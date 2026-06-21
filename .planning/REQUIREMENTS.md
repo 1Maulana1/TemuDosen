@@ -1,7 +1,8 @@
 # Requirements: TemuDosen
 
 **Defined:** 2026-06-12
-**Core Value:** Replace hours of physical hallway queuing with an accurate, triage-based time estimate and a dynamically managed queue — cutting average student waiting time from ~120 minutes to under 30.
+**Updated:** 2026-06-21 (PRD v2.2 — recording, STT, AI logbook, advisory continuity)
+**Core Value:** Turn ephemeral guidance conversations into a permanent logbook — automated STT → AI summary → one-tap approval, while cutting student wait time from ~120 min to <30 min.
 
 ## v1 Requirements
 
@@ -25,24 +26,49 @@
 - [ ] **QUEUE-05**: System checks the lecturer's Google Calendar free/busy and creates/updates/deletes a calendar event (for lecturer and student) on approval, cancellation, or reschedule
 - [ ] **QUEUE-06**: If the Google Calendar integration fails, times out, or tokens expire, the queue keeps working on local data and the error is logged to the Admin Dashboard (graceful degradation)
 
-### Session Execution
+### Session Execution (Updated v2.1 / v2.2)
 
 - [ ] **SESSION-01**: Student receives a notification (in-app/email) when their estimated turn is ~15 minutes away
-- [ ] **SESSION-02**: Lecturer presses "Start Session" to record the actual session start timestamp
-- [ ] **SESSION-03**: Lecturer presses "End Session" and must enter "Guidance Result Notes" to record the end timestamp
-- [ ] **SESSION-04**: System auto-cancels a student's queue slot if "Start Session" hasn't occurred within 30 minutes of being called
-- [ ] **SESSION-05**: Lecturer selects Offline/Online for the session and, if Online, attaches an external meeting link
+- [ ] **SESSION-02** *(revised)*: Before the session begins, an explicit recording consent prompt is shown; both parties must consent for recording to proceed; session can still run without recording if consent is declined
+- [ ] **SESSION-03** *(revised)*: Lecturer presses a single "Mulai & Rekam" button that simultaneously records the session start timestamp (TS1) and begins audio recording
+- [ ] **SESSION-04** *(revised)*: Lecturer presses "Selesai" to simultaneously stop recording and record the session end timestamp (TS2); manual result notes are optional (AI summary serves this role)
+- [ ] **SESSION-05**: System auto-cancels a student's queue slot if "Mulai & Rekam" hasn't occurred within 30 minutes of being called
+- [ ] **SESSION-06**: Lecturer selects Offline/Online for the session; if Online, attaches an external meeting link
+
+### STT & AI Summarization
+
+- [ ] **STT-01**: System transcribes session audio to text via self-hosted STT (faster-whisper large-v3-turbo) asynchronously after session ends
+- [ ] **STT-02**: Transcript is available for review within ≤2× audio duration for 90% of sessions; UI is not blocked during processing
+- [ ] **STT-03**: System generates a structured AI summary (advice points + improvement notes) from the transcript via LLM API after transcript is ready
+- [ ] **STT-04**: Lecturer can review, edit, and approve the AI-generated summary and advice items before they are committed to the logbook
+- [ ] **STT-05**: Approved summary, transcript, and advice items are saved and linked to the session and the student
+- [ ] **STT-06**: Student can view their approved transcript and summary after lecturer approval
+- [ ] **STT-07**: If STT or LLM fails or times out, system provides a manual note editor as fallback and logs the failure to Admin Dashboard (graceful degradation)
+
+### Advisory Continuity
+
+- [ ] **ADVICE-01**: Student can mark individual advice items as "addressed" (with optional note/evidence) before or when submitting the next session request
+- [ ] **ADVICE-02**: Lecturer can view the complete advice history and follow-up status for each advisee student
+
+### Campus Logbook Integration
+
+- [ ] **LOGBOOK-01**: System syncs approved summaries to the campus logbook API (Sekawan/KPTI) when the API is available
+- [ ] **LOGBOOK-02**: If campus API is unavailable, system provides CSV/PDF export of the summary as a manual-upload fallback
+- [ ] **LOGBOOK-03**: If campus logbook API call fails or times out, summary remains saved internally, is queued for retry, and error is logged to Admin Dashboard (graceful degradation)
 
 ### Admin & Configuration
 
 - [ ] **ADMIN-01**: Admin configures per-"Symptom" duration weights at the start of each semester
 - [ ] **ADMIN-02**: Admin can trigger an Emergency Cancel that clears a lecturer's remaining queue for the day
-- [ ] **ADMIN-03**: Admin can view integration error logs (e.g. Google Calendar failures) on an Admin Dashboard
+- [ ] **ADMIN-03**: Admin can view integration error logs (Google Calendar failures) on an Admin Dashboard
+- [ ] **ADMIN-04** *(new)*: Admin configures campus logbook API credentials and integration settings (Sekawan/KPTI)
+- [ ] **ADMIN-05** *(new)*: Admin can monitor STT/LLM service quota usage and review failure logs
 
 ### Reporting
 
-- [ ] **REPORT-01**: Kaprodi can view digitized guidance history (timestamps, durations, symptoms, notes) across all lecturers
-- [ ] **REPORT-02**: Kaprodi can view each lecturer's workload (sessions completed, time spent) for accreditation reporting
+- [ ] **REPORT-01**: Kaprodi can view digitized guidance history (timestamps, durations, symptoms, summaries) across all lecturers
+- [ ] **REPORT-02**: Kaprodi can view each lecturer's workload summary (sessions completed, total time) for accreditation reporting
+- [ ] **REPORT-03** *(new)*: Kaprodi can view advice follow-up compliance rates per lecturer/student
 
 ## v2 Requirements
 
@@ -50,7 +76,7 @@ Deferred to future release. Tracked but not in current roadmap.
 
 ### Communication
 
-- **VIDEO-01**: In-app/native video conferencing integration (Zoom/Meet) instead of an external link field
+- **VIDEO-01**: In-app/native video conferencing integration (Zoom/Meet) instead of external link field
 - **NOTIF-01**: Dedicated native push-notification gateway (beyond in-app/email T-15 alerts)
 
 ### Academic Workflows
@@ -62,49 +88,70 @@ Deferred to future release. Tracked but not in current roadmap.
 
 - **MOBILE-01**: Native mobile apps (Android/iOS)
 
+### AI Enhancements
+
+- **DIAR-01**: Speaker diarization — automatic separation of lecturer vs. student speech in transcript
+- **SCORE-01**: AI-based quality scoring of guidance sessions
+
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
-| Plagiarism checking (Turnitin/Grammarly) | Separate concern from scheduling/triage; no MVP value |
+| Plagiarism checking (Turnitin/Grammarly) | Separate concern from scheduling/documentation |
 | In-app/native video conferencing | MVP only needs an external meeting link/URL field |
 | Native push-notification gateway | T-15 alerts ship via in-app/email for MVP |
 | Multi-examiner thesis defense scheduling | Different workflow (group vs. 1:1 advisor sessions) |
-| Native mobile apps (Android/iOS) | Responsive PWA (360px+) covers target devices for MVP |
+| Native mobile apps (Android/iOS) | Responsive PWA (360px+) covers target devices |
+| Speaker diarization | Merged transcript is sufficient for MVP; diarization is complex and error-prone |
+| AI quality scoring of sessions | Out of scope per PRD v2.2 explicit exclusion |
 
 ## Traceability
 
-Which phases cover which requirements. Updated during roadmap creation.
-
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| TRIAGE-01 | TBD | Pending |
-| TRIAGE-02 | TBD | Pending |
-| TRIAGE-03 | TBD | Pending |
-| REVIEW-01 | TBD | Pending |
-| REVIEW-02 | TBD | Pending |
-| QUEUE-01 | TBD | Pending |
-| QUEUE-02 | TBD | Pending |
-| QUEUE-03 | TBD | Pending |
-| QUEUE-04 | TBD | Pending |
-| QUEUE-05 | TBD | Pending |
-| QUEUE-06 | TBD | Pending |
-| SESSION-01 | TBD | Pending |
-| SESSION-02 | TBD | Pending |
-| SESSION-03 | TBD | Pending |
-| SESSION-04 | TBD | Pending |
-| SESSION-05 | TBD | Pending |
-| ADMIN-01 | TBD | Pending |
-| ADMIN-02 | TBD | Pending |
-| ADMIN-03 | TBD | Pending |
-| REPORT-01 | TBD | Pending |
-| REPORT-02 | TBD | Pending |
+| TRIAGE-01 | Phase 1 | Pending |
+| TRIAGE-02 | Phase 1 | Pending |
+| TRIAGE-03 | Phase 2 | Pending |
+| REVIEW-01 | Phase 1 | Pending |
+| REVIEW-02 | Phase 2 | Pending |
+| QUEUE-01 | Phase 2 | Pending |
+| QUEUE-02 | Phase 3 | Pending |
+| QUEUE-03 | Phase 3 | Pending |
+| QUEUE-04 | Phase 3 | Pending |
+| QUEUE-05 | Phase 4 | Pending |
+| QUEUE-06 | Phase 4 | Pending |
+| SESSION-01 | Phase 5 | Pending |
+| SESSION-02 | Phase 5 | Pending |
+| SESSION-03 | Phase 5 | Pending |
+| SESSION-04 | Phase 5 | Pending |
+| SESSION-05 | Phase 5 | Pending |
+| SESSION-06 | Phase 5 | Pending |
+| STT-01 | Phase 6 | Pending |
+| STT-02 | Phase 6 | Pending |
+| STT-03 | Phase 6 | Pending |
+| STT-04 | Phase 6 | Pending |
+| STT-05 | Phase 6 | Pending |
+| STT-06 | Phase 6 | Pending |
+| STT-07 | Phase 6 | Pending |
+| ADVICE-01 | Phase 7 | Pending |
+| ADVICE-02 | Phase 7 | Pending |
+| LOGBOOK-01 | Phase 7 | Pending |
+| LOGBOOK-02 | Phase 7 | Pending |
+| LOGBOOK-03 | Phase 7 | Pending |
+| ADMIN-01 | Phase 1 | Pending |
+| ADMIN-02 | Phase 8 | Pending |
+| ADMIN-03 | Phase 4 | Pending |
+| ADMIN-04 | Phase 7 | Pending |
+| ADMIN-05 | Phase 6 | Pending |
+| REPORT-01 | Phase 8 | Pending |
+| REPORT-02 | Phase 8 | Pending |
+| REPORT-03 | Phase 8 | Pending |
 
 **Coverage:**
-- v1 requirements: 21 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 21 ⚠️ (will be resolved by roadmap creation)
+- v1 requirements: 36 total
+- Mapped to phases: 36
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-06-12*
-*Last updated: 2026-06-12 after initial definition*
+*Last updated: 2026-06-21 after PRD v2.2 revision*

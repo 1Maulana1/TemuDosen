@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-06-14T20:11:58.943Z"
+last_updated: "2026-06-21T00:00:00.000Z"
 progress:
-  total_phases: 6
+  total_phases: 8
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -18,7 +18,7 @@ progress:
 
 See `.planning/PROJECT.md` for core value, constraints, and full requirements.
 
-**Core value**: Replace hours of physical hallway queuing with an accurate, triage-based time estimate and a dynamically managed queue — cutting average student waiting time from ~120 minutes to under 30.
+**Core value**: Turn ephemeral guidance conversations into a permanent logbook — automated STT → AI summary → one-tap approval, while cutting student wait time from ~120 min to <30 min.
 
 ## Current Position
 
@@ -35,18 +35,19 @@ See `.planning/PROJECT.md` for core value, constraints, and full requirements.
 3. Admin can set/update a duration weight (in minutes) for each "Academic Symptom" category, and these weights persist for use in approval
 4. Lecturer can view a list of pending guidance requests, each showing the student's stated symptom and a link/preview to the draft attachment
 
-**Progress**: Phase 1 of 6 (0% complete)
+**Progress**: Phase 1 of 8 (0% complete)
 `[..........]`
 
 ## Accumulated Context
 
 ### Todos
 
-- Requirements traceability table in REQUIREMENTS.md still needs phase numbers filled in (currently TBD) — do this before/during Phase 1 planning.
+- Requirements traceability table in REQUIREMENTS.md has phase numbers filled in as of 2026-06-21.
+- Phase 1 context document (01-CONTEXT.md) was written against PRD v1.0 — review and update before starting Phase 1 plan.
 
 ### Decisions
 
-(None yet)
+- **2026-06-21**: PRD updated to v2.2. Core value shifted from queue management to documentation + advisory continuity. Roadmap expanded from 6 phases to 8. Phases 1–4 are structurally unchanged. Phase 5 revised to include recording + consent. Phases 6–7 are new (STT/AI pipeline; advisory continuity + campus logbook). Phase 8 expanded with advice-compliance reporting.
 
 ### Blockers
 
@@ -54,5 +55,5 @@ See `.planning/PROJECT.md` for core value, constraints, and full requirements.
 
 ## Session Continuity
 
-**Last updated**: 2026-06-12
-**Next step**: `/gsd-plan-phase 1`
+**Last updated**: 2026-06-21
+**Next step**: `/gsd-plan-phase 1` (after reviewing Phase 1 context doc for PRD v2.2 alignment)
