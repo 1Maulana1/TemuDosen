@@ -52,9 +52,27 @@ TemuDosen/
 
 ## Cara Menjalankan
 
+### Dengan Docker (Direkomendasikan)
+
 ```bash
 # Clone repo
 git clone https://github.com/1Maulana1/TemuDosen.git
+cd TemuDosen
+
+# Development (runserver + PostgreSQL)
+docker-compose -f docker-compose.dev.yml up --build
+
+# Production (gunicorn + PostgreSQL)
+docker-compose up --build
+```
+
+Server berjalan di `http://localhost:8000`
+
+Database PostgreSQL berjalan di `localhost:5432` — bisa dibuka di phpMyAdmin/DBeaver/TablePlus.
+
+### Tanpa Docker (Manual)
+
+```bash
 cd TemuDosen/backend
 
 # Buat virtual environment

@@ -1,0 +1,51 @@
+version: '3.9'
+
+# Docker Compose untuk development — pakai runserver bukan gunicorn
+# Usage: docker-compose -f docker-compose.dev.yml up
+
+services:
+
+  db:
+    image: postgres:15-alpine
+    container_name: temudosen_db_dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: temudosen_dev
+      POSTGRES_USER: temudosen
+      POSTGRES_PASSWORD: temudosen123
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U temudosen"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    container_name: temudosen_web_dev
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py seed_admin &&
+             python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - ./backend:/app
+      - storage_dev_data:/app/storage
+    ports:
+      - "8000:8000"
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.docker
+      - SECRET_KEY=dev-secret-key-not-for-production
+      - DATABASE_URL=postgres://temudosen:temudosen123@db:5432/temudosen_dev
+      - ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0
+      - MEDIA_ROOT=/app/storage
+      - DEBUG=True
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_dev_data:
+  storage_dev_data:
