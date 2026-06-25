@@ -13,6 +13,11 @@
 import { createBrowserRouter, redirect } from 'react-router';
 
 import LoginPage from './pages/auth/LoginPage';
+import RegisterRolePage from './pages/auth/RegisterRolePage';
+import RegisterStudentPage from './pages/auth/RegisterStudentPage';
+import RegisterLecturerPage from './pages/auth/RegisterLecturerPage';
+import PendingApprovalPage from './pages/auth/PendingApprovalPage';
+import UserApproval from './pages/admin/UserApproval';
 import { getCurrentUser } from './api/auth';
 import type { User } from './api/auth';
 
@@ -61,21 +66,21 @@ export const router = createBrowserRouter([
   },
   {
     path: '/register',
-    element: <Placeholder route="/register" />, // Plan 02
+    element: <RegisterRolePage />, // Plan 02
   },
   {
     path: '/register/mahasiswa',
-    element: <Placeholder route="/register/mahasiswa" />, // Plan 02
+    element: <RegisterStudentPage />, // Plan 02
   },
   {
     path: '/register/dosen',
-    element: <Placeholder route="/register/dosen" />, // Plan 02
+    element: <RegisterLecturerPage />, // Plan 02
   },
 
   // ── Authenticated + unapproved (D-20 pending-approval gate) ─────────────────
   {
     path: '/pending-approval',
-    element: <Placeholder route="/pending-approval" />, // Plan 02
+    element: <PendingApprovalPage />, // Plan 02
   },
 
   // ── Student routes (requireRole('student')) ──────────────────────────────────
@@ -117,7 +122,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'pengguna',
-        element: <Placeholder route="/admin/pengguna" />, // Plan 02
+        element: <UserApproval />, // Plan 02
       },
     ],
   },
