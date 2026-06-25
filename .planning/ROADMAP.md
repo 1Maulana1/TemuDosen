@@ -47,7 +47,7 @@ Every phase leaves the system in a state a real actor could use. The documentati
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 01-04-PLAN.md — Student submission form + validated upload + protected file serving + My Submissions dashboard (TRIAGE-01/02) (Wave 2)
+- [x] 01-04-PLAN.md — Student submission form + validated upload + protected file serving + My Submissions dashboard (TRIAGE-01/02) (Wave 2)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -171,7 +171,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Submission & Triage Foundation | 2/5 | Executing (01-03 next) | - |
+| 1. Submission & Triage Foundation | 4/5 | Executing (01-05 next) | - |
 | 2. Approval & Queue Placement | 0/TBD | Not started | - |
 | 3. Live Queue Management & Quota | 0/TBD | Not started | - |
 | 4. Google Calendar Sync & Graceful Degradation | 0/TBD | Not started | - |

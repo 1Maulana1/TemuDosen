@@ -8,8 +8,8 @@
 
 ### Submission & Triage
 
-- [ ] **TRIAGE-01**: Student can submit a guidance request by selecting "Academic Symptoms" from a dropdown and uploading a draft PDF (max 5MB)
-- [ ] **TRIAGE-02**: System validates the draft file and symptom form together on submit, rejecting incomplete submissions with a clear error
+- [x] **TRIAGE-01**: Student can submit a guidance request by selecting "Academic Symptoms" from a dropdown and uploading a draft PDF (max 5MB) — implemented in 01-04
+- [x] **TRIAGE-02**: System validates the draft file and symptom form together on submit, rejecting incomplete submissions with a clear error — implemented in 01-04
 - [ ] **TRIAGE-03**: System calculates an estimated guidance duration from weighted "Academic Symptoms" when the lecturer approves a request
 
 ### Lecturer Review
