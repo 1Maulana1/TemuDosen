@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Executing Phase 01
-last_updated: "2026-06-25T10:00:00.000Z"
+last_updated: "2026-06-25T10:30:00.000Z"
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 5
-  completed_plans: 0
-  percent: 0
+  completed_plans: 1
+  percent: 4
 ---
 
 # State: TemuDosen
@@ -23,10 +23,10 @@ See `.planning/PROJECT.md` for core value, constraints, and full requirements.
 ## Current Position
 
 Phase: 01 (Submission & Triage Foundation) — EXECUTING
-Plan: 1 of 5 — IN PROGRESS (Tasks 1-3 complete, awaiting checkpoint verification)
+Plan: 2 of 5 — NEXT (01-02 self-registration + approval gate)
 **Phase**: 1 - Submission & Triage Foundation
-**Plan**: 01-01 Walking Skeleton
-**Status**: Checkpoint pending (Task 4 human-verify)
+**Plan**: 01-02 Self-registration, pending-approval gate, admin user-approval queue
+**Status**: Ready to execute
 
 **Phase 1 Goal**: A student can submit a guidance request (symptoms + draft PDF) that is validated and visible to their lecturer, with the admin-configured symptom weights in place that later drive the triage calculation
 
@@ -37,8 +37,14 @@ Plan: 1 of 5 — IN PROGRESS (Tasks 1-3 complete, awaiting checkpoint verificati
 3. Admin can set/update a duration weight (in minutes) for each "Academic Symptom" category, and these weights persist for use in approval
 4. Lecturer can view a list of pending guidance requests, each showing the student's stated symptom and a link/preview to the draft attachment
 
-**Progress**: Phase 1 of 8 (0% complete — plan 01-01 in progress)
-`[..........]`
+**Progress**: Phase 1 of 8 (4% complete — 1/5 plans done)
+`[=.........]`
+
+## Performance Metrics
+
+| Phase | Plan | Duration | Tasks | Files | Completed |
+|-------|------|----------|-------|-------|-----------|
+| 01 | 01-01 Walking Skeleton | ~4h | 4 | 46 | 2026-06-25 |
 
 ## Accumulated Context
 
@@ -51,6 +57,7 @@ Plan: 1 of 5 — IN PROGRESS (Tasks 1-3 complete, awaiting checkpoint verificati
 
 - **2026-06-21**: PRD updated to v2.2. Core value shifted from queue management to documentation + advisory continuity. Roadmap expanded from 6 phases to 8. Phases 1–4 are structurally unchanged. Phase 5 revised to include recording + consent. Phases 6–7 are new (STT/AI pipeline; advisory continuity + campus logbook). Phase 8 expanded with advice-compliance reporting.
 - **2026-06-25**: Walking Skeleton (01-01) implemented. Auth strategy: Django server-side sessions + cookie (D-21). CustomUser: AbstractBaseUser + PermissionsMixin, USERNAME_FIELD=email. Tailwind v4 CSS @theme (no tailwind.config.js). React Router 7 createBrowserRouter + loaders. CSRF: GET /api/csrf/ on mount before render.
+- **2026-06-25**: AbstractBaseUser chosen over AbstractUser — prevents username/first_name/last_name conflicts with NIM/NIDN. google_oauth_token added as JSONField(null=True) stub for Phase-4 forward-compat. Vite proxy /api→:8000 eliminates CORS+credentials complexity in dev.
 
 ### Blockers
 
@@ -59,5 +66,5 @@ Plan: 1 of 5 — IN PROGRESS (Tasks 1-3 complete, awaiting checkpoint verificati
 ## Session Continuity
 
 **Last updated**: 2026-06-25
-**Next step**: Human verification of Walking Skeleton — login, cookies, role routing, /me/ returns 403 for anonymous
-**Stopped at**: Plan 01-01, Task 4 checkpoint:human-verify (Tasks 1-3 complete, awaiting checkpoint approval)
+**Next step**: Execute plan 01-02 — self-registration, pending-approval gate, admin user-approval queue, approved-lecturer dropdown
+**Stopped at**: Plan 01-01 COMPLETE (human checkpoint approved; SUMMARY written)
