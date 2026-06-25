@@ -23,5 +23,5 @@ urlpatterns = [
     # Plan 04/05: Submission management
     # path('api/submissions/', include('apps.submissions.urls')),
     # Plan 02: User registration + approval
-    # path('api/users/', include('apps.accounts.user_urls')),
+    path('api/users/', include('apps.accounts.user_urls')),
 ]
