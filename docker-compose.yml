@@ -1,0 +1,48 @@
+version: '3.9'
+
+services:
+
+  db:
+    image: postgres:15-alpine
+    container_name: temudosen_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: temudosen
+      POSTGRES_USER: temudosen
+      POSTGRES_PASSWORD: temudosen123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U temudosen"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    container_name: temudosen_web
+    restart: unless-stopped
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py seed_admin &&
+             gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 2"
+    volumes:
+      - ./backend:/app
+      - storage_data:/app/storage
+    ports:
+      - "8000:8000"
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.docker
+      - SECRET_KEY=docker-secret-key-ganti-di-production
+      - DATABASE_URL=postgres://temudosen:temudosen123@db:5432/temudosen
+      - ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0
+      - MEDIA_ROOT=/app/storage
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  storage_data:
