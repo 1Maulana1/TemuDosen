@@ -8,6 +8,13 @@
  */
 import { apiRequest } from './client';
 
+export interface AdviserInfo {
+  id: number;
+  full_name: string;
+  nidn: string | null;
+  email: string;
+}
+
 export interface User {
   id: number;
   email: string;
@@ -18,6 +25,8 @@ export interface User {
   is_approved: boolean;
   is_active: boolean;
   created_at: string;
+  /** Adviser info (only populated for students with an assigned adviser, D-24) */
+  adviser?: AdviserInfo | null;
 }
 
 /**

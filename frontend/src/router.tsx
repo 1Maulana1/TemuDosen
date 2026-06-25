@@ -19,6 +19,8 @@ import RegisterLecturerPage from './pages/auth/RegisterLecturerPage';
 import PendingApprovalPage from './pages/auth/PendingApprovalPage';
 import UserApproval from './pages/admin/UserApproval';
 import SymptomConfig from './pages/admin/SymptomConfig';
+import StudentDashboard from './pages/student/StudentDashboard';
+import SubmissionForm from './pages/student/SubmissionForm';
 import { getCurrentUser } from './api/auth';
 import type { User } from './api/auth';
 
@@ -91,11 +93,11 @@ export const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <Placeholder route="/mahasiswa" />, // Plan 04
+        element: <StudentDashboard />, // Plan 04
       },
       {
         path: 'ajukan',
-        element: <Placeholder route="/mahasiswa/ajukan" />, // Plan 04
+        element: <SubmissionForm />, // Plan 04
       },
     ],
   },
