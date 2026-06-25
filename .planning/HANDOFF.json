@@ -1,31 +1,29 @@
 {
   "version": "1.0",
-  "timestamp": "2026-06-12T01:59:22.305Z",
-  "phase": "1",
+  "timestamp": "2026-06-25T09:00:00.000Z",
+  "phase": "01",
   "phase_name": "Submission & Triage Foundation",
-  "phase_dir": null,
-  "plan": null,
-  "task": null,
-  "total_tasks": null,
-  "status": "paused",
-  "completed_tasks": [
-    {"id": 1, "name": "Define project (PROJECT.md)", "status": "done", "commit": "ea5147b"},
-    {"id": 2, "name": "Set workflow config (config.json)", "status": "done", "commit": "9365fb4"},
-    {"id": 3, "name": "Define v1/v2 requirements (REQUIREMENTS.md)", "status": "done", "commit": "622f2bd"},
-    {"id": 4, "name": "Create roadmap + initial state (ROADMAP.md, STATE.md)", "status": "done", "commit": "1239afa"}
+  "status": "verification_complete_pending_close",
+  "completed_plans": [
+    {"id": "01-01", "name": "Walking Skeleton", "status": "done"},
+    {"id": "01-02", "name": "Registration & Approval", "status": "done"},
+    {"id": "01-03", "name": "Symptom Category Weights", "status": "done"},
+    {"id": "01-04", "name": "Student Submission", "status": "done"},
+    {"id": "01-05", "name": "Lecturer Review", "status": "done"}
   ],
   "remaining_tasks": [
-    {"id": 5, "name": "Fill REQUIREMENTS.md traceability table (21 reqs -> phases 1-6)", "status": "not_started"},
-    {"id": 6, "name": "Run /gsd-plan-phase 1 (Submission & Triage Foundation)", "status": "not_started"},
-    {"id": 7, "name": "Generate/refresh CLAUDE.md via gsd-tools generate-claude-md", "status": "not_started"}
+    {"id": 1, "name": "Commit 01-VERIFICATION.md", "status": "not_started"},
+    {"id": 2, "name": "Run gsd-tools phase.complete 01 to mark phase done in ROADMAP/STATE", "status": "not_started"},
+    {"id": 3, "name": "Commit updated ROADMAP.md + STATE.md", "status": "not_started"},
+    {"id": 4, "name": "Update PROJECT.md (evolve after phase completion)", "status": "not_started"}
   ],
-  "blockers": [],
-  "human_actions_pending": [],
-  "decisions": [
-    {"decision": "MVP mode, standard granularity, 6-phase roadmap (numeric phases 1-6, executed in order)", "rationale": "Covers all 21 v1 requirements as vertical slices, each leaving a usable system state", "phase": "0"},
-    {"decision": "Traceability mapping derived from ROADMAP.md 'Requirements:' lines per phase (ready to apply): Phase 1 = TRIAGE-01, TRIAGE-02, ADMIN-01, REVIEW-01; Phase 2 = TRIAGE-03, REVIEW-02, QUEUE-01; Phase 3 = QUEUE-02, QUEUE-03, QUEUE-04; Phase 4 = QUEUE-05, QUEUE-06, ADMIN-03; Phase 5 = SESSION-01..05; Phase 6 = ADMIN-02, REPORT-01, REPORT-02 (all 21 mapped, 0 unmapped)", "rationale": "Computed during this session by cross-referencing ROADMAP.md Phase Details against REQUIREMENTS.md's 21 REQ-IDs; just needs to be written into REQUIREMENTS.md's Traceability table (currently all TBD/Pending)", "phase": "0"}
-  ],
-  "uncommitted_files": [],
-  "next_action": "Run /gsd-plan-phase 1 (it will also fill the REQUIREMENTS.md traceability table using the mapping recorded in decisions above, or do it manually first if preferred)",
-  "context_notes": "Project initialization (/gsd-new-project) for 'TemuDosen' completed end-to-end: PROJECT.md, config.json, REQUIREMENTS.md, ROADMAP.md, STATE.md all written and committed. No phase work has started yet (.planning/phases/ does not exist). The only loose end is REQUIREMENTS.md's Traceability table still showing TBD/Pending for all 21 REQ-IDs -- the correct mapping has already been computed (see decisions) and just needs to be transcribed. Everything else is ready for /gsd-plan-phase 1."
+  "verification_result": {
+    "status": "human_needed",
+    "score": "6/6 must-haves verified",
+    "automated": "5/6 confirmed in code",
+    "human": "Login approved manually at checkpoint; PDF upload + admin weights + lecturer dashboard are browser smoke tests pending",
+    "verdict": "No gaps, no blockers — all requirements TRIAGE-01, TRIAGE-02, REVIEW-01, ADMIN-01 implemented"
+  },
+  "next_action": "Resume with: git add .planning/phases/01-submission-triage-foundation/01-VERIFICATION.md && git commit, then run gsd-tools phase.complete 01, then commit tracking files. Phase 1 is effectively done.",
+  "context_notes": "All 5 plans executed and committed. Verifier confirmed all must-haves pass. Only step left is closing out the phase in planning artifacts (ROADMAP.md checkbox, STATE.md advance to Phase 2). The app is running locally — backend on :8000, frontend on :5173."
 }

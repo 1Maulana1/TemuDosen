@@ -4,7 +4,7 @@
  */
 
 @import "tailwindcss";
-@import "@tailwindcss/forms";
+@plugin "@tailwindcss/forms";
 
 @theme {
   /* ── Colors (UI-SPEC Tailwind Config Contract) ── */
