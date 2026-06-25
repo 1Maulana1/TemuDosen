@@ -53,7 +53,7 @@ No approval or rejection actions in Phase 1 — lecturer can only *view* submiss
 ### File Storage
 - **D-26:** Files stored on the **local filesystem** (server disk), e.g., `/storage/uploads/`
 - **D-27:** Filenames use **UUID-based paths** (e.g., `/storage/{uuid}.pdf`) — no guessable filename, mapped to submission record in DB
-- **D-28:** **Disk-level encryption** (e.g., LUKS on Linux) satisfies the PRD AES-256 at-rest requirement — no per-file app-level encryption
+- **D-28:** [informational] **Disk-level encryption** (e.g., LUKS on Linux) satisfies the PRD AES-256 at-rest requirement — no per-file app-level encryption. No application code required; deployment/ops concern only.
 - **D-29 ⚠ RISK:** Files are served via direct URL with UUID filename (no server-side auth check on the file route). This conflicts with the PRD constraint that access is "restricted to the specific lecturer and student pair." **Planner should evaluate whether to serve files through an access-controlled app route instead** — the PRD's security requirement (NFR) points toward a protected route.
 
 ### Claude's Discretion
@@ -110,7 +110,7 @@ No approval or rejection actions in Phase 1 — lecturer can only *view* submiss
 - **Per-lecturer symptom weight overrides** — captured for Phase 2+ consideration
 - **Bulk CSV import for admin symptom configuration** — noted for a future admin tools phase
 - **Google Calendar OAuth2 connection flow for Lecturer** — deferred to Phase 4
-- **Password reset flow** — not discussed; planner should include standard reset-by-email in Phase 1 auth scaffolding
+- **Password reset flow** — deferred to a later phase (no requirement ID, no UI screen, no validation mapping in Phase 1)
 
 </deferred>
 

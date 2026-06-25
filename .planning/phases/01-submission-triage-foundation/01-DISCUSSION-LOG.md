@@ -1,65 +1,197 @@
-# Phase 1 Discussion Log
+# Phase 1: Submission & Triage Foundation - Discussion Log
 
-**Phase:** 01 — Submission & Triage Foundation  
-**Date:** 2026-06-15  
-**Facilitator:** Claude (GSD discuss-phase workflow)
+> **Audit trail only.** Do not use as input to planning, research, or execution agents.
+> Decisions are captured in CONTEXT.md — this log preserves the alternatives considered.
 
-## Discussion Summary
+**Date:** 2026-06-21
+**Phase:** 1 — Submission & Triage Foundation
+**Areas discussed:** Tech Stack (deferred), Auth & User Provisioning, PDF & File Storage
+**Note:** Previous discussion (2026-06-15, PRD v1.0) covered Symptom Categories, Admin Config UI, Lecturer Review List, and PDF Handling — those decisions are still valid and carried forward in CONTEXT.md.
 
-User selected all four gray areas for deep discussion: Symptom Categories, Admin Config UI, Lecturer Review List, PDF Handling.
+---
 
-## Area 1: Symptom Categories
+## Tech Stack
 
-| Question | Options | User Selection | Notes |
-|----------|---------|-----------------|-------|
-| Fixed vs admin-defined? | Fixed by you / Admin-defined | Admin-defined | Flexibility to adjust symptom categories per semester |
-| How many categories? | ~5-6 / Broader taxonomy | ~5-6 categories | Keeps the list manageable |
-| Which categories? | Academic-focused (my suggestion) / Other | Academic-focused | Agreed: Thesis methodology, Data analysis, Writing & structure, Literature review, Time management, Supervisor conflict |
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Laravel (PHP) | Common in Indonesian university projects, Eloquent ORM, MySQL/PostgreSQL | |
+| Next.js (TypeScript) | Full-stack React, Prisma ORM, strong for PWA + async queues | |
+| Django (Python) | Batteries-included, DRF + React/Vue frontend | |
+| We haven't decided yet | Defer based on team background/constraints | |
 
-**Decision**: Admin-defined symptom categories (default 6) with UI in Phase 1 to add/edit/delete.
+**User's choice:** Deferred — "skip this first and tell me again before go to another phase"
+**Notes:** Must be decided before `/gsd-plan-phase 1`. Framework choice affects async pipeline (Phase 6 STT/LLM) and the session strategy already chosen (server-side sessions).
 
-## Area 2: Admin Symptom Configuration UI
+---
 
-| Question | Options | User Selection | Notes |
-|----------|---------|-----------------|-------|
-| How input weights? | Inline editable table / Modal per symptom | Inline editable table | Simpler, faster bulk editing |
-| Absolute or relative? | Minutes (absolute) / Relative weights | Minutes (absolute) | Clearer for admin, easier for queue calculation |
-| Global or per-lecturer? | Global weights / Per-lecturer weights | Global weights | Consistency across program; per-lecturer deferred |
+## Auth & User Provisioning
 
-**Decision**: Inline-editable table, absolute minutes, global for all lecturers. Save once; weights persist per semester.
+### Account creation method
 
-## Area 3: Lecturer Review List
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Admin creates all accounts manually | Admin registers students and lecturers via management panel | |
+| Self-registration with campus email | Users register themselves with university email | ✓ |
+| SSO / LDAP with campus system | Integrate with university identity provider | |
 
-| Question | Options | User Selection | Notes |
-|----------|---------|-----------------|-------|
-| Which statuses? | Pending only / + Rejected & Revisions / + Approved | All statuses | Full audit trail for lecturer reference |
-| Which columns? | Minimal / + Name & Status / + File & Preview | All columns (NIM, Name, Symptom, Status, Date, File) | Rich context for lecturer decision-making |
-| Filter/search/sort? | Status filter / Search by student / Sort options | All navigation options | Full list management |
+**User's choice:** Self-registration with campus email
 
-**Decision**: Show all statuses (Pending, Rejected, Approved). Columns: NIM, Name, Symptom, Status, Date, File. Support status filter, student search, and sort by date/symptom.
+---
 
-## Area 4: PDF Handling
+### Role determination
 
-| Question | Options | User Selection | Notes |
-|----------|---------|-----------------|-------|
-| Lecturer PDF view? | In-app preview / Download only | In-app preview | Integrated workflow |
-| Student PDF view? | Student dashboard / Notifications only | Student dashboard with split-pane | User provided design guidance: split layout (PDF + notes) for review |
-| PDF storage? | Server storage / Cloud storage | Server storage | Simpler for MVP, no external cloud dependency |
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Email domain determines role | Domain suffix infers role (e.g., @mahasiswa vs @dosen) | |
+| User selects role on signup, Admin approves | User picks role; Admin confirms before full access | ✓ |
+| NIM/NIDN field determines role | Presence of NIM vs. NIDN field infers role | |
 
-**Decision**: In-app preview for both. Student "My Submissions" dashboard. Split-pane UI (PDF left, notes right) as standard pattern. Server-side storage. Forward-looking design for Phase 2.
+**User's choice:** User selects role on signup, Admin approves
+
+---
+
+### Session strategy
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Server-side sessions (cookie-based) | Session stored on server, browser holds session cookie | ✓ |
+| JWT (stateless tokens) | Token issued on login, sent with each request | |
+
+**User's choice:** Server-side sessions (cookie-based)
+
+---
+
+### Student–Lecturer relationship
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Student selects their lecturer during registration | Advisor dropdown on the signup form | ✓ |
+| Admin assigns lecturer after account approval | Extra admin step before student can submit | |
+| Student specifies lecturer on each submission | No permanent assignment | |
+
+**User's choice:** Student selects their lecturer during registration
+**Notes:** Dropdown should only show approved lecturer accounts.
+
+---
+
+### Email domain restriction
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Single domain for everyone | All users on same domain | |
+| Split domains (student vs. staff) | Separate domains hint at role | |
+| No domain restriction | Any email accepted | ✓ |
+
+**User's choice:** No restriction — user did not know their university's email domain pattern
+**Notes:** Admin approval is the sole gate for verifying role and identity.
+
+---
+
+### Student registration form fields
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| NIM + Full name + Email + Password + Lecturer selection | Minimum needed | ✓ |
+| NIM + Full name + Email + Password + Lecturer + Study program | Adds Prodi field for Kaprodi reporting | |
+
+**User's choice:** NIM + Full name + Email + Password + Lecturer selection
+
+---
+
+### Lecturer registration form fields
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| NIDN + Full name + Email + Password | Minimum needed | ✓ |
+| NIDN + Full name + Email + Password + Study program | Adds Prodi field | |
+| NIDN + Full name + Email + Password + Google Calendar OAuth | Calendar linked at registration | |
+
+**User's choice:** NIDN + Full name + Email + Password
+**Notes:** Google Calendar OAuth deferred to Phase 4.
+
+---
+
+### Post-registration state
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Account inactive — cannot log in | Login blocked until Admin approves | |
+| Account active but access restricted | Can log in; sees pending-approval banner; can't act | ✓ |
+
+**User's choice:** Account active but access restricted
+
+---
+
+### Admin & Kaprodi account creation
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Seeded in the database during deployment | Seed script creates initial Admin; Admin creates Kaprodi from panel | ✓ |
+| Admin registers normally, then super-admin promotes | Requires direct DB access to bootstrap | |
+| Registration with secret invite code | Anyone with code can register as Admin | |
+
+**User's choice:** Seeded in the database during deployment
+
+---
+
+## PDF & File Storage
+
+### Storage location
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Local filesystem (server disk) | Files in /storage/uploads on the server | ✓ |
+| Self-hosted object storage (MinIO) | S3-compatible, more scalable for audio in Phase 5 | |
+| Cloud object storage (S3, Supabase) | Cloud-hosted; conflicts with PRD privacy constraints on audio | |
+
+**User's choice:** Local filesystem (server disk)
+
+---
+
+### Access control for files
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Serve files through app (access-controlled route) | Auth check before streaming file | |
+| Public URL with hard-to-guess filename | UUID filename, no auth check on URL | ✓ |
+
+**User's choice:** Public URL with hard-to-guess filename
+**Notes:** ⚠ Conflicts with PRD constraint that file access is "restricted to the specific lecturer and student pair." Flagged in CONTEXT.md D-29 for planner to resolve.
+
+---
+
+### Encryption at rest
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Filesystem-level encryption (disk encryption) | LUKS or equivalent; satisfies PRD AES-256 requirement | ✓ |
+| Per-file app-level encryption (AES-256 in app) | App encrypts each file before write, decrypts on serve | |
+
+**User's choice:** Filesystem-level disk encryption
+
+---
+
+### Filename strategy
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| UUID-based path (/storage/{uuid}.pdf) | Random UUID, mapped to submission in DB | ✓ |
+| Structured path (/storage/{nim}/{year}/{id}.pdf) | Human-readable but leaks NIM in URL | |
+| App-managed opaque ID | Never exposed in URLs | |
+
+**User's choice:** UUID-based path
+
+---
+
+## Claude's Discretion
+
+- PDF viewer implementation detail (iframe vs. embedded PDF.js) — choose for mobile PWA compatibility at 360px
+- UI component library / design system — deferred to planner based on tech stack choice
 
 ## Deferred Ideas
 
-- **Per-lecturer symptom weight overrides** — Noted for Phase 2+ consideration (admin complexity vs. benefit trade-off)
-- **Bulk CSV import** — Future admin tools enhancement
-- **Full-text PDF search** — Future phase
-
-## Canonical References Added
-
-- `.planning/PROJECT.md` — TemuDosen project context
-- `.planning/REQUIREMENTS.md` — Requirements (21 total, TRIAGE-01/02, ADMIN-01, REVIEW-01 in Phase 1)
-- `.planning/ROADMAP.md` — 6-phase structure
-
----
-*Discussion completed: 2026-06-15*  
-*Next step: `/gsd-plan-phase 1`*
+- Tech stack selection (must decide before planning)
+- Per-lecturer symptom weight overrides (Phase 2+)
+- Bulk CSV import for admin symptom configuration (future)
+- Google Calendar OAuth2 for Lecturer (Phase 4)
+- Password reset flow (planner to include in Phase 1 auth scaffolding)
