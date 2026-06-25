@@ -2,8 +2,9 @@
  * API client for Submission endpoints.
  *
  * Wraps:
- *   POST /api/submissions/  → createSubmission (multipart FormData — must NOT force application/json)
- *   GET  /api/submissions/  → fetchMySubmissions (student's own submissions)
+ *   POST /api/submissions/           → createSubmission (multipart FormData — must NOT force application/json)
+ *   GET  /api/submissions/           → fetchMySubmissions (student's own submissions)
+ *   GET  /api/submissions/lecturer/  → fetchLecturerSubmissions (lecturer's advisees' submissions)
  *
  * IMPORTANT: createSubmission uses FormData so the browser sets the correct
  * multipart/form-data boundary. Do NOT set Content-Type manually for this call.
@@ -97,6 +98,56 @@ export async function fetchMySubmissions(): Promise<SubmissionSummary[]> {
 
   if (!response.ok) {
     throw new Error(`Failed to fetch submissions: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+// ── Lecturer API types (Plan 05 — D-10 columns) ───────────────────────────────
+
+export interface LecturerSubmissionItem {
+  id: number;
+  student_nim: string;
+  student_name: string;
+  symptom_names: string[];
+  status: 'pending' | 'approved' | 'rejected' | 'revision';
+  created_at: string;
+  original_filename: string | null;
+  file_url: string | null;
+}
+
+export interface FetchLecturerSubmissionsParams {
+  status?: string;
+  search?: string;
+  ordering?: string;
+}
+
+/**
+ * Fetch the authenticated lecturer's advisees' submissions (for lecturer dashboard S-08).
+ *
+ * Calls GET /api/submissions/lecturer/ with optional filter/search/ordering params (D-09, D-11).
+ * Requires IsLecturer permission (authenticated + approved lecturer).
+ *
+ * Security: The backend enforces student__adviser == request.user (REVIEW-01 isolation, T-1-21).
+ * The frontend only passes query params — it cannot override the adviser filter.
+ */
+export async function fetchLecturerSubmissions(
+  params: FetchLecturerSubmissionsParams = {}
+): Promise<LecturerSubmissionItem[]> {
+  const query = new URLSearchParams();
+
+  if (params.status) query.set('status', params.status);
+  if (params.search) query.set('search', params.search);
+  if (params.ordering) query.set('ordering', params.ordering);
+
+  const url = `/api/submissions/lecturer/${query.toString() ? '?' + query.toString() : ''}`;
+
+  const response = await fetch(url, {
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch lecturer submissions: ${response.status}`);
   }
 
   return response.json();

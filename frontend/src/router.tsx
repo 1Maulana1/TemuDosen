@@ -21,6 +21,7 @@ import UserApproval from './pages/admin/UserApproval';
 import SymptomConfig from './pages/admin/SymptomConfig';
 import StudentDashboard from './pages/student/StudentDashboard';
 import SubmissionForm from './pages/student/SubmissionForm';
+import LecturerDashboard from './pages/lecturer/LecturerDashboard';
 import { getCurrentUser } from './api/auth';
 import type { User } from './api/auth';
 
@@ -109,7 +110,7 @@ export const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <Placeholder route="/dosen" />, // Plan 05
+        element: <LecturerDashboard />, // Plan 05
       },
     ],
   },
