@@ -42,7 +42,7 @@ Every phase leaves the system in a state a real actor could use. The documentati
 **Wave 1**
 
 - [x] 01-01-PLAN.md — Walking Skeleton: scaffold backend+frontend, CustomUser + session/CSRF auth, seeded admin, test scaffolding (Wave 0)
-- [ ] 01-02-PLAN.md — Self-registration, pending-approval gate, admin user-approval queue, approved-lecturer dropdown (Wave 1)
+- [x] 01-02-PLAN.md — Self-registration, pending-approval gate, admin user-approval queue, approved-lecturer dropdown (Wave 1)
 - [ ] 01-03-PLAN.md — SymptomCategory model + 6-category seed + admin inline-editable weight config (ADMIN-01) (Wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
@@ -171,7 +171,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Submission & Triage Foundation | 1/5 | Executing (01-02 next) | - |
+| 1. Submission & Triage Foundation | 2/5 | Executing (01-03 next) | - |
 | 2. Approval & Queue Placement | 0/TBD | Not started | - |
 | 3. Live Queue Management & Quota | 0/TBD | Not started | - |
 | 4. Google Calendar Sync & Graceful Degradation | 0/TBD | Not started | - |
