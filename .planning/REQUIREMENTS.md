@@ -14,7 +14,7 @@
 
 ### Lecturer Review
 
-- [ ] **REVIEW-01**: Lecturer can view pending guidance requests, including the student's stated symptoms and draft attachment
+- [x] **REVIEW-01**: Lecturer can view pending guidance requests, including the student's stated symptoms and draft attachment — implemented in 01-05
 - [ ] **REVIEW-02**: Lecturer can Approve a request, or Reject/Request-Revision with notes returned to the student
 
 ### Queue & Scheduling
@@ -109,10 +109,10 @@ Deferred to future release. Tracked but not in current roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| TRIAGE-01 | Phase 1 | Pending |
-| TRIAGE-02 | Phase 1 | Pending |
+| TRIAGE-01 | Phase 1 | Complete (01-04) |
+| TRIAGE-02 | Phase 1 | Complete (01-04) |
 | TRIAGE-03 | Phase 2 | Pending |
-| REVIEW-01 | Phase 1 | Pending |
+| REVIEW-01 | Phase 1 | Complete (01-05) |
 | REVIEW-02 | Phase 2 | Pending |
 | QUEUE-01 | Phase 2 | Pending |
 | QUEUE-02 | Phase 3 | Pending |

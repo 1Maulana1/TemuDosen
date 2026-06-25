@@ -13,7 +13,7 @@ Every phase leaves the system in a state a real actor could use. The documentati
 - Integer phases (1–8): Planned milestone work
 - Decimal phases (e.g. 2.1): Urgent insertions (marked INSERTED)
 
-- [ ] **Phase 1: Submission & Triage Foundation** - Student submits guidance request with symptoms + draft PDF; admin configures symptom weights; lecturer views pending requests
+- [x] **Phase 1: Submission & Triage Foundation** - Student submits guidance request with symptoms + draft PDF; admin configures symptom weights; lecturer views pending requests — COMPLETE (2026-06-25)
 - [ ] **Phase 2: Approval & Queue Placement** - Lecturer approves/rejects requests; approved requests get a triage-estimated duration and a queue slot
 - [ ] **Phase 3: Live Queue Management & Quota** - Students see real-time queue status, can self-cancel, and daily lecturer quotas are enforced
 - [ ] **Phase 4: Google Calendar Sync & Graceful Degradation** - Approved/cancelled/rescheduled sessions sync to Google Calendar with local fallback and admin error logs
@@ -51,7 +51,7 @@ Every phase leaves the system in a state a real actor could use. The documentati
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 01-05-PLAN.md — Lecturer review dashboard: advisee-scoped filterable list + PDF preview, view-only (REVIEW-01) (Wave 3)
+- [x] 01-05-PLAN.md — Lecturer review dashboard: advisee-scoped filterable list + PDF preview, view-only (REVIEW-01) (Wave 3)
 
 ### Phase 2: Approval & Queue Placement
 

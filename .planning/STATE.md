@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Executing Phase 01
-last_updated: "2026-06-25T16:30:00.000Z"
+status: Phase 01 Complete — Ready for Phase 02
+last_updated: "2026-06-25T18:30:00.000Z"
 progress:
   total_phases: 8
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 5
-  completed_plans: 4
-  percent: 16
+  completed_plans: 5
+  percent: 20
 ---
 
 # State: TemuDosen
@@ -22,11 +22,10 @@ See `.planning/PROJECT.md` for core value, constraints, and full requirements.
 
 ## Current Position
 
-Phase: 01 (Submission & Triage Foundation) — EXECUTING
-Plan: 5 of 5 — NEXT (01-05 Lecturer review dashboard)
-**Phase**: 1 - Submission & Triage Foundation
-**Plan**: 01-05 Lecturer review dashboard (final plan of Phase 1)
-**Status**: Ready to execute
+Phase: 01 (Submission & Triage Foundation) — COMPLETE
+Plan: 5 of 5 — DONE (01-05 Lecturer review dashboard — FINAL)
+**Phase**: 1 - Submission & Triage Foundation — ALL PLANS COMPLETE
+**Status**: Phase 1 complete — ready to execute Phase 2
 
 **Phase 1 Goal**: A student can submit a guidance request (symptoms + draft PDF) that is validated and visible to their lecturer, with the admin-configured symptom weights in place that later drive the triage calculation
 
@@ -35,10 +34,10 @@ Plan: 5 of 5 — NEXT (01-05 Lecturer review dashboard)
 1. Student can select an "Academic Symptom" from a dropdown and upload a draft PDF (max 5MB) to submit a guidance request — DONE (01-04)
 2. A submission missing the file or symptom selection is rejected with a clear, specific error instead of being silently accepted — DONE (01-04)
 3. Admin can set/update a duration weight (in minutes) for each "Academic Symptom" category, and these weights persist for use in approval — DONE (01-03)
-4. Lecturer can view a list of pending guidance requests, each showing the student's stated symptom and a link/preview to the draft attachment — PENDING (01-05)
+4. Lecturer can view a list of pending guidance requests, each showing the student's stated symptom and a link/preview to the draft attachment — DONE (01-05)
 
-**Progress**: Phase 1 of 8 (16% complete — 4/5 plans done)
-`[====......]`
+**Progress**: Phase 1 of 8 (20% complete — 5/5 plans done, Phase 1 COMPLETE)
+`[=====.....]`
 
 ## Performance Metrics
 
@@ -48,6 +47,7 @@ Plan: 5 of 5 — NEXT (01-05 Lecturer review dashboard)
 | 01 | 01-02 Self-registration + approval gate | ~1.5h | 3 | 19 | 2026-06-25 |
 | 01 | 01-03 SymptomCategory CRUD + admin weight config | ~1.5h | 3 | 12 | 2026-06-25 |
 | 01 | 01-04 Submission form + PDF upload (student side) | ~3h | 3 | 19 | 2026-06-25 |
+| 01 | 01-05 Lecturer review dashboard (REVIEW-01) | ~2h | 2 | 9 | 2026-06-25 |
 
 ## Accumulated Context
 
@@ -64,6 +64,7 @@ Plan: 5 of 5 — NEXT (01-05 Lecturer review dashboard)
 - **2026-06-25**: Registration (01-02) — RejectUserView deactivates (is_active=False) rather than deletes for audit trail. RegisterView dispatches to StudentRegisterSerializer or LecturerRegisterSerializer by `role` field. LecturerListView is AllowAny (unauthenticated users need adviser dropdown before registering). validate_adviser_id checks role=lecturer AND is_approved=True server-side (Pitfall 7 guard even if client bypasses UI).
 - **2026-06-25**: SymptomCategory (01-03) — SymptomCategoryViewSet.get_permissions() dispatches IsAdmin for write actions (create/update/partial_update/destroy/bulk_update) and IsApprovedUser for reads. Bulk-update validates all IDs exist before opening transaction (400 if any missing). Seed migration uses get_or_create so re-running migrate never overwrites admin edits (D-08). SymptomConfig S-10 tracks inline edits in local RowState[]; saves all via bulkUpdateSymptoms on "Simpan Semua Perubahan".
 - **2026-06-25**: Submission + file serving (01-04) — validate_draft_file (size + magic bytes) runs BEFORE save_file — bad files never touch disk. serve_submission_file uses FileResponse + ownership check (student/adviser/admin/kaprodi), never MEDIA_URL (D-29). QueryDict.getlist('symptom_ids') extracts all repeated multipart keys. UserSerializer extended with nested AdviserSerializer so /me/ returns adviser info for S-07 adviser card (D-24). PDFPreview uses iframe src=/api/files/<uuid>/ — browser sends session cookie same-origin via Vite proxy.
+- **2026-06-25**: Lecturer dashboard (01-05) — REVIEW-01 isolation: student__adviser=request.user at ORM level in get_queryset(). Dedicated /api/submissions/lecturer/ URL keeps IsLecturer permission separate from IsStudent. LecturerSubmissionSerializer.get_file_url() always returns /api/files/<uuid>/ (never MEDIA_URL — T-1-23 mitigation). No approve/reject in Phase 1 (D-12 — Phase 2 scope). SearchFilter on student__nim/student__full_name + DjangoFilterBackend for status + OrderingFilter for created_at (all parameterized via ORM — T-1-24 mitigation).
 
 ### Blockers
 
@@ -72,5 +73,5 @@ Plan: 5 of 5 — NEXT (01-05 Lecturer review dashboard)
 ## Session Continuity
 
 **Last updated**: 2026-06-25
-**Next step**: Execute plan 01-05 — Lecturer review dashboard (view pending submissions + PDF preview)
-**Stopped at**: Plan 01-04 COMPLETE (checkpoint auto-approved; SUMMARY written)
+**Next step**: Phase 2 — Approval flow (lecturer approve/reject, Phase 2 planning required)
+**Stopped at**: Plan 01-05 COMPLETE — Phase 1 all 5/5 plans done
