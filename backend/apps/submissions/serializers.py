@@ -1,5 +1,5 @@
 """
-Submission serializers — Plan 04.
+Submission serializers — Plan 04 (student) + Plan 05 (lecturer).
 
 SubmissionCreateSerializer:
   - symptom_ids: ListField (min_length=1) — required, >=1 symptom
@@ -11,6 +11,11 @@ SubmissionCreateSerializer:
 
 SubmissionListSerializer:
   - For student dashboard (S-06): exposes id, status, symptom names, created_at, file_uuid
+
+LecturerSubmissionSerializer (Plan 05):
+  - For lecturer dashboard (S-08): exposes D-10 columns
+  - student_nim, student_name, symptom_names, status, created_at,
+    original_filename, file_url pointing at /api/files/<uuid>/ (NOT a media path)
 """
 import os
 import uuid as _uuid
@@ -199,3 +204,64 @@ class SubmissionListSerializer(serializers.ModelSerializer):
         if hasattr(obj, 'file') and obj.file:
             return obj.file.original_filename
         return None
+
+
+# ── Lecturer Serializer (Plan 05 — REVIEW-01, D-10) ───────────────────────────
+
+class LecturerSubmissionSerializer(serializers.ModelSerializer):
+    """
+    Serializer for the lecturer's advisee submission list (dashboard S-08).
+
+    D-10 columns:
+      - student_nim: student's NIM
+      - student_name: student's full name
+      - symptom_names: list of symptom category names
+      - status: submission status (pending/approved/rejected/revision)
+      - created_at: submission creation datetime
+      - original_filename: uploaded PDF filename
+      - file_url: /api/files/<uuid>/ — protected route (D-29), NOT a media path
+
+    T-1-23 mitigation: file_url always points at the ownership-checked /api/files/<uuid>/
+    endpoint — never a direct MEDIA_URL path. The file endpoint re-checks auth (Plan 04).
+    """
+    student_nim = serializers.CharField(source='student.nim', read_only=True)
+    student_name = serializers.CharField(source='student.full_name', read_only=True)
+    symptom_names = serializers.SerializerMethodField()
+    original_filename = serializers.SerializerMethodField()
+    file_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Submission
+        fields = [
+            'id',
+            'student_nim',
+            'student_name',
+            'symptom_names',
+            'status',
+            'created_at',
+            'original_filename',
+            'file_url',
+        ]
+
+    def get_symptom_names(self, obj):
+        """Return list of symptom category name strings."""
+        return [s.name for s in obj.symptoms.all()]
+
+    def get_original_filename(self, obj):
+        """Return the original PDF filename from the associated SubmissionFile."""
+        try:
+            return obj.file.original_filename
+        except SubmissionFile.DoesNotExist:
+            return None
+
+    def get_file_url(self, obj):
+        """
+        Return the protected file URL: /api/files/<uuid>/ (D-29 compliant).
+
+        CRITICAL: This must NEVER return a MEDIA_URL path (T-1-23).
+        The /api/files/<uuid>/ endpoint enforces ownership auth (Plan 04).
+        """
+        try:
+            return f'/api/files/{obj.file.uuid}/'
+        except SubmissionFile.DoesNotExist:
+            return None

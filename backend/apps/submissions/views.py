@@ -1,10 +1,17 @@
 """
-Submission views — Plan 04.
+Submission views — Plan 04 (student) + Plan 05 (lecturer).
 
 Views:
   SubmissionListCreateView:
     - POST /api/submissions/ — student creates a submission (IsStudent + IsApprovedUser)
     - GET  /api/submissions/ — student lists own submissions (IsStudent + IsApprovedUser)
+
+  LecturerSubmissionListView (Plan 05 — REVIEW-01):
+    - GET /api/submissions/lecturer/ — lecturer lists their advisees' submissions
+    - Filtered to student__adviser == request.user (REVIEW-01 isolation, T-1-21)
+    - Supports ?status= filter, ?search= (NIM/name), ?ordering= (created_at)
+    - IsLecturer + IsApprovedUser permissions (T-1-22)
+    - Read-only in Phase 1 — NO approve/reject actions (D-12)
 
   serve_submission_file:
     - GET /api/files/<uuid>/ — serves file ONLY to the owning student, their adviser, or admin/kaprodi
@@ -15,17 +22,23 @@ Views:
 import os
 
 from django.http import FileResponse, Http404
-from rest_framework import status
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters, generics, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.accounts.permissions import IsStudent
+from apps.accounts.permissions import IsLecturer, IsStudent
 
+from .filters import SubmissionFilter
 from .models import Submission, SubmissionFile
-from .serializers import SubmissionCreateSerializer, SubmissionListSerializer
+from .serializers import (
+    LecturerSubmissionSerializer,
+    SubmissionCreateSerializer,
+    SubmissionListSerializer,
+)
 
 
 class SubmissionListCreateView(APIView):
@@ -92,6 +105,55 @@ class SubmissionListCreateView(APIView):
         )
         serializer = SubmissionListSerializer(submissions, many=True)
         return Response(serializer.data)
+
+
+# ── Lecturer Submission List (Plan 05 — REVIEW-01) ────────────────────────────
+
+class LecturerSubmissionListView(generics.ListAPIView):
+    """
+    GET /api/submissions/lecturer/ — Lecturer sees ONLY their own advisees' submissions.
+
+    REVIEW-01 isolation: get_queryset filters Submission where
+    student__adviser == request.user. A lecturer can never see another lecturer's
+    students' data (T-1-21).
+
+    D-12 read-only: No approve/reject actions in Phase 1 (deferred to Phase 2).
+
+    Filters (D-09, D-11):
+      - DjangoFilterBackend + SubmissionFilter: ?status=pending|approved|rejected|revision
+      - SearchFilter: ?search=<nim-or-name> matches student__nim, student__full_name
+      - OrderingFilter: ?ordering=created_at (ascending); ?ordering=-created_at (descending)
+
+    Permissions: IsLecturer (implies IsApprovedUser + role=lecturer) — T-1-22.
+    """
+
+    serializer_class = LecturerSubmissionSerializer
+    permission_classes = [IsLecturer]
+    filter_backends = [
+        DjangoFilterBackend,
+        filters.SearchFilter,
+        filters.OrderingFilter,
+    ]
+    filterset_class = SubmissionFilter
+    search_fields = ['student__nim', 'student__full_name']
+    ordering_fields = ['created_at']
+    ordering = ['-created_at']  # default: newest first
+
+    def get_queryset(self):
+        """
+        Return submissions for students whose adviser is the requesting lecturer.
+
+        REVIEW-01: student__adviser=self.request.user
+        This is the sole queryset filter — no other lecturer's data can leak through.
+        T-1-21 mitigation: queryset is scoped at ORM level, not presentation layer.
+        """
+        return (
+            Submission.objects
+            .filter(student__adviser=self.request.user)
+            .select_related('student', 'file')
+            .prefetch_related('symptoms')
+            .order_by('-created_at')
+        )
 
 
 # ── Protected File Serving (D-29) ──────────────────────────────────────────────
