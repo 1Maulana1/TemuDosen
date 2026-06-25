@@ -58,7 +58,7 @@
 
 ### Admin & Configuration
 
-- [ ] **ADMIN-01**: Admin configures per-"Symptom" duration weights at the start of each semester
+- [x] **ADMIN-01**: Admin configures per-"Symptom" duration weights at the start of each semester
 - [ ] **ADMIN-02**: Admin can trigger an Emergency Cancel that clears a lecturer's remaining queue for the day
 - [ ] **ADMIN-03**: Admin can view integration error logs (Google Calendar failures) on an Admin Dashboard
 - [ ] **ADMIN-04** *(new)*: Admin configures campus logbook API credentials and integration settings (Sekawan/KPTI)
@@ -138,7 +138,7 @@ Deferred to future release. Tracked but not in current roadmap.
 | LOGBOOK-01 | Phase 7 | Pending |
 | LOGBOOK-02 | Phase 7 | Pending |
 | LOGBOOK-03 | Phase 7 | Pending |
-| ADMIN-01 | Phase 1 | Pending |
+| ADMIN-01 | Phase 1 | Complete |
 | ADMIN-02 | Phase 8 | Pending |
 | ADMIN-03 | Phase 4 | Pending |
 | ADMIN-04 | Phase 7 | Pending |
