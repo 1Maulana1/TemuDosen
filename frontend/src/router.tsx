@@ -18,6 +18,7 @@ import RegisterStudentPage from './pages/auth/RegisterStudentPage';
 import RegisterLecturerPage from './pages/auth/RegisterLecturerPage';
 import PendingApprovalPage from './pages/auth/PendingApprovalPage';
 import UserApproval from './pages/admin/UserApproval';
+import SymptomConfig from './pages/admin/SymptomConfig';
 import { getCurrentUser } from './api/auth';
 import type { User } from './api/auth';
 
@@ -118,7 +119,7 @@ export const router = createBrowserRouter([
     children: [
       {
         path: 'katalog-gejala',
-        element: <Placeholder route="/admin/katalog-gejala" />, // Plan 03
+        element: <SymptomConfig />, // Plan 03
       },
       {
         path: 'pengguna',
