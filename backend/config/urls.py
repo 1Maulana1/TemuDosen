@@ -19,7 +19,7 @@ urlpatterns = [
     path('api/auth/', include('apps.accounts.urls')),
     # Feature plans uncomment their own include below:
     # Plan 03: Symptom category CRUD
-    # path('api/symptoms/', include('apps.symptoms.urls')),
+    path('api/symptoms/', include('apps.symptoms.urls')),
     # Plan 04/05: Submission management
     # path('api/submissions/', include('apps.submissions.urls')),
     # Plan 02: User registration + approval
