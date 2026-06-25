@@ -11,8 +11,21 @@ from rest_framework import serializers
 from .models import CustomUser, UserRole
 
 
+class AdviserSerializer(serializers.ModelSerializer):
+    """Nested adviser info — returned in the student's /me/ response (D-24)."""
+
+    class Meta:
+        model = CustomUser
+        fields = ['id', 'full_name', 'nidn', 'email']
+        read_only_fields = fields
+
+
 class UserSerializer(serializers.ModelSerializer):
-    """Read-only serializer for the current user — returned by /api/auth/me/."""
+    """
+    Read-only serializer for the current user — returned by /api/auth/me/.
+    Includes nested adviser info (D-24: student-lecturer relationship set at registration).
+    """
+    adviser = AdviserSerializer(read_only=True)
 
     class Meta:
         model = CustomUser
@@ -26,6 +39,7 @@ class UserSerializer(serializers.ModelSerializer):
             'is_approved',
             'is_active',
             'created_at',
+            'adviser',
         ]
         read_only_fields = fields
 
