@@ -72,6 +72,14 @@ Turn ephemeral guidance conversations into a permanent, searchable logbook — r
 - Speaker diarization (separating lecturer vs. student voices) — transcript is merged text
 - Automated quality scoring of guidance by AI
 
+### Deferred to Post July 15 (Phases 4–8)
+
+- Google Calendar sync (Phase 4)
+- Session recording with consent and "Mulai & Rekam" button (Phase 5)
+- STT transcription and AI logbook summarization (Phase 6)
+- Advisory continuity and campus logbook sync (Phase 7)
+- Admin emergency controls and Kaprodi reporting (Phase 8)
+
 ## Context
 
 - **Domain**: Indonesian higher-education academic/thesis advising ("bimbingan akademik/skripsi"). PRD v2.2, June 2026, Kelompok 1.

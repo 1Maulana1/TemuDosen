@@ -2,9 +2,11 @@
 
 ## Overview
 
-TemuDosen v2.2 builds in eight phases as a chain of usable vertical slices. The first four phases deliver the scheduling and queue backbone (submission triage, approval, live queue, Google Calendar sync) — largely unchanged from v1.0. Phase 5 adds the session execution flow with the combined "Mulai & Rekam" button and recording consent. Phase 6 implements the STT + AI summarization pipeline that turns recordings into an editable logbook entry. Phase 7 adds advisory continuity (follow-up tracking across sessions) and campus logbook integration (Sekawan/KPTI). Phase 8 closes the loop with admin emergency controls and Kaprodi reporting including advice-compliance metrics.
+**Revised plan — June 2026:** Due to a hard deadline of 15 July 2026 and a 4-person team (1 effective person-day/day), scope has been cut to Phases 1–3 for the submission. Phases 4–8 are deferred as documented future work.
 
-Every phase leaves the system in a state a real actor could use. The documentation and continuity features (phases 6–7) build directly on top of the queue infrastructure (phases 1–5), so no re-architecture is needed at the boundary.
+The MVP delivers the full guidance request and queue backbone: a student submits a request with symptoms and a draft PDF, the lecturer approves/rejects with triage-calculated duration, and the student tracks their real-time queue position and can self-cancel. This is a complete, usable flow for the primary actors.
+
+Phases 4–8 (Google Calendar sync, session recording, STT/AI logbook, advisory continuity, admin reports) remain in this roadmap as the post-deadline backlog.
 
 ## Phases
 
@@ -13,9 +15,14 @@ Every phase leaves the system in a state a real actor could use. The documentati
 - Integer phases (1–8): Planned milestone work
 - Decimal phases (e.g. 2.1): Urgent insertions (marked INSERTED)
 
+### In Scope — July 15 Deadline
+
 - [x] **Phase 1: Submission & Triage Foundation** - Student submits guidance request with symptoms + draft PDF; admin configures symptom weights; lecturer views pending requests — COMPLETE (2026-06-25)
 - [ ] **Phase 2: Approval & Queue Placement** - Lecturer approves/rejects requests; approved requests get a triage-estimated duration and a queue slot
 - [ ] **Phase 3: Live Queue Management & Quota** - Students see real-time queue status, can self-cancel, and daily lecturer quotas are enforced
+
+### Deferred — Post July 15
+
 - [ ] **Phase 4: Google Calendar Sync & Graceful Degradation** - Approved/cancelled/rescheduled sessions sync to Google Calendar with local fallback and admin error logs
 - [ ] **Phase 5: Session Execution with Recording & Consent** - Consent prompt, single "Mulai & Rekam" button (TS1 + audio start), "Selesai" (TS2 + audio stop), T-15 notifications, auto-cancel, online/offline mode
 - [ ] **Phase 6: STT, AI Summarization & Logbook** - Async STT transcription (faster-whisper), LLM summary generation, lecturer review/edit/approve flow, student-visible transcript + summary; fallback to manual notes
@@ -166,16 +173,23 @@ Every phase leaves the system in a state a real actor could use. The documentati
 
 ## Progress
 
-**Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
+**Deadline: 15 July 2026 | Team: 4 people, all working daily**
+**Execution Order (MVP scope):** 1 → 2 → 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Submission & Triage Foundation | 5/5 | Complete | 2026-06-25 |
-| 2. Approval & Queue Placement | 0/TBD | Not started | - |
-| 3. Live Queue Management & Quota | 0/TBD | Not started | - |
-| 4. Google Calendar Sync & Graceful Degradation | 0/TBD | Not started | - |
-| 5. Session Execution with Recording & Consent | 0/TBD | Not started | - |
-| 6. STT, AI Summarization & Logbook | 0/TBD | Not started | - |
-| 7. Advisory Continuity & Campus Logbook Integration | 0/TBD | Not started | - |
-| 8. Admin Emergency Controls & Kaprodi Reporting | 0/TBD | Not started | - |
+| 1. Submission & Triage Foundation | 5/5 | ✅ Complete | 2026-06-25 |
+| 2. Approval & Queue Placement | 0/TBD | 🔄 Next | - |
+| 3. Live Queue Management & Quota | 0/TBD | ⏳ Blocked on Phase 2 | - |
+| 4–8. (Deferred) | - | ❌ Cut from July 15 scope | - |
+
+**Team assignments:**
+- Person A → Auth & User Management (registration, admin approval, role redirect)
+- Person B → Symptom Config & Submission (symptom weights, submission form, My Submissions)
+- Person C → Approval & Triage (approve/reject, duration calc, QueueSlot model)
+- Person D → Queue Engine (queue status, self-cancel, quota enforcement)
+
+**Sprint timeline:**
+- Jun 25–Jul 1: A+B finish Phase 1 remaining work; C+D design Phase 2 models
+- Jul 2–Jul 8: A+B join Phase 2; D builds queue engine foundation
+- Jul 9–Jul 15: All 4 on Phase 3 + integration testing + buffer
