@@ -30,7 +30,7 @@ human_verification:
 
 | # | Truth | Status | Evidence |
 |---|-------|--------|----------|
-| 1 | Lecturer can Approve, or Reject/Request-Revision with notes the student can see | VERIFIED | `ApproveSubmissionView` + `RejectSubmissionView` (`apps/bimbingan/views.py`). Reject persists `submission.rejection_reason`, surfaced on the student's submission record. Tests: `test_approval.py::TestRejectSubmission` (reject keeps reason, revision keeps note, short-reason 400, non-advisee 403, role guard) |
+| 1 | Lecturer can Approve, or Reject/Request-Revision with notes the student can see | VERIFIED | `ApproveSubmissionView` + `RejectSubmissionView` (`apps/bimbingan/views.py`) persist `rejection_reason`. **"Student can see" verified end-to-end:** `SubmissionListSerializer` now exposes `rejection_reason` and `StudentDashboard.tsx` renders it for rejected/revision. Tests: `test_approval.py::TestRejectSubmission` — incl. `test_student_can_see_rejection_note_via_their_submissions` (lecturer rejects → student GET `/api/submissions/` shows the note), plus reject/revision/short-reason/non-advisee/role guards |
 | 2 | On approval, system calculates estimated duration from symptom + admin-configured weight | VERIFIED | `estimated_minutes = sum(s.duration_minutes for s in submission.symptoms.all()) or 30` (`views.py:140`). Tests: `test_approval.py::TestApproveSubmission::test_approval_calculates_duration_from_symptom_weight` (single = 45) and `test_duration_sums_multiple_symptom_weights` (45+30 = 75) |
 | 3 | On approval, student is placed in lecturer's queue with a queue number + fixed estimated schedule slot | VERIFIED | `_calculate_schedule()` returns `(scheduled_at, queue_position, total_wait)`; `Session` row created WAITING with `scheduled_at` + `estimated_minutes`. Tests: `test_approval_assigns_queue_number_and_schedule` (pos 1, scheduled_at set) and `test_second_approval_queues_behind_first` (pos 2, later slot) |
 
@@ -44,19 +44,24 @@ New test suite added in this change: `backend/apps/bimbingan/tests/` (Phase 1's 
 
 | File | Covers | Tests |
 |------|--------|-------|
-| `test_approval.py` | Approve, reject, revision, duration calc, queue placement, quota guard, role/ownership guards | 19 |
+| `test_approval.py` | Approve, reject, revision, duration calc, queue placement, quota guard, role/ownership guards, **student-visible reject note (end-to-end)** | 20 |
 | `test_queue.py` | Student queue view, self-cancel, lecturer queue ordering, start session | 13 |
 
 ```
 $ .venv/Scripts/python -m pytest apps/bimbingan/tests/ -q
-32 passed
+33 passed
 ```
 
-Full backend suite after the change: **138 passed, 1 failed**. The single failure
-(`apps/submissions/tests/test_upload.py::test_missing_file_returns_400_with_exact_copy`)
-is a **pre-existing Phase 1 issue** unrelated to Phase 2 — the `draft_file` field is
-submitted as `null` rather than absent, so DRF emits the `null` error code instead of
-the `required` copy. Tracked separately; not introduced by this work.
+Full backend suite after the change: **140 passed, 0 failed**.
+
+**SC1 gap caught in review and fixed in this PR:** `rejection_reason` was persisted but
+the student-facing `SubmissionListSerializer` did not expose it and `StudentDashboard.tsx`
+did not render it — so "notes the student can see" was not actually met end-to-end. Both
+were fixed (serializer field + UI block) and a new end-to-end test now guards it.
+
+A previously-failing Phase 1 test (`test_upload.py::test_missing_file_returns_400_with_exact_copy`)
+was also fixed here, since this PR already edits the same serializer — added a `'null'`
+error-message key so the student-facing copy fires whether `draft_file` is absent or null.
 
 ---
 

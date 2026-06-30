@@ -102,6 +102,14 @@ export default function StudentDashboard() {
                 </div>
                 <StatusBadge status={STATUS_MAP[s.status] ?? 'MENUNGGU'} />
               </div>
+              {(s.status === 'rejected' || s.status === 'revision') && s.rejection_reason && (
+                <div className="mt-3 rounded-lg bg-amber-50 border border-amber-200 p-3">
+                  <p className="text-xs font-bold text-amber-800">
+                    {s.status === 'revision' ? 'Catatan Revisi dari Dosen' : 'Alasan Penolakan'}
+                  </p>
+                  <p className="text-xs text-amber-700 mt-1 whitespace-pre-wrap">{s.rejection_reason}</p>
+                </div>
+              )}
               {s.file_uuid && (
                 <div className="mt-3 flex items-center justify-between">
                   <span className="text-xs text-gray-500 truncate flex-1">{s.file_name ?? 'draft.pdf'}</span>

@@ -12,6 +12,7 @@ Endpoints:
   POST /api/submissions/<id>/reject/   → RejectSubmissionView  (IsLecturer)
 """
 import pytest
+from rest_framework.test import APIClient
 
 from apps.bimbingan.models import Session
 from apps.submissions.models import Submission
@@ -23,6 +24,13 @@ def approve_url(pk):
 
 def reject_url(pk):
     return f'/api/submissions/{pk}/reject/'
+
+
+def client_for(user):
+    """A dedicated APIClient authenticated as `user` (avoids the shared-client clobber)."""
+    c = APIClient()
+    c.force_authenticate(user=user)
+    return c
 
 
 @pytest.mark.django_db
@@ -217,6 +225,29 @@ class TestRejectSubmission:
         assert pending_submission.status == Submission.Status.REJECTED
         # SC1 — the note must be readable by the student on their submission record.
         assert pending_submission.rejection_reason == 'Draft belum lengkap, mohon dilengkapi.'
+
+    def test_student_can_see_rejection_note_via_their_submissions(
+        self, lecturer_user, advisee_student, pending_submission
+    ):
+        """SC1 end-to-end: after reject, the student's OWN submission list exposes the note.
+
+        Guards against the note being persisted but never surfaced to the student
+        (SubmissionListSerializer must include rejection_reason).
+        """
+        note = 'Draft belum lengkap, mohon dilengkapi bagian metodologi.'
+        rej = client_for(lecturer_user).post(
+            reject_url(pending_submission.id),
+            {'action': 'REJECTED', 'reason': note},
+            format='json',
+        )
+        assert rej.status_code == 200
+
+        listing = client_for(advisee_student).get('/api/submissions/')
+        assert listing.status_code == 200
+        data = listing.data
+        items = data['results'] if isinstance(data, dict) and 'results' in data else data
+        item = next(s for s in items if s['id'] == pending_submission.id)
+        assert item['rejection_reason'] == note
 
     def test_lecturer_can_request_revision(
         self, authenticated_lecturer, pending_submission

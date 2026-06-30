@@ -28,6 +28,7 @@ export interface SubmissionSummary {
   symptoms: SubmissionSymptom[];
   file_uuid: string | null;
   file_name: string | null;
+  rejection_reason: string;  // lecturer's note on reject/revision (empty otherwise)
   created_at: string;
   updated_at: string;
 }
