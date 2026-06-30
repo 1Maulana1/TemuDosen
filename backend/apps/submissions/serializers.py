@@ -68,6 +68,9 @@ class SubmissionCreateSerializer(serializers.Serializer):
         required=True,
         error_messages={
             'required': 'Unggah file PDF draft sebelum melanjutkan.',
+            # When the field is sent as null (not just absent), DRF uses the 'null'
+            # code — keep the same student-facing copy instead of the generic message.
+            'null': 'Unggah file PDF draft sebelum melanjutkan.',
         },
         validators=[FileExtensionValidator(allowed_extensions=['pdf'])],
     )
@@ -186,6 +189,7 @@ class SubmissionListSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'status', 'description',
             'symptoms', 'file_uuid', 'file_name',
+            'rejection_reason',  # Phase 2 SC1: student must see lecturer's reject/revision note
             'created_at', 'updated_at',
         ]
 

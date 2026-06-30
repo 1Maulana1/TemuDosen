@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Phase 01 Complete — Ready for Phase 02
-last_updated: "2026-06-25T18:30:00.000Z"
+status: Phase 02 Implemented & Verified — Ready for Phase 03
+last_updated: "2026-06-30T12:00:00.000Z"
 progress:
   total_phases: 8
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 5
   completed_plans: 5
-  percent: 20
+  percent: 40
 ---
 
 # State: TemuDosen
@@ -22,22 +22,23 @@ See `.planning/PROJECT.md` for core value, constraints, and full requirements.
 
 ## Current Position
 
-Phase: 01 (Submission & Triage Foundation) — COMPLETE
-Plan: 5 of 5 — DONE (01-05 Lecturer review dashboard — FINAL)
-**Phase**: 1 - Submission & Triage Foundation — ALL PLANS COMPLETE
-**Status**: Phase 1 complete — ready to execute Phase 2
+Phase: 02 (Approval & Queue Placement) — IMPLEMENTED & VERIFIED
+**Status**: Phase 2 shipped in commit 55aefb3 and retroactively verified (see 02-VERIFICATION.md) — ready to execute Phase 3
 
-**Phase 1 Goal**: A student can submit a guidance request (symptoms + draft PDF) that is validated and visible to their lecturer, with the admin-configured symptom weights in place that later drive the triage calculation
+**Phase 2 Goal**: A lecturer can act on a pending request, and approval turns it into a triage-estimated, queued guidance slot
 
-**Phase 1 Success Criteria** (what must be TRUE):
+**Phase 2 Success Criteria** (what must be TRUE):
 
-1. Student can select an "Academic Symptom" from a dropdown and upload a draft PDF (max 5MB) to submit a guidance request — DONE (01-04)
-2. A submission missing the file or symptom selection is rejected with a clear, specific error instead of being silently accepted — DONE (01-04)
-3. Admin can set/update a duration weight (in minutes) for each "Academic Symptom" category, and these weights persist for use in approval — DONE (01-03)
-4. Lecturer can view a list of pending guidance requests, each showing the student's stated symptom and a link/preview to the draft attachment — DONE (01-05)
+1. Lecturer can Approve, or Reject/Request-Revision with notes the student can see — DONE (ApproveSubmissionView / RejectSubmissionView)
+2. On approval, system calculates estimated duration from symptom + admin-configured weight — DONE (estimated_minutes = sum of symptom weights)
+3. On approval, student placed in lecturer's queue with a queue number + fixed estimated schedule slot — DONE (_calculate_schedule + Session)
 
-**Progress**: Phase 1 of 8 (20% complete — 5/5 plans done, Phase 1 COMPLETE)
-`[=====.....]`
+**Test evidence**: `backend/apps/bimbingan/tests/` — 32 tests, all passing.
+
+**Caveat**: Phase 2 was implemented before a formal GSD plan loop, so no `02-*-PLAN.md` exists; `02-VERIFICATION.md` is the closing artifact. The same commit also landed Phase 3/4/8 code — those phases remain OPEN.
+
+**Progress**: Phase 2 of 8 (40% — Phase 1 + Phase 2 verified)
+`[========..]`
 
 ## Performance Metrics
 
@@ -72,6 +73,9 @@ Plan: 5 of 5 — DONE (01-05 Lecturer review dashboard — FINAL)
 
 ## Session Continuity
 
-**Last updated**: 2026-06-25
-**Next step**: Phase 2 — Approval flow (lecturer approve/reject, Phase 2 planning required)
-**Stopped at**: Plan 01-05 COMPLETE — Phase 1 all 5/5 plans done
+**Last updated**: 2026-06-30
+**Next step**: Phase 3 — Live Queue Management & Quota. Note: queue self-cancel + daily quota enforcement code already landed in commit 55aefb3 and has partial test coverage; Phase 3 work is mostly verification + UAT + any gaps (real-time refresh, edge cases).
+**Stopped at**: Phase 2 retroactively verified — added `apps/bimbingan/tests/` (32 passing) and `02-VERIFICATION.md`; updated STATE + ROADMAP.
+
+### Known pre-existing issue (not Phase 2)
+- `apps/submissions/tests/test_upload.py::test_missing_file_returns_400_with_exact_copy` fails: when `draft_file` is sent as `null` (not absent), DRF returns the `null` error code instead of the custom `required` copy. Fix = add a `'null'` key to `draft_file` error_messages in `apps/submissions/serializers.py`. Phase 1 / Person B area.

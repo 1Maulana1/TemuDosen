@@ -18,8 +18,8 @@ Phases 4–8 (Google Calendar sync, session recording, STT/AI logbook, advisory 
 ### In Scope — July 15 Deadline
 
 - [x] **Phase 1: Submission & Triage Foundation** - Student submits guidance request with symptoms + draft PDF; admin configures symptom weights; lecturer views pending requests — COMPLETE (2026-06-25)
-- [ ] **Phase 2: Approval & Queue Placement** - Lecturer approves/rejects requests; approved requests get a triage-estimated duration and a queue slot
-- [ ] **Phase 3: Live Queue Management & Quota** - Students see real-time queue status, can self-cancel, and daily lecturer quotas are enforced
+- [x] **Phase 2: Approval & Queue Placement** - Lecturer approves/rejects requests; approved requests get a triage-estimated duration and a queue slot — IMPLEMENTED & VERIFIED (2026-06-30, commit 55aefb3 + 02-VERIFICATION.md)
+- [ ] **Phase 3: Live Queue Management & Quota** - Students see real-time queue status, can self-cancel, and daily lecturer quotas are enforced — PARTIAL (self-cancel + quota code landed in 55aefb3; needs verification + UAT)
 
 ### Deferred — Post July 15
 
@@ -66,13 +66,14 @@ Phases 4–8 (Google Calendar sync, session recording, STT/AI logbook, advisory 
 **Mode:** mvp
 **Depends on**: Phase 1
 **Requirements**: TRIAGE-03, REVIEW-02, QUEUE-01
+**Status**: IMPLEMENTED & VERIFIED (2026-06-30) — see `phases/02-approval-queue-placement/02-VERIFICATION.md`
 **Success Criteria** (what must be TRUE):
 
-  1. Lecturer can Approve a pending request, or Reject/Request-Revision with notes the student can see
-  2. On approval, system calculates an estimated guidance duration from the symptom + admin-configured weight
-  3. On approval, the student is placed in that lecturer's queue with an assigned queue number and a fixed estimated schedule slot
+  1. Lecturer can Approve a pending request, or Reject/Request-Revision with notes the student can see — ✅ VERIFIED
+  2. On approval, system calculates an estimated guidance duration from the symptom + admin-configured weight — ✅ VERIFIED
+  3. On approval, the student is placed in that lecturer's queue with an assigned queue number and a fixed estimated schedule slot — ✅ VERIFIED
 
-**Plans**: TBD
+**Plans**: None — Phase 2 was implemented directly in commit 55aefb3 (no formal PLAN.md). Verified retroactively with `apps/bimbingan/tests/` (32 passing tests).
 
 ### Phase 3: Live Queue Management & Quota
 
@@ -179,9 +180,9 @@ Phases 4–8 (Google Calendar sync, session recording, STT/AI logbook, advisory 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Submission & Triage Foundation | 5/5 | ✅ Complete | 2026-06-25 |
-| 2. Approval & Queue Placement | 0/TBD | 🔄 Next | - |
-| 3. Live Queue Management & Quota | 0/TBD | ⏳ Blocked on Phase 2 | - |
-| 4–8. (Deferred) | - | ❌ Cut from July 15 scope | - |
+| 2. Approval & Queue Placement | n/a (direct) | ✅ Implemented & Verified (32 tests) | 2026-06-30 |
+| 3. Live Queue Management & Quota | 0/TBD | 🔄 Next — partial code already landed (self-cancel + quota); needs verification + UAT | - |
+| 4–8. (Deferred) | - | ❌ Cut from July 15 scope (Calendar/stats code partially landed in 55aefb3) | - |
 
 **Team assignments:**
 - Person A → Auth & User Management (registration, admin approval, role redirect)
