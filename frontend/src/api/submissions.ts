@@ -23,7 +23,7 @@ export interface SubmissionSymptom {
 
 export interface SubmissionSummary {
   id: number;
-  status: 'pending' | 'approved' | 'rejected' | 'revision';
+  status: 'pending' | 'approved' | 'rejected' | 'revision' | 'cancelled';
   description: string;
   symptoms: SubmissionSymptom[];
   file_uuid: string | null;
@@ -110,7 +110,7 @@ export interface LecturerSubmissionItem {
   student_nim: string;
   student_name: string;
   symptom_names: string[];
-  status: 'pending' | 'approved' | 'rejected' | 'revision';
+  status: 'pending' | 'approved' | 'rejected' | 'revision' | 'cancelled';
   created_at: string;
   original_filename: string | null;
   file_url: string | null;

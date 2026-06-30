@@ -1,222 +1,112 @@
-/**
- * StudentDashboard page — S-06: My Submissions dashboard.
- *
- * UI-SPEC S-06 elements:
- *   - Fixed header: TemuDosen wordmark + notification bell + avatar
- *   - Bottom nav: Beranda | Ajukan | Riwayat | Profil
- *   - Greeting: font-headline font-bold text-2xl text-slate-900
- *   - "Ajukan Bimbingan Baru" shortcut card (primary-tinted)
- *   - Submission list with StatusBadge + symptom names + date + "Pratinjau" button
- *   - Empty state: "Belum Ada Pengajuan" with exact Copywriting Contract copy
- *
- * "Pratinjau" opens PDFPreview (S-09) with /api/files/<uuid>/ protected serving.
- */
-
 import { useEffect, useState } from 'react';
-import { Link, useLoaderData, useNavigate } from 'react-router';
+import { Link, useLoaderData } from 'react-router';
 import type { User } from '../../api/auth';
-import { fetchMySubmissions } from '../../api/submissions';
-import type { SubmissionSummary } from '../../api/submissions';
+import { fetchMySubmissions, type SubmissionSummary } from '../../api/submissions';
+import { getMyQueue, type StudentQueueSession } from '../../api/sessions';
 import StatusBadge from '../../components/StatusBadge';
 import PDFPreview from '../../components/PDFPreview';
 
-const STATUS_MAP: Record<SubmissionSummary['status'], 'MENUNGGU' | 'DISETUJUI' | 'DIBATALKAN' | 'REVISI'> = {
-  pending: 'MENUNGGU',
-  approved: 'DISETUJUI',
-  rejected: 'DIBATALKAN',
-  revision: 'REVISI',
+const STATUS_MAP: Record<string, 'MENUNGGU'|'DISETUJUI'|'DIBATALKAN'|'REVISI'> = {
+  pending:'MENUNGGU', approved:'DISETUJUI', rejected:'DIBATALKAN', revision:'REVISI', cancelled:'DIBATALKAN',
 };
 
-function formatDate(isoStr: string): string {
-  const date = new Date(isoStr);
-  return date.toLocaleDateString('id-ID', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
+function fmt(iso: string) {
+  return new Date(iso).toLocaleDateString('id-ID', { day:'numeric', month:'long', year:'numeric' });
+}
+
+function greeting() {
+  const h = new Date().getHours();
+  return h < 11 ? 'Selamat Pagi' : h < 15 ? 'Selamat Siang' : h < 18 ? 'Selamat Sore' : 'Selamat Malam';
 }
 
 export default function StudentDashboard() {
   const user = useLoaderData() as User;
-  const navigate = useNavigate();
-
-  const [submissions, setSubmissions] = useState<SubmissionSummary[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [previewFile, setPreviewFile] = useState<{
-    uuid: string;
-    name: string;
-  } | null>(null);
+  const [subs, setSubs] = useState<SubmissionSummary[]>([]);
+  const [queue, setQueue] = useState<StudentQueueSession | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [preview, setPreview] = useState<{uuid:string;name:string}|null>(null);
 
   useEffect(() => {
-    fetchMySubmissions()
-      .then(setSubmissions)
-      .catch(() =>
-        setError('Gagal memuat pengajuan. Coba muat ulang halaman.')
-      )
-      .finally(() => setIsLoading(false));
+    Promise.all([fetchMySubmissions(), getMyQueue()])
+      .then(([s, q]) => { setSubs(s); setQueue(q.hasActiveQueue ? q.session : null); })
+      .finally(() => setLoading(false));
   }, []);
 
-  const firstName = user.full_name.split(' ')[0];
+  const first = user.full_name.split(' ')[0];
 
   return (
-    <div className="font-body text-slate-900 bg-gray-50 min-h-screen overflow-x-hidden">
-
-      {/* Fixed header */}
-      <header className="fixed top-0 left-0 right-0 w-full z-50 bg-white border-b border-gray-200 shadow-sm h-16 max-w-md mx-auto flex items-center justify-between px-4">
-        <div className="flex items-center gap-2">
-          <span className="text-primary font-headline font-bold text-xl tracking-tight">
-            TemuDosen
-          </span>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <span className="material-symbols-outlined text-gray-600">notifications</span>
-            <span className="absolute top-0 right-0 w-2 h-2 bg-error rounded-full border-2 border-white" />
-          </div>
-          <div className="w-9 h-9 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
-            <span className="material-symbols-outlined text-primary text-lg">person</span>
-          </div>
+    <div className="bg-gray-50 min-h-screen">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 h-16 max-w-md mx-auto flex items-center justify-between px-4">
+        <span className="font-headline font-bold text-xl text-primary">TemuDosen</span>
+        <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
+          <span className="material-symbols-outlined text-primary text-lg">person</span>
         </div>
       </header>
 
-      {/* Scrollable main content */}
       <main className="pt-20 pb-24 px-4 max-w-md mx-auto space-y-5">
-
-        {/* Greeting */}
         <section className="pt-2">
-          <h1 className="font-headline font-bold text-2xl text-slate-900">
-            Halo, {firstName}!
-          </h1>
-          <p className="text-sm font-normal text-gray-500 mt-0.5">
-            Selamat datang kembali di TemuDosen.
-          </p>
+          <h1 className="font-headline font-bold text-2xl text-slate-900">{greeting()}, {first}!</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Selamat datang kembali di TemuDosen.</p>
         </section>
 
-        {/* Ajukan Bimbingan Baru shortcut card */}
-        <section>
-          <Link
-            to="/mahasiswa/ajukan"
-            className="block p-4 bg-primary rounded-2xl text-white shadow-lg shadow-primary/25 hover:bg-primary/90 transition-colors active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
-            aria-label="Ajukan bimbingan baru"
-          >
+        {/* Kartu antrian aktif */}
+        {!loading && queue && (
+          <Link to="/mahasiswa/queue" className="block bg-primary rounded-2xl p-4 text-white shadow-lg shadow-primary/25 hover:bg-primary/90 transition-colors">
+            <p className="text-xs text-blue-200 uppercase tracking-wider mb-1">Antrian Aktif</p>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-normal text-blue-200 uppercase tracking-wider mb-1">
-                  Mulai Sekarang
-                </p>
-                <h2 className="font-headline font-bold text-lg">
-                  Ajukan Bimbingan Baru
-                </h2>
-                <p className="text-xs font-normal text-blue-100 mt-1">
-                  Pilih gejala akademik dan unggah draft
+                <p className="font-headline font-bold text-lg">Nomor Antrian: #{queue.queue_position}</p>
+                <p className="text-sm text-blue-100 mt-1">
+                  {queue.dosen_name} · {queue.estimated_wait_minutes > 0 ? `±${queue.estimated_wait_minutes} menit` : 'Segera'}
                 </p>
               </div>
-              <span className="material-symbols-outlined text-white/70 text-3xl">
-                add_circle
-              </span>
+              <span className="material-symbols-outlined text-white/70 text-3xl">queue</span>
             </div>
           </Link>
-        </section>
+        )}
 
-        {/* Submission list */}
-        <section className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="font-headline font-bold text-lg text-slate-900">
-              Riwayat Pengajuan
-            </h2>
-          </div>
-
-          {isLoading && (
-            <div className="py-8 text-center text-sm text-gray-400" aria-live="polite">
-              Memuat pengajuan...
-            </div>
-          )}
-
-          {error && (
-            <div
-              className="p-3 bg-error/5 border border-error/20 rounded-xl text-sm text-error"
-              role="alert"
-            >
-              {error}
-            </div>
-          )}
-
-          {/* Empty state — exact Copywriting Contract copy */}
-          {!isLoading && !error && submissions.length === 0 && (
-            <div className="py-10 flex flex-col items-center justify-center text-center">
-              <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-                <span className="material-symbols-outlined text-gray-300 text-3xl">
-                  description
-                </span>
+        {/* Tombol ajukan (jika tidak ada antrian) */}
+        {!loading && !queue && (
+          <Link to="/mahasiswa/ajukan"
+            className="block p-4 bg-primary rounded-2xl text-white shadow-lg shadow-primary/25 hover:bg-primary/90 transition-colors active:scale-[0.98]">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-blue-200 uppercase tracking-wider mb-1">Mulai Sekarang</p>
+                <h2 className="font-headline font-bold text-lg">Ajukan Bimbingan Baru</h2>
+                <p className="text-xs text-blue-100 mt-1">Pilih gejala akademik dan unggah draft</p>
               </div>
-              <h3 className="font-headline font-bold text-lg text-slate-800">
-                Belum Ada Pengajuan
-              </h3>
-              <p className="text-sm font-normal text-gray-500 mt-2 max-w-[240px]">
-                Ajukan bimbingan pertama Anda dengan memilih gejala akademik dan
-                mengunggah draft.
-              </p>
-              <Link
-                to="/mahasiswa/ajukan"
-                className={[
-                  'mt-4 px-6 py-3 rounded-xl bg-primary text-white text-sm font-bold',
-                  'shadow-lg shadow-primary/25 hover:bg-primary/90 transition-colors',
-                  'active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none',
-                ].join(' ')}
-              >
-                Ajukan Sekarang
-              </Link>
+              <span className="material-symbols-outlined text-white/70 text-3xl">add_circle</span>
+            </div>
+          </Link>
+        )}
+
+        {/* Riwayat 5 terakhir */}
+        <section className="space-y-3">
+          <h2 className="font-headline font-bold text-lg text-slate-900">Riwayat Pengajuan</h2>
+          {loading && <p className="text-sm text-gray-400 py-4 text-center">Memuat...</p>}
+          {!loading && subs.length === 0 && (
+            <div className="py-10 flex flex-col items-center text-center">
+              <span className="material-symbols-outlined text-gray-300 text-4xl mb-3">description</span>
+              <h3 className="font-bold text-slate-800">Belum Ada Pengajuan</h3>
+              <p className="text-sm text-gray-500 mt-1 max-w-xs">Ajukan bimbingan pertama Anda dengan memilih gejala akademik dan mengunggah draft.</p>
             </div>
           )}
-
-          {/* Submission cards */}
-          {!isLoading && submissions.map((submission) => (
-            <div
-              key={submission.id}
-              className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow"
-            >
+          {!loading && subs.slice(0, 5).map((s) => (
+            <div key={s.id} className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
-                  {/* Symptom names */}
                   <p className="text-sm font-bold text-slate-800 truncate">
-                    {submission.symptoms.map((s) => s.name).join(', ') || 'Tidak ada gejala'}
+                    {s.symptoms.map(x => x.name).join(', ') || 'Tidak ada gejala'}
                   </p>
-                  {/* Submission date */}
-                  <p className="text-xs font-normal text-gray-400 mt-0.5">
-                    {formatDate(submission.created_at)}
-                  </p>
+                  <p className="text-xs text-gray-400 mt-0.5">{fmt(s.created_at)}</p>
                 </div>
-                {/* Status badge */}
-                <StatusBadge status={STATUS_MAP[submission.status] ?? 'MENUNGGU'} />
+                <StatusBadge status={STATUS_MAP[s.status] ?? 'MENUNGGU'} />
               </div>
-
-              {/* File name + preview button */}
-              {submission.file_uuid && (
+              {s.file_uuid && (
                 <div className="mt-3 flex items-center justify-between">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="material-symbols-outlined text-gray-400 text-sm">
-                      attach_file
-                    </span>
-                    <span className="text-xs font-normal text-gray-500 truncate">
-                      {submission.file_name ?? 'draft.pdf'}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setPreviewFile({
-                        uuid: submission.file_uuid!,
-                        name: submission.file_name ?? 'draft.pdf',
-                      })
-                    }
-                    className={[
-                      'px-3 py-1.5 rounded-lg text-xs font-bold text-primary',
-                      'border border-primary/20 bg-primary/5 hover:bg-primary/10',
-                      'transition-colors min-h-[44px] flex items-center',
-                      'focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none',
-                    ].join(' ')}
-                  >
+                  <span className="text-xs text-gray-500 truncate flex-1">{s.file_name ?? 'draft.pdf'}</span>
+                  <button type="button" onClick={() => setPreview({ uuid: s.file_uuid!, name: s.file_name ?? 'draft.pdf' })}
+                    className="ml-3 px-3 py-1.5 rounded-lg text-xs font-bold text-primary border border-primary/20 bg-primary/5 hover:bg-primary/10 min-h-[44px] flex items-center focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">
                     Pratinjau
                   </button>
                 </div>
@@ -226,67 +116,26 @@ export default function StudentDashboard() {
         </section>
       </main>
 
-      {/* Bottom navigation */}
-      <nav
-        className="fixed bottom-0 left-0 right-0 w-full z-50 flex justify-around bg-white border-t border-gray-200 px-2 py-3 rounded-t-xl max-w-md mx-auto"
-        aria-label="Navigasi bawah"
-      >
-        {/* Beranda — active */}
-        <button
-          type="button"
-          onClick={() => navigate('/mahasiswa')}
-          className="flex flex-col items-center justify-center text-primary min-h-[44px] min-w-[44px] focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none rounded-xl px-2"
-          aria-current="page"
-          aria-label="Beranda"
-        >
-          <span
-            className="material-symbols-outlined text-xl"
-            style={{ fontVariationSettings: "'FILL' 1" }}
-          >
-            home
-          </span>
-          <span className="font-label text-[11px] font-normal mt-0.5">Beranda</span>
+      <nav className="fixed bottom-0 left-0 right-0 z-50 flex justify-around bg-white border-t border-gray-200 px-2 py-3 rounded-t-xl max-w-md mx-auto">
+        <button type="button" aria-current="page" className="flex flex-col items-center text-primary min-h-[44px] min-w-[44px]">
+          <span className="material-symbols-outlined text-xl" style={{fontVariationSettings:"'FILL' 1"}}>home</span>
+          <span className="text-[11px]">Beranda</span>
         </button>
-
-        {/* Ajukan */}
-        <Link
-          to="/mahasiswa/ajukan"
-          className="flex flex-col items-center justify-center text-gray-400 hover:text-primary min-h-[44px] min-w-[44px] focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none rounded-xl px-2"
-          aria-label="Ajukan"
-        >
+        <Link to="/mahasiswa/ajukan" className="flex flex-col items-center text-gray-400 hover:text-primary min-h-[44px] min-w-[44px]">
           <span className="material-symbols-outlined text-xl">add_circle</span>
-          <span className="font-label text-[11px] font-normal mt-0.5">Ajukan</span>
+          <span className="text-[11px]">Ajukan</span>
         </Link>
-
-        {/* Riwayat */}
-        <button
-          type="button"
-          className="flex flex-col items-center justify-center text-gray-400 min-h-[44px] min-w-[44px] focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none rounded-xl px-2"
-          aria-label="Riwayat"
-        >
-          <span className="material-symbols-outlined text-xl">history</span>
-          <span className="font-label text-[11px] font-normal mt-0.5">Riwayat</span>
-        </button>
-
-        {/* Profil */}
-        <button
-          type="button"
-          className="flex flex-col items-center justify-center text-gray-400 min-h-[44px] min-w-[44px] focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none rounded-xl px-2"
-          aria-label="Profil"
-        >
+        <Link to="/mahasiswa/queue" className="flex flex-col items-center text-gray-400 hover:text-primary min-h-[44px] min-w-[44px]">
+          <span className="material-symbols-outlined text-xl">queue</span>
+          <span className="text-[11px]">Antrian</span>
+        </Link>
+        <button type="button" className="flex flex-col items-center text-gray-400 min-h-[44px] min-w-[44px]">
           <span className="material-symbols-outlined text-xl">person</span>
-          <span className="font-label text-[11px] font-normal mt-0.5">Profil</span>
+          <span className="text-[11px]">Profil</span>
         </button>
       </nav>
 
-      {/* PDF Preview modal */}
-      {previewFile && (
-        <PDFPreview
-          fileUuid={previewFile.uuid}
-          fileName={previewFile.name}
-          onClose={() => setPreviewFile(null)}
-        />
-      )}
+      {preview && <PDFPreview fileUuid={preview.uuid} fileName={preview.name} onClose={() => setPreview(null)} />}
     </div>
   );
 }

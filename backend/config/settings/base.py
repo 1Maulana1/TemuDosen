@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     'apps.accounts',
     'apps.submissions',
     'apps.symptoms',
+    'apps.bimbingan',
     'core',
 ]
 
@@ -115,3 +116,12 @@ MEDIA_URL = None  # Intentionally None — files served via /api/files/<uuid>/ a
 # Upload size limits: 6MB so Django accepts the upload before serializer validates at 5MB (Pitfall 6)
 DATA_UPLOAD_MAX_MEMORY_SIZE = 6 * 1024 * 1024
 FILE_UPLOAD_MAX_MEMORY_SIZE = 6 * 1024 * 1024
+
+# Phase 2: Google Calendar Integration
+GOOGLE_CALENDAR_ENABLED = env.bool('GOOGLE_CALENDAR_ENABLED', default=False)
+GOOGLE_CLIENT_ID = env('GOOGLE_CLIENT_ID', default='')
+GOOGLE_CLIENT_SECRET = env('GOOGLE_CLIENT_SECRET', default='')
+GOOGLE_REDIRECT_URI = env('GOOGLE_REDIRECT_URI', default='http://localhost:8000/api/calendar/callback/')
+
+# Phase 2: Dosen daily guidance quota (minutes); default 480 min = 8 hours
+DOSEN_DAILY_QUOTA_MINUTES = env.int('DOSEN_DAILY_QUOTA_MINUTES', default=480)

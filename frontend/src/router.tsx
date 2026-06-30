@@ -1,15 +1,3 @@
-/**
- * React Router configuration for TemuDosen.
- *
- * All Phase-1 routes are scaffolded here as placeholders per SKELETON.md.
- * Feature plans replace placeholder components by editing their own page files only —
- * router.tsx is NOT re-edited after Wave 0 except to swap a lazy import target.
- *
- * Auth loaders:
- * - requireAuth: redirects unauthenticated users to /login
- *                redirects unapproved users to /pending-approval (Pitfall 8 prevention)
- * - requireRole(role): requireAuth + role check; redirects wrong-role users to /
- */
 import { createBrowserRouter, redirect } from 'react-router';
 
 import LoginPage from './pages/auth/LoginPage';
@@ -19,18 +7,17 @@ import RegisterLecturerPage from './pages/auth/RegisterLecturerPage';
 import PendingApprovalPage from './pages/auth/PendingApprovalPage';
 import UserApproval from './pages/admin/UserApproval';
 import SymptomConfig from './pages/admin/SymptomConfig';
+import AdminDashboard from './pages/admin/AdminDashboard';
 import StudentDashboard from './pages/student/StudentDashboard';
 import SubmissionForm from './pages/student/SubmissionForm';
+import StudentQueue from './pages/student/StudentQueue';
 import LecturerDashboard from './pages/lecturer/LecturerDashboard';
+import LecturerRequests from './pages/lecturer/LecturerRequests';
+import LecturerQueue from './pages/lecturer/LecturerQueue';
+import KaprodiDashboard from './pages/kaprodi/KaprodiDashboard';
 import { getCurrentUser } from './api/auth';
 import type { User } from './api/auth';
 
-// ── Route Loaders ──────────────────────────────────────────────────────────────
-
-/**
- * requireAuth loader — called on every protected route.
- * Fetches current user; if absent → /login; if unapproved → /pending-approval.
- */
 async function requireAuth(): Promise<User> {
   const user = await getCurrentUser();
   if (!user) throw redirect('/login');
@@ -38,10 +25,6 @@ async function requireAuth(): Promise<User> {
   return user;
 }
 
-/**
- * requireRole loader factory — wraps requireAuth with a role check.
- * Wrong role redirects to / (root).
- */
 function requireRole(role: User['role']) {
   return async (): Promise<User> => {
     const user = await requireAuth();
@@ -50,92 +33,70 @@ function requireRole(role: User['role']) {
   };
 }
 
-// ── Placeholder components for routes implemented by later plans ───────────────
-
-const Placeholder = ({ route }: { route: string }) => (
-  <div data-route={route} style={{ padding: '2rem', fontFamily: 'sans-serif' }}>
-    <h1>TemuDosen</h1>
-    <p>Route: <code>{route}</code></p>
-    <p style={{ color: '#6B7280' }}>This page is being built. Check back soon.</p>
-  </div>
-);
-
-// ── Router ─────────────────────────────────────────────────────────────────────
+// Root: redirect by role
+async function rootLoader(): Promise<never> {
+  const user = await getCurrentUser();
+  if (!user) throw redirect('/login');
+  if (!user.is_approved) throw redirect('/pending-approval');
+  const dest: Record<string, string> = {
+    student: '/mahasiswa',
+    lecturer: '/dosen',
+    admin: '/admin',
+    kaprodi: '/kaprodi',
+  };
+  throw redirect(dest[user.role] ?? '/login');
+}
 
 export const router = createBrowserRouter([
-  // ── Public routes (no auth required) ────────────────────────────────────────
-  {
-    path: '/login',
-    element: <LoginPage />,
-  },
-  {
-    path: '/register',
-    element: <RegisterRolePage />, // Plan 02
-  },
-  {
-    path: '/register/mahasiswa',
-    element: <RegisterStudentPage />, // Plan 02
-  },
-  {
-    path: '/register/dosen',
-    element: <RegisterLecturerPage />, // Plan 02
-  },
+  // Public
+  { path: '/login', element: <LoginPage /> },
+  { path: '/register', element: <RegisterRolePage /> },
+  { path: '/register/mahasiswa', element: <RegisterStudentPage /> },
+  { path: '/register/dosen', element: <RegisterLecturerPage /> },
+  { path: '/pending-approval', element: <PendingApprovalPage /> },
 
-  // ── Authenticated + unapproved (D-20 pending-approval gate) ─────────────────
-  {
-    path: '/pending-approval',
-    element: <PendingApprovalPage />, // Plan 02
-  },
-
-  // ── Student routes (requireRole('student')) ──────────────────────────────────
+  // Student
   {
     path: '/mahasiswa',
     loader: requireRole('student'),
     children: [
-      {
-        index: true,
-        element: <StudentDashboard />, // Plan 04
-      },
-      {
-        path: 'ajukan',
-        element: <SubmissionForm />, // Plan 04
-      },
+      { index: true, element: <StudentDashboard /> },
+      { path: 'ajukan', element: <SubmissionForm /> },
+      { path: 'queue', element: <StudentQueue /> },
     ],
   },
 
-  // ── Lecturer routes (requireRole('lecturer')) ────────────────────────────────
+  // Lecturer
   {
     path: '/dosen',
     loader: requireRole('lecturer'),
     children: [
-      {
-        index: true,
-        element: <LecturerDashboard />, // Plan 05
-      },
+      { index: true, element: <LecturerDashboard /> },
+      { path: 'requests', element: <LecturerRequests /> },
+      { path: 'queue', element: <LecturerQueue /> },
     ],
   },
 
-  // ── Admin routes (requireRole('admin')) ─────────────────────────────────────
+  // Admin
   {
     path: '/admin',
     loader: requireRole('admin'),
     children: [
-      {
-        path: 'katalog-gejala',
-        element: <SymptomConfig />, // Plan 03
-      },
-      {
-        path: 'pengguna',
-        element: <UserApproval />, // Plan 02
-      },
+      { index: true, element: <AdminDashboard /> },
+      { path: 'pengguna', element: <UserApproval /> },
+      { path: 'katalog-gejala', element: <SymptomConfig /> },
     ],
   },
 
-  // ── Root redirect ────────────────────────────────────────────────────────────
+  // Kaprodi
   {
-    path: '/',
-    loader: requireAuth,
-    // Root redirects by role after auth check
-    element: <Placeholder route="/" />,
+    path: '/kaprodi',
+    loader: requireRole('kaprodi'),
+    children: [
+      { index: true, element: <KaprodiDashboard /> },
+    ],
   },
+
+  // Root → redirect by role
+  { path: '/', loader: rootLoader, element: <></> },
 ]);
