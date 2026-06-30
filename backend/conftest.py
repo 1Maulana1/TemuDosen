@@ -211,3 +211,90 @@ def submission_factory(db, tmp_path, settings):
         return sub_file
 
     return _make
+
+
+# ── Phase 2 (bimbingan) fixtures ─────────────────────────────────────────────
+
+@pytest.fixture
+def advisee_student(db, lecturer_user):
+    """An approved student whose adviser is lecturer_user (D-24).
+
+    Approve/reject endpoints require submission.student.adviser == request.user,
+    so Phase 2 flows need a student explicitly linked to the acting lecturer.
+    """
+    return CustomUser.objects.create_user(
+        email='advisee@test.com',
+        password='testpass123',
+        full_name='Advisee Student',
+        role=UserRole.STUDENT,
+        is_approved=True,
+        nim='20231111',
+        adviser=lecturer_user,
+    )
+
+
+@pytest.fixture
+def second_advisee_student(db, lecturer_user):
+    """A second approved student advised by lecturer_user — for queue ordering/quota."""
+    return CustomUser.objects.create_user(
+        email='advisee2@test.com',
+        password='testpass123',
+        full_name='Second Advisee',
+        role=UserRole.STUDENT,
+        is_approved=True,
+        nim='20232222',
+        adviser=lecturer_user,
+    )
+
+
+@pytest.fixture
+def authenticated_advisee(api_client, advisee_student):
+    """APIClient authenticated as advisee_student."""
+    api_client.force_authenticate(user=advisee_student)
+    return api_client
+
+
+@pytest.fixture
+def kaprodi_user(db):
+    """A kaprodi (program-head) user — read-only monitoring role."""
+    return CustomUser.objects.create_user(
+        email='kaprodi@test.com',
+        password='testpass123',
+        full_name='Kaprodi Test',
+        role=UserRole.KAPRODI,
+        is_approved=True,
+    )
+
+
+@pytest.fixture
+def pending_submission(db, advisee_student, symptom_category):
+    """A PENDING submission by advisee_student with one symptom (duration 45 min)."""
+    from apps.submissions.models import Submission
+    sub = Submission.objects.create(
+        student=advisee_student,
+        description='Butuh bimbingan metodologi',
+        status=Submission.Status.PENDING,
+    )
+    sub.symptoms.add(symptom_category)  # symptom_category.duration_minutes == 45
+    return sub
+
+
+@pytest.fixture
+def submission_for(db):
+    """Factory: create a PENDING submission for a given student with given symptoms.
+
+    Usage: submission_for(student, [symptom1, symptom2])
+    """
+    from apps.submissions.models import Submission
+
+    def _make(student, symptoms=()):
+        sub = Submission.objects.create(
+            student=student,
+            description='Pengajuan bimbingan',
+            status=Submission.Status.PENDING,
+        )
+        for s in symptoms:
+            sub.symptoms.add(s)
+        return sub
+
+    return _make
