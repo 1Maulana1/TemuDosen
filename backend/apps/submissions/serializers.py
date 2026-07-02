@@ -68,6 +68,9 @@ class SubmissionCreateSerializer(serializers.Serializer):
         required=True,
         error_messages={
             'required': 'Unggah file PDF draft sebelum melanjutkan.',
+            # When the field is sent as null (not just absent), DRF uses the 'null'
+            # code — keep the same student-facing copy instead of the generic message.
+            'null': 'Unggah file PDF draft sebelum melanjutkan.',
         },
         validators=[FileExtensionValidator(allowed_extensions=['pdf'])],
     )
