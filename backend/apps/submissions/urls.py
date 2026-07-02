@@ -1,29 +1,28 @@
 """
-URL patterns for submissions app — Plan 04 (student) + Plan 05 (lecturer).
+URL patterns for submissions app — Phase 1 + Phase 2.
 
 Routes:
-  /api/submissions/           — SubmissionListCreateView (student POST/GET)
-  /api/submissions/lecturer/  — LecturerSubmissionListView (lecturer GET, REVIEW-01)
-  /api/files/<uuid>/          — serve_submission_file (D-29 protected serving)
-
-The lecturer endpoint is a dedicated path so the student endpoint's IsStudent
-permission is not mixed with the lecturer's IsLecturer permission. Each role
-has its own URL and view class, keeping permissions clean.
-
-No approve/reject route is added here — that is Phase 2 scope (D-12).
-Absence of 'approve'/'reject' in this file confirms D-12 compliance.
+  POST /api/submissions/              — student create submission
+  GET  /api/submissions/              — student list own submissions
+  GET  /api/submissions/lecturer/     — lecturer list advisees' submissions (REVIEW-01)
+  POST /api/submissions/<id>/approve/ — lecturer approve submission (Phase 2)
+  POST /api/submissions/<id>/reject/  — lecturer reject/revise submission (Phase 2)
+  GET  /api/files/<uuid>/             — protected file serving (D-29)
 """
 from django.urls import path
 
 from .views import LecturerSubmissionListView, SubmissionListCreateView, serve_submission_file
+from apps.bimbingan.views import ApproveSubmissionView, RejectSubmissionView
 
 urlpatterns = [
     path('', SubmissionListCreateView.as_view(), name='submission-list-create'),
     path('lecturer/', LecturerSubmissionListView.as_view(), name='submission-lecturer-list'),
+    # Phase 2 — approve/reject
+    path('<int:pk>/approve/', ApproveSubmissionView.as_view(), name='submission-approve'),
+    path('<int:pk>/reject/', RejectSubmissionView.as_view(), name='submission-reject'),
 ]
 
 # File serving: /api/files/<uuid>/ is registered at root URL config level
-# so it sits at /api/files/<uuid>/ (not under /api/submissions/files/)
 file_urlpatterns = [
     path('<uuid:file_uuid>/', serve_submission_file, name='serve-submission-file'),
 ]

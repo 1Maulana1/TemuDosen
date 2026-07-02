@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+
+<html lang="id"><head>
+<meta charset="utf-8"/>
+<meta content="width=375, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>TemuDosen - Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary": "#006c49",
+                    "surface-tint": "#855300",
+                    "on-tertiary-fixed-variant": "#7f2b00",
+                    "tertiary-fixed": "#ffdbce",
+                    "on-tertiary": "#ffffff",
+                    "surface-variant": "#d9e3f6",
+                    "secondary-container": "#7ef6be",
+                    "on-surface": "#121c2a",
+                    "surface": "#f8f9ff",
+                    "primary": "#855300",
+                    "primary-fixed-dim": "#ffb95f",
+                    "inverse-surface": "#27313f",
+                    "inverse-on-surface": "#eaf1ff",
+                    "on-primary": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "on-secondary-container": "#00714c",
+                    "surface-container-high": "#dee9fc",
+                    "surface-container-lowest": "#ffffff",
+                    "error": "#ba1a1a",
+                    "on-tertiary-container": "#7a2800",
+                    "on-secondary-fixed": "#002113",
+                    "on-primary-container": "#613b00",
+                    "on-primary-fixed-variant": "#653e00",
+                    "tertiary-fixed-dim": "#ffb599",
+                    "tertiary": "#a73a00",
+                    "tertiary-container": "#ff956b",
+                    "surface-dim": "#d0dbed",
+                    "on-error": "#ffffff",
+                    "surface-container-low": "#eff4ff",
+                    "surface-bright": "#f8f9ff",
+                    "background": "#f8f9ff",
+                    "on-primary-fixed": "#2a1700",
+                    "on-secondary-fixed-variant": "#005236",
+                    "on-background": "#121c2a",
+                    "on-secondary": "#ffffff",
+                    "outline-variant": "#d8c3ad",
+                    "on-surface-variant": "#534434",
+                    "surface-container-highest": "#d9e3f6",
+                    "on-error-container": "#93000a",
+                    "inverse-primary": "#ffb95f",
+                    "secondary-fixed": "#81f9c1",
+                    "outline": "#867461",
+                    "primary-fixed": "#ffddb8",
+                    "surface-container": "#e6eeff",
+                    "on-tertiary-fixed": "#370e00",
+                    "secondary-fixed-dim": "#63dca6",
+                    "primary-container": "#f59e0b"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "section-gap": "32px",
+                    "container-margin": "24px",
+                    "card-padding": "24px",
+                    "gutter": "16px"
+            },
+            "fontFamily": {
+                    "body-sm": [
+                            "Inter"
+                    ],
+                    "label-bold": [
+                            "Inter"
+                    ],
+                    "headline-md": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "headline-lg": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "body-lg": [
+                            "Inter"
+                    ]
+            },
+            "fontSize": {
+                    "body-sm": [
+                            "14px",
+                            {
+                                    "lineHeight": "1.5",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "label-bold": [
+                            "14px",
+                            {
+                                    "lineHeight": "1.2",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "headline-md": [
+                            "24px",
+                            {
+                                    "lineHeight": "1.3",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "headline-lg": [
+                            "32px",
+                            {
+                                    "lineHeight": "1.2",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "body-lg": [
+                            "16px",
+                            {
+                                    "lineHeight": "1.6",
+                                    "fontWeight": "400"
+                            }
+                    ]
+            }
+        },
+        },
+      }
+    </script>
+<style>
+        body {
+            background: linear-gradient(to bottom, #FFFBEB, #FEF3C7);
+            min-height: 100vh;
+            max-width: 375px;
+            margin: 0 auto;
+            position: relative;
+            background-attachment: fixed;
+        }
+        
+        /* Hide scrollbar for horizontal scroll */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined[data-weight="fill"] {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="pb-[80px]">
+<!-- Header -->
+<header class="sticky top-0 z-50 flex justify-between items-center px-4 py-4 w-full bg-surface-container-lowest shadow-sm">
+<button class="p-2 -ml-2 text-on-surface-variant focus:outline-none focus:ring-2 focus:ring-primary-container rounded-full">
+<span class="material-symbols-outlined text-2xl">menu</span>
+</button>
+<h1 class="text-headline-md font-headline-md text-primary-container">TemuDosen</h1>
+<div class="w-[40px] h-[40px] bg-primary-container rounded-full flex items-center justify-center text-on-primary-container font-label-bold text-label-bold shadow-sm ring-2 ring-white">
+            AR
+        </div>
+</header>
+<main class="px-4 pt-6 pb-8 space-y-6">
+<!-- Welcome Hero -->
+<div>
+<h2 class="font-headline-md text-[22px] text-[#1F2937] leading-tight mb-1">Halo, Arifin! 👋</h2>
+<p class="font-body-sm text-body-sm text-[#6B7280]">Pantau progres skripsimu.</p>
+</div>
+<!-- Primary CTA -->
+<button class="w-full bg-primary-container text-[#1F2937] font-bold text-body-lg h-[52px] rounded-[12px] shadow-sm flex items-center justify-center gap-2 hover:bg-yellow-500 transition-colors focus:ring-2 focus:ring-offset-2 focus:ring-primary-container active:scale-[0.98]">
+<span class="material-symbols-outlined">add</span>
+            Ajukan Bimbingan Baru
+        </button>
+<!-- Stats Scroll -->
+<div class="flex gap-4 overflow-x-auto no-scrollbar pb-2 -mx-4 px-4">
+<!-- Card 1 -->
+<div class="flex-none w-[100px] bg-white rounded-[12px] p-4 shadow-sm flex flex-col items-center justify-center border border-gray-100">
+<span class="text-2xl font-headline-md text-on-surface mb-1">12</span>
+<span class="font-body-sm text-[12px] text-on-surface-variant text-center leading-tight">Total Sesi</span>
+</div>
+<!-- Card 2 -->
+<div class="flex-none w-[100px] bg-white rounded-[12px] p-4 shadow-sm flex flex-col items-center justify-center border border-gray-100">
+<span class="text-2xl font-headline-md text-[#0E9F6E] mb-1">8</span>
+<span class="font-body-sm text-[12px] text-on-surface-variant text-center leading-tight">Selesai</span>
+</div>
+<!-- Card 3 -->
+<div class="flex-none w-[100px] bg-white rounded-[12px] p-4 shadow-sm flex flex-col items-center justify-center border border-gray-100">
+<span class="text-2xl font-headline-md text-[#EA580C] mb-1">2</span>
+<span class="font-body-sm text-[12px] text-on-surface-variant text-center leading-tight">Menunggu</span>
+</div>
+</div>
+<!-- Antrean Aktif -->
+<div class="bg-white rounded-[12px] shadow-sm border border-gray-100 overflow-hidden">
+<div class="px-4 py-3 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+<h3 class="font-label-bold text-label-bold text-on-surface">Antrean Aktif</h3>
+</div>
+<div class="p-4 space-y-4">
+<!-- Item 1 -->
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-start">
+<div>
+<h4 class="font-label-bold text-[15px] text-on-surface">Bab III – Metodologi</h4>
+<p class="font-body-sm text-[13px] text-gray-500">Dr. Siti Rahayu</p>
+</div>
+<span class="px-2 py-1 bg-[#FEF3C7] text-[#EA580C] text-[11px] font-semibold rounded-full whitespace-nowrap">Menunggu</span>
+</div>
+<div class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-yellow-50 text-yellow-800 rounded-md text-[13px] font-medium w-fit border border-yellow-100">
+<span class="material-symbols-outlined text-[16px]">calendar_today</span>
+                        Sen, 30 Jun
+                    </div>
+</div>
+<div class="h-px bg-gray-100 w-full"></div>
+<!-- Item 2 -->
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-start">
+<div>
+<h4 class="font-label-bold text-[15px] text-on-surface">Revisi Bab II – Pustaka</h4>
+<p class="font-body-sm text-[13px] text-gray-500">Prof. Budi Santoso</p>
+</div>
+<span class="px-2 py-1 bg-[#DBEAFE] text-[#1D4ED8] text-[11px] font-semibold rounded-full whitespace-nowrap">Disetujui</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Riwayat Sesi -->
+<div class="bg-white rounded-[12px] shadow-sm border border-gray-100 overflow-hidden">
+<div class="px-4 py-3 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+<h3 class="font-label-bold text-label-bold text-on-surface">Riwayat Sesi</h3>
+</div>
+<div class="p-0">
+<!-- List Item 1 -->
+<div class="p-4 border-b border-gray-100 flex gap-3 items-start">
+<div class="w-8 h-8 rounded-full bg-[#D1FAE5] text-[#065F46] flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px]">check</span>
+</div>
+<div class="flex-1">
+<h4 class="font-label-bold text-[14px] text-on-surface leading-tight mb-1">Revisi Bab I Latar Belakang</h4>
+<p class="font-body-sm text-[12px] text-gray-500 mb-2">15 Jun • Dr. Siti Rahayu</p>
+<div class="flex items-center justify-between">
+<span class="px-2 py-0.5 bg-[#D1FAE5] text-[#065F46] text-[10px] font-semibold rounded-full">Selesai</span>
+<a class="text-[12px] font-medium text-blue-600 hover:underline" href="#">Lihat Ringkasan</a>
+</div>
+</div>
+</div>
+<!-- List Item 2 -->
+<div class="p-4 border-b border-gray-100 flex gap-3 items-start">
+<div class="w-8 h-8 rounded-full bg-[#FEE2E2] text-[#B91C1C] flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</div>
+<div class="flex-1">
+<h4 class="font-label-bold text-[14px] text-on-surface leading-tight mb-1">Pengajuan Judul Skripsi</h4>
+<p class="font-body-sm text-[12px] text-gray-500 mb-2">10 Jun • Prof. Budi Santoso</p>
+<div class="flex items-center justify-between">
+<span class="px-2 py-0.5 bg-[#FEE2E2] text-[#B91C1C] text-[10px] font-semibold rounded-full">Dibatalkan</span>
+<a class="text-[12px] font-medium text-blue-600 hover:underline" href="#">Detail</a>
+</div>
+</div>
+</div>
+<!-- List Item 3 -->
+<div class="p-4 flex gap-3 items-start">
+<div class="w-8 h-8 rounded-full bg-[#D1FAE5] text-[#065F46] flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px]">check</span>
+</div>
+<div class="flex-1">
+<h4 class="font-label-bold text-[14px] text-on-surface leading-tight mb-1">Konsultasi Awal</h4>
+<p class="font-body-sm text-[12px] text-gray-500 mb-2">02 Jun • Dr. Siti Rahayu</p>
+<div class="flex items-center justify-between">
+<span class="px-2 py-0.5 bg-[#D1FAE5] text-[#065F46] text-[10px] font-semibold rounded-full">Selesai</span>
+<a class="text-[12px] font-medium text-blue-600 hover:underline" href="#">Lihat Ringkasan</a>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Dosen Pembimbing -->
+<div class="bg-white rounded-[12px] shadow-sm border border-gray-100 p-4 flex flex-col gap-4">
+<h3 class="font-label-bold text-label-bold text-gray-500 uppercase tracking-wider text-[11px]">Dosen Pembimbing Utama</h3>
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-600 font-label-bold text-[16px] shrink-0 border border-gray-200">
+                    SR
+                </div>
+<div>
+<h4 class="font-label-bold text-[15px] text-on-surface">Dr. Siti Rahayu, M.Kom.</h4>
+<p class="font-body-sm text-[13px] text-gray-500">NIP. 198005122005012001</p>
+</div>
+</div>
+<button class="w-full py-2.5 px-4 rounded-[8px] border-2 border-primary-container text-primary-container font-label-bold text-[14px] bg-transparent hover:bg-yellow-50 transition-colors flex justify-center items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">mail</span>
+                Hubungi via Email
+            </button>
+</div>
+</main>
+<!-- Bottom Nav Bar -->
+<nav class="fixed bottom-0 w-full max-w-[375px] bg-white border-t border-gray-200 flex justify-around items-center py-2 px-2 z-50 pb-[env(safe-area-inset-bottom,16px)]">
+<!-- Dashboard (Active) -->
+<a class="flex flex-col items-center gap-1 p-2 min-w-[64px]" href="#">
+<div class="w-12 h-8 flex items-center justify-center rounded-full bg-[#FEF3C7]">
+<span class="material-symbols-outlined text-primary-container" data-weight="fill">home</span>
+</div>
+<span class="text-[10px] font-label-bold text-primary-container">Beranda</span>
+</a>
+<!-- Riwayat -->
+<a class="flex flex-col items-center gap-1 p-2 min-w-[64px] text-gray-500 hover:text-gray-900 transition-colors" href="#">
+<div class="w-12 h-8 flex items-center justify-center rounded-full">
+<span class="material-symbols-outlined">history</span>
+</div>
+<span class="text-[10px] font-medium">Riwayat</span>
+</a>
+<!-- Profil -->
+<a class="flex flex-col items-center gap-1 p-2 min-w-[64px] text-gray-500 hover:text-gray-900 transition-colors" href="#">
+<div class="w-12 h-8 flex items-center justify-center rounded-full">
+<span class="material-symbols-outlined">person</span>
+</div>
+<span class="text-[10px] font-medium">Profil</span>
+</a>
+<!-- Pengaturan -->
+<a class="flex flex-col items-center gap-1 p-2 min-w-[64px] text-gray-500 hover:text-gray-900 transition-colors" href="#">
+<div class="w-12 h-8 flex items-center justify-center rounded-full">
+<span class="material-symbols-outlined">settings</span>
+</div>
+<span class="text-[10px] font-medium">Panduan</span>
+</a>
+</nav>
+</body></html>

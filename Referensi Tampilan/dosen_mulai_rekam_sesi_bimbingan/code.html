@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+
+<html lang="id"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Dosen – Mulai &amp; Rekam Sesi Bimbingan</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-fixed-variant": "#653e00",
+                        "background": "#f8f9ff",
+                        "surface-bright": "#f8f9ff",
+                        "surface-dim": "#d0dbed",
+                        "tertiary-fixed-dim": "#ffb599",
+                        "primary-fixed": "#ffddb8",
+                        "error-container": "#ffdad6",
+                        "on-primary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "primary-container": "#f59e0b",
+                        "outline": "#867461",
+                        "inverse-primary": "#ffb95f",
+                        "surface-container-low": "#eff4ff",
+                        "secondary-fixed": "#81f9c1",
+                        "on-error": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-fixed": "#ffdbce",
+                        "surface": "#f8f9ff",
+                        "on-secondary-fixed-variant": "#005236",
+                        "on-surface-variant": "#534434",
+                        "outline-variant": "#d8c3ad",
+                        "surface-container-highest": "#d9e3f6",
+                        "on-tertiary-fixed": "#370e00",
+                        "on-surface": "#121c2a",
+                        "on-secondary-container": "#00714c",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-high": "#dee9fc",
+                        "on-tertiary-container": "#7a2800",
+                        "tertiary": "#a73a00",
+                        "on-secondary-fixed": "#002113",
+                        "on-background": "#121c2a",
+                        "inverse-surface": "#27313f",
+                        "secondary-container": "#7ef6be",
+                        "primary-fixed-dim": "#ffb95f",
+                        "primary": "#855300",
+                        "on-secondary": "#ffffff",
+                        "surface-container": "#e6eeff",
+                        "secondary": "#006c49",
+                        "on-primary-container": "#613b00",
+                        "surface-tint": "#855300",
+                        "on-tertiary-fixed-variant": "#7f2b00",
+                        "tertiary-container": "#ff956b",
+                        "surface-variant": "#d9e3f6",
+                        "secondary-fixed-dim": "#63dca6",
+                        "on-error-container": "#93000a",
+                        "inverse-on-surface": "#eaf1ff",
+                        "on-primary-fixed": "#2a1700"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "container-margin": "24px",
+                        "card-padding": "24px",
+                        "gutter": "16px",
+                        "section-gap": "32px"
+                    },
+                    "fontFamily": {
+                        "label-bold": ["Inter"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "body-lg": ["Inter"],
+                        "body-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label-bold": ["14px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "1.3", "fontWeight": "700" }],
+                        "headline-lg": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-lg": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "body-sm": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .gradient-bg {
+            background: linear-gradient(180deg, #FFFBEB 0%, #FEF3C7 100%);
+        }
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(220, 38, 38, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+        }
+        .animate-pulse-red {
+            animation: pulse-red 2s infinite;
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen text-on-surface font-body-lg antialiased pb-24">
+<!-- Top Navigation (From JSON) -->
+<header class="bg-background dark:bg-on-background flex justify-between items-center w-full px-container-margin max-w-[680px] mx-auto h-16 sticky top-0 z-50">
+<a class="font-headline-md text-headline-md font-bold text-primary dark:text-inverse-primary tracking-tight" href="#">TemuDosen</a>
+<button class="text-primary dark:text-primary-fixed-dim hover:text-primary dark:hover:text-primary-fixed transition-colors font-label-bold text-label-bold">Bantuan</button>
+</header>
+<main class="w-full max-w-[680px] mx-auto px-container-margin pt-8 flex flex-col gap-12">
+<!-- SECTION 1: Consent -->
+<section class="flex flex-col gap-4">
+<div class="flex items-center gap-4 text-on-surface-variant">
+<span class="h-[1px] bg-outline-variant flex-grow"></span>
+<span class="font-label-bold text-label-bold uppercase tracking-wider text-xs">State 1 · Persetujuan</span>
+<span class="h-[1px] bg-outline-variant flex-grow"></span>
+</div>
+<div class="bg-surface-container-lowest rounded-[12px] shadow-sm p-[32px] relative">
+<div class="absolute top-6 right-6">
+<span class="inline-flex items-center rounded-full bg-[#FEF3C7] px-3 py-1 font-label-bold text-[12px] font-semibold text-[#EA580C]">
+                        Menunggu Konfirmasi Dosen
+                    </span>
+</div>
+<h2 class="font-headline-md text-headline-md mb-2 pt-4">Konfirmasi Sesi Bimbingan</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-8 max-w-md">Pastikan data mahasiswa berikut sudah benar sebelum memulai sesi.</p>
+<div class="bg-surface-container-low rounded-lg p-6 mb-8 border border-outline-variant/30">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div>
+<p class="font-label-bold text-label-bold text-on-surface-variant mb-1">Mahasiswa</p>
+<p class="font-body-lg text-body-lg font-medium">Budi Santoso</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">NIM: 20210001</p>
+</div>
+<div>
+<p class="font-label-bold text-label-bold text-on-surface-variant mb-1">Jadwal</p>
+<div class="flex items-start gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]" style="font-variation-settings: 'FILL' 1;">calendar_today</span>
+<div>
+<p class="font-body-lg text-body-lg font-medium">Kamis, 26 Juni 2026</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">10.00 – 11.00 WIB</p>
+</div>
+</div>
+</div>
+<div class="md:col-span-2">
+<p class="font-label-bold text-label-bold text-on-surface-variant mb-1">Topik Skripsi</p>
+<p class="font-body-lg text-body-lg font-medium">Penerapan Machine Learning untuk Deteksi Penyakit Tanaman Padi</p>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-4 mt-8">
+<button class="w-full bg-primary-container text-[#1F2937] h-12 rounded-lg font-label-bold text-label-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">mic</span>
+                        Mulai &amp; Rekam Sesi
+                    </button>
+<button class="w-full bg-transparent border-2 border-outline-variant text-on-surface h-12 rounded-lg font-label-bold text-label-bold hover:bg-surface-container-low transition-colors">
+                        Mulai Tanpa Rekam
+                    </button>
+</div>
+</div>
+</section>
+<!-- SECTION 2: Recording -->
+<section class="flex flex-col gap-4">
+<div class="flex items-center gap-4 text-on-surface-variant">
+<span class="h-[1px] bg-outline-variant flex-grow"></span>
+<span class="font-label-bold text-label-bold uppercase tracking-wider text-xs">State 2 · Berjalan</span>
+<span class="h-[1px] bg-outline-variant flex-grow"></span>
+</div>
+<div class="bg-surface-container-lowest rounded-[12px] shadow-sm overflow-hidden border border-red-200">
+<div class="bg-[#991B1B] px-6 py-3 flex justify-between items-center text-white">
+<div class="flex items-center gap-2 font-label-bold text-label-bold">
+<span class="text-[10px]">•</span> MEREKAM
+                    </div>
+<button class="bg-white/20 hover:bg-white/30 px-4 py-1.5 rounded text-sm font-medium transition-colors backdrop-blur-sm">
+                        Jeda
+                    </button>
+</div>
+<div class="p-[32px] flex flex-col items-center text-center">
+<div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-6 animate-pulse-red">
+<span class="material-symbols-outlined text-red-600 text-3xl" style="font-variation-settings: 'FILL' 1;">mic</span>
+</div>
+<h3 class="font-headline-md text-headline-md mb-1">Budi Santoso · 20210001</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-8">Sesi sedang berjalan...</p>
+<div class="font-mono text-[64px] font-bold text-on-surface leading-none mb-10 tracking-tight">
+                        00:14:32
+                    </div>
+<button class="w-full bg-[#0E9F6E] text-white h-14 rounded-lg font-label-bold text-label-bold text-base flex items-center justify-center gap-2 hover:bg-[#057A55] transition-colors shadow-md">
+<span class="material-symbols-outlined">check_circle</span>
+                        Selesai &amp; Simpan Rekaman
+                    </button>
+</div>
+</div>
+</section>
+<!-- SECTION 3: Summary -->
+<section class="flex flex-col gap-4">
+<div class="flex items-center gap-4 text-on-surface-variant">
+<span class="h-[1px] bg-outline-variant flex-grow"></span>
+<span class="font-label-bold text-label-bold uppercase tracking-wider text-xs">State 3 · Ringkasan AI</span>
+<span class="h-[1px] bg-outline-variant flex-grow"></span>
+</div>
+<div class="bg-surface-container-lowest rounded-[12px] shadow-sm p-[32px]">
+<div class="flex justify-between items-start mb-6">
+<h2 class="font-headline-md text-headline-md">Ringkasan Sesi Bimbingan</h2>
+<span class="inline-flex items-center gap-1 rounded-full bg-[#DBEAFE] px-3 py-1 font-label-bold text-[12px] font-semibold text-[#1D4ED8]">
+<span class="material-symbols-outlined text-[14px]">auto_awesome</span>
+                        Dihasilkan oleh AI · Draft
+                    </span>
+</div>
+<div class="bg-surface-container-low rounded-[8px] p-[16px] border-l-4 border-l-primary-container mb-8">
+<p class="font-body-lg text-body-lg text-on-surface leading-relaxed">
+                        Mahasiswa (Budi) mempresentasikan progres Bab 3 terkait arsitektur CNN yang digunakan. Dosen menyarankan untuk memperjelas diagram alir preprocessing gambar agar lebih mudah dipahami penguji. Dataset yang digunakan sudah cukup valid, namun perlu penambahan rujukan paper tahun 2023-2024 untuk justifikasi hyperparameter.
+                    </p>
+</div>
+<h3 class="font-label-bold text-label-bold text-on-surface mb-4 uppercase tracking-wider text-sm">Tindak Lanjut Mahasiswa</h3>
+<ul class="space-y-3 mb-10">
+<li class="flex items-start gap-3">
+<div class="mt-0.5"><span class="material-symbols-outlined text-primary">check_box_outline_blank</span></div>
+<p class="font-body-lg text-body-lg">Perbaiki grafik arsitektur model di Bab 3 agar resolusinya lebih tinggi.</p>
+</li>
+<li class="flex items-start gap-3">
+<div class="mt-0.5"><span class="material-symbols-outlined text-primary">check_box_outline_blank</span></div>
+<p class="font-body-lg text-body-lg">Tambahkan minimal 3 referensi paper terbaru (2023+) terkait tuning CNN.</p>
+</li>
+<li class="flex items-start gap-3">
+<div class="mt-0.5"><span class="material-symbols-outlined text-primary">check_box_outline_blank</span></div>
+<p class="font-body-lg text-body-lg">Koordinasi dengan admin lab untuk akses GPU minggu depan.</p>
+</li>
+<li class="flex items-start gap-3">
+<div class="mt-0.5"><span class="material-symbols-outlined text-primary">check_box_outline_blank</span></div>
+<p class="font-body-lg text-body-lg">Jadwalkan bimbingan selanjutnya setelah revisi Bab 3 selesai (target 2 minggu).</p>
+</li>
+</ul>
+<div class="flex flex-col gap-4">
+<button class="w-full bg-primary-container text-[#1F2937] h-12 rounded-lg font-label-bold text-label-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">send</span>
+                        Setujui &amp; Kirim ke Mahasiswa
+                    </button>
+<button class="w-full bg-transparent border-2 border-outline-variant text-on-surface h-12 rounded-lg font-label-bold text-label-bold hover:bg-surface-container-low transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">edit</span>
+                        Edit Ringkasan
+                    </button>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer (From JSON) -->
+<footer class="bg-transparent flex flex-col items-center gap-4 w-full px-container-margin max-w-[680px] mx-auto mt-section-gap pt-12 pb-8 border-t border-outline-variant/20">
+<div class="font-label-bold text-label-bold text-on-surface mb-2">TemuDosen</div>
+<div class="flex gap-6 flex-wrap justify-center">
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors" href="#">Kebijakan Privasi</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors" href="#">Syarat &amp; Ketentuan</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors" href="#">Pusat Bantuan</a>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-4">© 2024 TemuDosen - Platform Bimbingan Akademik</p>
+</footer>
+</body></html>

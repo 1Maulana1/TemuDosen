@@ -1,4 +1,4 @@
-"""Submission models — stub for Plan 01 (implemented fully in Plans 04/05)."""
+"""Submission models — Phase 1 foundation, extended in Phase 2."""
 import uuid
 from django.db import models
 from django.conf import settings
@@ -10,6 +10,7 @@ class Submission(models.Model):
         APPROVED = 'approved', 'Disetujui'
         REJECTED = 'rejected', 'Ditolak'
         REVISION = 'revision', 'Revisi'
+        CANCELLED = 'cancelled', 'Dibatalkan'
 
     student = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -20,6 +21,15 @@ class Submission(models.Model):
     symptoms = models.ManyToManyField('symptoms.SymptomCategory', blank=True)
     description = models.TextField(blank=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    rejection_reason = models.TextField(blank=True, default='')
+    # FR-D01: submission REVISION bisa diajukan ulang — tautkan ke submission sebelumnya
+    previous_submission = models.ForeignKey(
+        'self',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='resubmissions',
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

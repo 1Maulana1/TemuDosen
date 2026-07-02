@@ -1,443 +1,170 @@
-/**
- * LecturerDashboard (S-08) — Pending guidance requests for the logged-in lecturer.
- *
- * Layout: mobile-first, fixed header + bottom nav + scrollable main (max-w-md).
- *
- * Features (Plan 05 — REVIEW-01, D-09, D-10, D-11, D-12):
- *   - Displays all advisees' submissions (all statuses — D-09)
- *   - Each card shows: student avatar initials, NIM, name, symptom labels, StatusBadge,
- *     submitted date, draft file chip, and "Lihat Draft" button → PDFPreview (D-10)
- *   - Filter tabs: All | Menunggu | Disetujui | Revisi (drives ?status= param — D-11)
- *   - Search field: "Cari NIM atau nama..." (drives ?search= param — D-11)
- *   - CRITICAL D-12: NO Approve/Reject buttons — view-only in Phase 1
- *   - Empty state: "Belum Ada Permintaan Masuk" with body copy (Copywriting Contract)
- *
- * Accessibility (Accessibility Contract):
- *   - All interactive elements min-h-[44px] min-w-[44px] touch targets
- *   - focus-visible:ring-2 on all interactive elements
- *   - 14px minimum body font (text-sm)
- *   - Status badges carry both color AND text label
- */
-
 import { useState, useEffect, useCallback } from 'react';
-import { useLoaderData } from 'react-router';
-import StatusBadge from '../../components/StatusBadge';
-import PDFPreview from '../../components/PDFPreview';
-import { fetchLecturerSubmissions, type LecturerSubmissionItem } from '../../api/submissions';
+import { Link, useRouteLoaderData } from 'react-router';
 import type { User } from '../../api/auth';
+import { getLecturerQueue, type LecturerQueueItem } from '../../api/sessions';
+import { getLecturerStats, startSession, type LecturerStats } from '../../api/stats';
+import ConsentModal from '../../components/ConsentModal';
 
-// ── Status mapping (API lowercase → StatusBadge uppercase enum) ───────────────
-const STATUS_MAP: Record<string, 'MENUNGGU' | 'DISETUJUI' | 'DIBATALKAN' | 'REVISI' | 'BERLANGSUNG' | 'SELESAI'> = {
-  pending: 'MENUNGGU',
-  approved: 'DISETUJUI',
-  rejected: 'DIBATALKAN',
-  revision: 'REVISI',
-};
-
-// ── Filter tab types ───────────────────────────────────────────────────────────
-type FilterTab = 'all' | 'pending' | 'approved' | 'revision';
-
-interface TabOption {
-  value: FilterTab;
-  label: string;
+function fmt(iso: string) {
+  return new Date(iso).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 }
-
-const FILTER_TABS: TabOption[] = [
-  { value: 'all', label: 'Semua' },
-  { value: 'pending', label: 'Menunggu' },
-  { value: 'approved', label: 'Disetujui' },
-  { value: 'revision', label: 'Revisi' },
-];
-
-// ── Helper: initials from full name ───────────────────────────────────────────
-function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase() ?? '')
-    .join('');
+function greeting() {
+  const h = new Date().getHours();
+  return h < 11 ? 'Selamat Pagi' : h < 15 ? 'Selamat Siang' : h < 18 ? 'Selamat Sore' : 'Selamat Malam';
 }
-
-// ── Helper: format date (Indonesia locale) ────────────────────────────────────
-function formatDate(iso: string): string {
-  try {
-    return new Date(iso).toLocaleDateString('id-ID', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    });
-  } catch {
-    return iso;
-  }
+function initials(name: string) {
+  return name.split(' ').slice(0,2).map(w=>w[0]?.toUpperCase()??'').join('');
 }
-
-// ── Submission card ───────────────────────────────────────────────────────────
-
-interface SubmissionCardProps {
-  item: LecturerSubmissionItem;
-  onPreview: (uuid: string, filename: string) => void;
-}
-
-function SubmissionCard({ item, onPreview }: SubmissionCardProps) {
-  const badgeStatus = STATUS_MAP[item.status] ?? 'MENUNGGU';
-  const fileUuid = item.file_url ? item.file_url.replace('/api/files/', '').replace('/', '') : null;
-
-  return (
-    <div className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm flex flex-col gap-3">
-      {/* Student info row */}
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-3 min-w-0">
-          {/* Avatar with initials */}
-          <div
-            className="w-10 h-10 min-w-[40px] rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary text-sm flex-shrink-0"
-            aria-hidden="true"
-          >
-            {getInitials(item.student_name)}
-          </div>
-          {/* Name + NIM */}
-          <div className="min-w-0">
-            <h4 className="font-bold text-sm text-slate-900 truncate">{item.student_name}</h4>
-            <p className="text-[11px] text-neutral-gray font-normal">{item.student_nim}</p>
-          </div>
-        </div>
-        {/* Status badge */}
-        <StatusBadge status={badgeStatus} />
-      </div>
-
-      {/* Symptom chips */}
-      {item.symptom_names.length > 0 && (
-        <div className="flex flex-wrap gap-1.5" aria-label="Gejala akademik">
-          {item.symptom_names.map((name) => (
-            <span
-              key={name}
-              className="inline-block rounded-full bg-gray-100 text-slate-600 text-[11px] px-2 py-0.5 font-normal"
-            >
-              {name}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* Submission date */}
-      <div className="flex items-center gap-1 text-[11px] text-neutral-gray">
-        <span className="material-symbols-outlined text-base" aria-hidden="true">calendar_today</span>
-        <span>{formatDate(item.created_at)}</span>
-      </div>
-
-      {/* Draft file chip + "Lihat Draft" button */}
-      {item.original_filename && fileUuid && (
-        <div className="flex items-center justify-between gap-2">
-          {/* File chip */}
-          <div className="flex items-center gap-1.5 bg-gray-50 border border-dashed border-gray-200 rounded-lg px-2 py-1.5 min-w-0 flex-1">
-            <span className="material-symbols-outlined text-neutral-gray text-base flex-shrink-0" aria-hidden="true">
-              description
-            </span>
-            <span className="text-[11px] text-neutral-gray truncate font-normal">
-              {item.original_filename}
-            </span>
-          </div>
-
-          {/* "Lihat Draft" button — D-12: ONLY this button, no Approve/Reject */}
-          <button
-            type="button"
-            onClick={() => onPreview(fileUuid, item.original_filename ?? 'draft.pdf')}
-            className={[
-              'px-3 py-2 bg-primary text-white text-xs font-bold rounded-lg',
-              'hover:bg-blue-700 active:scale-[0.98] transition-all',
-              'focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none',
-              'min-h-[44px] flex items-center gap-1 flex-shrink-0',
-            ].join(' ')}
-            aria-label={`Lihat draft dari ${item.student_name}`}
-          >
-            <span className="material-symbols-outlined text-base" aria-hidden="true">visibility</span>
-            Lihat Draft
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Main component ─────────────────────────────────────────────────────────────
 
 export default function LecturerDashboard() {
-  const user = useLoaderData() as User;
+  const user = useRouteLoaderData('dosen') as User;
+  const [queue, setQueue] = useState<{totalWaiting:number;estimatedEndTime:string;queue:LecturerQueueItem[]}|null>(null);
+  const [stats, setStats] = useState<LecturerStats|null>(null);
+  const [starting, setStarting] = useState<number|null>(null);
+  const [msg, setMsg] = useState('');
+  const [consentTarget, setConsentTarget] = useState<LecturerQueueItem | null>(null);
 
-  // ── State ──────────────────────────────────────────────────────────────────
-  const [submissions, setSubmissions] = useState<LecturerSubmissionItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const load = useCallback(async () => {
+    const [q, s] = await Promise.all([
+      getLecturerQueue().catch(() => null),
+      getLecturerStats().catch(() => null),
+    ]);
+    setQueue(q); setStats(s);
+  }, []);
 
-  // Filter / search / ordering state (D-11)
-  const [activeTab, setActiveTab] = useState<FilterTab>('all');
-  const [search, setSearch] = useState('');
+  useEffect(() => { load(); const t = setInterval(load, 30_000); return () => clearInterval(t); }, [load]);
 
-  // PDF preview state
-  const [previewUuid, setPreviewUuid] = useState<string | null>(null);
-  const [previewFilename, setPreviewFilename] = useState<string>('draft.pdf');
-
-  // ── Fetch submissions ──────────────────────────────────────────────────────
-  const loadSubmissions = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  // FR-M04: dosen menekan "Mulai" → tampilkan modal consent sebelum sesi benar-benar dimulai
+  const handleStart = async (withRecording: boolean) => {
+    if (!consentTarget) return;
+    const id = consentTarget.id;
+    setStarting(id);
     try {
-      const params: Record<string, string> = {};
-      if (activeTab !== 'all') params.status = activeTab;
-      if (search.trim()) params.search = search.trim();
-      const data = await fetchLecturerSubmissions(params);
-      setSubmissions(data);
-    } catch {
-      setError('Gagal memuat data. Coba lagi.');
-    } finally {
-      setLoading(false);
-    }
-  }, [activeTab, search]);
-
-  // Reload when tab or search changes (with debounce on search)
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      loadSubmissions();
-    }, search ? 300 : 0);
-    return () => clearTimeout(timer);
-  }, [loadSubmissions, search]);
-
-  // ── Handlers ───────────────────────────────────────────────────────────────
-  const handlePreview = (uuid: string, filename: string) => {
-    setPreviewUuid(uuid);
-    setPreviewFilename(filename);
+      await startSession(id, {
+        consent_by_dosen: withRecording,
+        consent_by_mahasiswa: withRecording,
+      });
+      setMsg('Sesi berhasil dimulai!');
+      setConsentTarget(null);
+      load();
+    } catch (e) { setMsg(e instanceof Error ? e.message : 'Gagal.'); }
+    finally { setStarting(null); setTimeout(() => setMsg(''), 3000); }
   };
 
-  const handleClosePreview = () => {
-    setPreviewUuid(null);
-  };
+  const today = new Date().toLocaleDateString('id-ID', { weekday:'long', day:'numeric', month:'long' });
 
-  // ── Today's date (Indonesian format) ──────────────────────────────────────
-  const todayLabel = new Date().toLocaleDateString('id-ID', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
-
-  // ── Greeting ───────────────────────────────────────────────────────────────
-  const hour = new Date().getHours();
-  const greeting =
-    hour < 11 ? 'Selamat Pagi' : hour < 15 ? 'Selamat Siang' : hour < 18 ? 'Selamat Sore' : 'Selamat Malam';
-
-  // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Fixed header */}
-      <nav
-        className="fixed top-0 w-full z-50 bg-white border-b border-gray-200 shadow-sm max-w-md mx-auto left-0 right-0"
-        aria-label="Navigasi utama"
-      >
-        <div className="flex items-center justify-between px-4 h-16">
-          <div className="flex items-center gap-3">
-            {/* Lecturer avatar */}
-            <div
-              className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary text-sm"
-              aria-hidden="true"
-            >
-              {getInitials(user?.full_name ?? 'D')}
-            </div>
-            <span className="font-headline font-bold text-lg text-primary">TemuDosen</span>
-          </div>
-          {/* Notification bell */}
-          <button
-            type="button"
-            className="p-2 rounded-full hover:bg-gray-50 transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none min-h-[44px] min-w-[44px] flex items-center justify-center"
-            aria-label="Notifikasi"
-          >
-            <span className="material-symbols-outlined text-gray-600">notifications</span>
-          </button>
+    <div className="bg-gray-50 min-h-screen">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 h-16 max-w-md mx-auto flex items-center justify-between px-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary text-sm">{initials(user?.full_name??'D')}</div>
+          <span className="font-headline font-bold text-lg text-primary">TemuDosen</span>
         </div>
-      </nav>
+        <span className="material-symbols-outlined text-gray-500">notifications</span>
+      </header>
 
-      {/* Scrollable main content */}
-      <main className="pt-16 pb-32 px-4 max-w-md mx-auto space-y-6">
-        {/* Greeting section */}
-        <header className="pt-4 pb-2">
-          <h1 className="font-headline font-bold text-2xl text-slate-900">
-            {greeting}, {user?.full_name?.split(' ')[0] ?? 'Dosen'}
-          </h1>
-          <div className="flex items-center gap-1 mt-1 text-neutral-gray">
-            <span className="material-symbols-outlined text-base" aria-hidden="true">calendar_today</span>
-            <p className="text-sm font-normal">{todayLabel}</p>
+      <main className="pt-20 pb-24 px-4 max-w-md mx-auto space-y-5">
+        {msg && <div className="bg-success/10 border border-success/20 rounded-xl p-3 text-sm text-success font-bold">{msg}</div>}
+
+        <section className="pt-2">
+          <h1 className="font-headline font-bold text-2xl text-slate-900">{greeting()}, {user?.full_name?.split(' ')[0]}!</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{today}</p>
+        </section>
+
+        {/* Ringkasan antrian */}
+        <section className="grid grid-cols-2 gap-3">
+          <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+            <p className="text-[11px] text-neutral-gray">Antrian Hari Ini</p>
+            <p className="font-headline font-bold text-3xl text-primary mt-1">{queue?.totalWaiting ?? '-'}</p>
+            <p className="text-[11px] text-neutral-gray">mahasiswa</p>
           </div>
-        </header>
-
-        {/* Permintaan Masuk section */}
-        <section aria-label="Permintaan Masuk">
-          <h2 className="font-headline font-bold text-lg text-slate-900 mb-4">
-            Permintaan Masuk
-          </h2>
-
-          {/* Search field (D-11) */}
-          <div className="relative mb-4">
-            <span
-              className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-gray text-lg"
-              aria-hidden="true"
-            >
-              search
-            </span>
-            <input
-              type="search"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Cari NIM atau nama..."
-              className={[
-                'w-full pl-10 pr-4 py-3 text-sm rounded-xl border border-gray-200 bg-white',
-                'focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none',
-                'placeholder:text-neutral-gray',
-                'min-h-[44px]',
-              ].join(' ')}
-              aria-label="Cari berdasarkan NIM atau nama mahasiswa"
-            />
+          <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+            <p className="text-[11px] text-neutral-gray">Estimasi Selesai</p>
+            <p className="font-headline font-bold text-2xl text-slate-800 mt-1">
+              {queue?.estimatedEndTime ? fmt(queue.estimatedEndTime) : '--:--'}
+            </p>
+            <p className="text-[11px] text-neutral-gray">WIB</p>
           </div>
+          <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+            <p className="text-[11px] text-neutral-gray">Sesi Minggu Ini</p>
+            <p className="font-headline font-bold text-3xl text-slate-800 mt-1">{stats?.total_sessions_week ?? '-'}</p>
+            <p className="text-[11px] text-neutral-gray">total</p>
+          </div>
+          <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+            <p className="text-[11px] text-neutral-gray">Rata-rata Durasi</p>
+            <p className="font-headline font-bold text-3xl text-slate-800 mt-1">{stats?.avg_duration_minutes ?? '-'}</p>
+            <p className="text-[11px] text-neutral-gray">menit</p>
+          </div>
+        </section>
 
-          {/* Filter tabs (D-11) */}
-          <div
-            className="flex gap-1 border-b border-gray-200 mb-4"
-            role="tablist"
-            aria-label="Filter status pengajuan"
-          >
-            {FILTER_TABS.map((tab) => {
-              const isActive = activeTab === tab.value;
-              return (
-                <button
-                  key={tab.value}
-                  type="button"
-                  role="tab"
-                  aria-selected={isActive}
-                  onClick={() => setActiveTab(tab.value)}
-                  className={[
-                    'px-3 py-2 text-sm font-normal transition-colors min-h-[44px]',
-                    'focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none rounded-t',
-                    isActive
-                      ? 'font-bold text-primary border-b-2 border-primary'
-                      : 'text-gray-500 hover:text-slate-700',
-                  ].join(' ')}
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
+        {/* Antrian mahasiswa */}
+        <section className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="font-headline font-bold text-lg text-slate-900">Mahasiswa Menunggu</h2>
+            <Link to="/dosen/requests" className="text-xs text-primary font-bold">Lihat Semua →</Link>
           </div>
 
-          {/* Content */}
-          {loading && (
-            <div
-              className="text-center py-10 text-neutral-gray text-sm"
-              aria-live="polite"
-              aria-busy="true"
-            >
-              <span className="material-symbols-outlined animate-spin text-3xl block mb-2">
-                progress_activity
-              </span>
-              Memuat data...
+          {!queue || queue.queue.length === 0 ? (
+            <div className="bg-white rounded-xl border border-gray-100 p-6 text-center">
+              <span className="material-symbols-outlined text-gray-300 text-4xl block mb-2">queue</span>
+              <p className="text-sm text-neutral-gray">Antrian kosong hari ini.</p>
             </div>
-          )}
-
-          {!loading && error && (
-            <div className="bg-error/5 border border-error/20 rounded-xl p-4 text-center" aria-live="assertive">
-              <p className="text-sm text-error font-normal">{error}</p>
-              <button
-                type="button"
-                onClick={loadSubmissions}
-                className="mt-2 text-sm text-primary font-bold underline focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
-              >
-                Coba Lagi
-              </button>
-            </div>
-          )}
-
-          {!loading && !error && submissions.length === 0 && (
-            /* Empty state (Copywriting Contract — S-08) */
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <span className="material-symbols-outlined text-gray-300 text-5xl mb-4" aria-hidden="true">
-                inbox
-              </span>
-              <h3 className="font-headline font-bold text-lg text-slate-900 mb-2">
-                Belum Ada Permintaan Masuk
-              </h3>
-              <p className="text-sm text-neutral-gray font-normal max-w-xs">
-                Mahasiswa bimbingan Anda belum mengajukan sesi bimbingan.
-              </p>
-            </div>
-          )}
-
-          {!loading && !error && submissions.length > 0 && (
-            <div
-              className="flex flex-col gap-4"
-              role="list"
-              aria-label={`${submissions.length} permintaan masuk`}
-            >
-              {submissions.map((item) => (
-                <div key={item.id} role="listitem">
-                  <SubmissionCard item={item} onPreview={handlePreview} />
+          ) : queue.queue.map((item, idx) => (
+            <div key={item.id} className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 min-w-[32px] rounded-full bg-primary flex items-center justify-center text-on-primary font-bold text-sm">{item.position}</div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-sm text-slate-900 truncate">{item.mahasiswa_name}</p>
+                  <p className="text-[11px] text-neutral-gray">{item.nim} · {item.symptom_name}</p>
+                  <div className="flex items-center gap-3 mt-1">
+                    <span className="text-[11px] text-neutral-gray flex items-center gap-0.5">
+                      <span className="material-symbols-outlined text-sm">timer</span>{item.estimated_minutes} mnt
+                    </span>
+                    <span className="text-[11px] text-neutral-gray flex items-center gap-0.5">
+                      <span className="material-symbols-outlined text-sm">{item.method==='online'?'videocam':'person'}</span>
+                      {item.method==='online'?'Online':'Offline'}
+                    </span>
+                  </div>
                 </div>
-              ))}
+                {idx === 0 && (
+                  <button type="button" disabled={starting === item.id} onClick={() => setConsentTarget(item)}
+                    className="px-3 py-2 bg-success text-white text-xs font-bold rounded-lg hover:bg-green-700 disabled:opacity-60 min-h-[44px] flex items-center gap-1 flex-shrink-0 focus-visible:ring-2 focus-visible:ring-success focus-visible:outline-none">
+                    <span className="material-symbols-outlined text-sm">play_arrow</span>
+                    Mulai
+                  </button>
+                )}
+              </div>
             </div>
-          )}
+          ))}
         </section>
       </main>
 
-      {/* Bottom navigation */}
-      <nav
-        className="fixed bottom-0 left-0 w-full max-w-md mx-auto right-0 z-50 flex justify-around items-center px-2 py-3 bg-white border-t border-gray-200 rounded-t-xl"
-        aria-label="Navigasi bawah"
-      >
-        {/* Beranda — active */}
-        <button
-          type="button"
-          className="flex flex-col items-center justify-center text-primary gap-0.5 min-h-[44px] min-w-[44px] focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none rounded"
-          aria-label="Beranda"
-          aria-current="page"
-        >
-          <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>
-            home
-          </span>
-          <span className="text-[11px] font-normal">Beranda</span>
+      <nav className="fixed bottom-0 left-0 right-0 z-50 flex justify-around bg-white border-t border-gray-200 px-2 py-3 rounded-t-xl max-w-md mx-auto">
+        <button type="button" aria-current="page" className="flex flex-col items-center text-primary min-h-[44px] min-w-[44px]">
+          <span className="material-symbols-outlined text-xl" style={{fontVariationSettings:"'FILL' 1"}}>home</span>
+          <span className="text-[11px] font-bold">Beranda</span>
         </button>
-
-        {/* Antrean */}
-        <button
-          type="button"
-          className="flex flex-col items-center justify-center text-gray-400 gap-0.5 min-h-[44px] min-w-[44px] hover:text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none rounded"
-          aria-label="Antrean"
-        >
-          <span className="material-symbols-outlined">format_list_numbered</span>
-          <span className="text-[11px] font-normal">Antrean</span>
-        </button>
-
-        {/* Riwayat */}
-        <button
-          type="button"
-          className="flex flex-col items-center justify-center text-gray-400 gap-0.5 min-h-[44px] min-w-[44px] hover:text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none rounded"
-          aria-label="Riwayat"
-        >
-          <span className="material-symbols-outlined">history</span>
-          <span className="text-[11px] font-normal">Riwayat</span>
-        </button>
-
-        {/* Profil */}
-        <button
-          type="button"
-          className="flex flex-col items-center justify-center text-gray-400 gap-0.5 min-h-[44px] min-w-[44px] hover:text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none rounded"
-          aria-label="Profil"
-        >
-          <span className="material-symbols-outlined">person</span>
-          <span className="text-[11px] font-normal">Profil</span>
+        <Link to="/dosen/requests" className="flex flex-col items-center text-gray-400 hover:text-primary min-h-[44px] min-w-[44px]">
+          <span className="material-symbols-outlined text-xl">inbox</span>
+          <span className="text-[11px]">Permintaan</span>
+        </Link>
+        <Link to="/dosen/queue" className="flex flex-col items-center text-gray-400 hover:text-primary min-h-[44px] min-w-[44px]">
+          <span className="material-symbols-outlined text-xl">format_list_numbered</span>
+          <span className="text-[11px]">Antrian</span>
+        </Link>
+        <button type="button" className="flex flex-col items-center text-gray-400 min-h-[44px] min-w-[44px]">
+          <span className="material-symbols-outlined text-xl">person</span>
+          <span className="text-[11px]">Profil</span>
         </button>
       </nav>
 
-      {/* PDF Preview modal */}
-      {previewUuid && (
-        <PDFPreview
-          fileUuid={previewUuid}
-          fileName={previewFilename}
-          onClose={handleClosePreview}
+      {consentTarget && (
+        <ConsentModal
+          studentName={consentTarget.mahasiswa_name}
+          dosenName={user?.full_name ?? 'Dosen'}
+          onConfirm={handleStart}
+          onClose={() => setConsentTarget(null)}
+          loading={starting === consentTarget.id}
         />
       )}
     </div>

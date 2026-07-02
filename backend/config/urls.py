@@ -1,31 +1,59 @@
 """
 URL configuration for TemuDosen.
 
-Endpoints registered here:
-  /api/csrf/        → core.urls (Task 1 stub, implemented Task 2)
-  /api/auth/        → apps.accounts.urls (Task 2)
-  /api/symptoms/    → apps.symptoms.urls (Plan 03)
-  /api/submissions/ → apps.submissions.urls (Plan 04)
-  /api/files/<uuid>/→ apps.submissions.file_urlpatterns (Plan 04 — D-29 protected serving)
-  /api/users/       → apps.accounts.urls (Plan 02)
+Phase 1:
+  /api/csrf/        → core.urls
+  /api/auth/        → apps.accounts.urls
+  /api/symptoms/    → apps.symptoms.urls
+  /api/submissions/ → apps.submissions.urls  (includes Phase 2 approve/reject)
+  /api/files/<uuid>/→ protected file serving (D-29)
+  /api/users/       → apps.accounts.user_urls
+
+Phase 2:
+  /api/queue/       → apps.bimbingan queue views
+  /api/calendar/    → apps.bimbingan calendar OAuth views
+  /api/stats/       → lecturer/admin summary stats
+
+Phase 3 (Admin/Kaprodi):
+  /api/admin/       → symptom catalog CRUD, emergency cancel, error logs (FR-AD01/02/03)
+  /api/kaprodi/     → workload/compliance stats + logbook export (FR-KP01-04)
+  /api/action-items/→ mark a saran/tindak-lanjut as done (FR-KP04)
 """
 from django.contrib import admin
 from django.urls import path, include
 
 from apps.submissions.urls import file_urlpatterns
+from apps.bimbingan.urls import (
+    queue_urlpatterns, calendar_urlpatterns, stats_urlpatterns,
+    admin_urlpatterns, kaprodi_urlpatterns, action_item_urlpatterns,
+)
+from apps.symptoms.urls import router as symptoms_router
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    # Core cross-cutting endpoints (CSRF cookie)
+    # Core
     path('api/', include('core.urls')),
-    # Auth: login, logout, me
+    # Auth
     path('api/auth/', include('apps.accounts.urls')),
-    # Plan 03: Symptom category CRUD
+    # Symptoms (general read access for all approved users)
     path('api/symptoms/', include('apps.symptoms.urls')),
-    # Plan 04: Submission management
+    # Submissions (Phase 1 + Phase 2 approve/reject)
     path('api/submissions/', include('apps.submissions.urls')),
-    # Plan 04: Protected file serving (D-29) — separate from submissions/ prefix
+    # Protected file serving (D-29)
     path('api/files/', include((file_urlpatterns, 'submission-files'))),
-    # Plan 02: User registration + approval
+    # User registration + approval
     path('api/users/', include('apps.accounts.user_urls')),
+    # Phase 2: Queue
+    path('api/queue/', include((queue_urlpatterns, 'queue'))),
+    # Phase 2: Calendar OAuth
+    path('api/calendar/', include((calendar_urlpatterns, 'calendar'))),
+    # Dashboard stats
+    path('api/stats/', include((stats_urlpatterns, 'stats'))),
+    # Phase 3: Admin (FR-AD01/02/03) — same SymptomCategoryViewSet, admin-scoped alias
+    path('api/admin/symptoms/', include((symptoms_router.urls, 'admin-symptoms'))),
+    path('api/admin/', include((admin_urlpatterns, 'admin-api'))),
+    # Phase 3: Kaprodi (FR-KP01-04)
+    path('api/kaprodi/', include((kaprodi_urlpatterns, 'kaprodi'))),
+    # Phase 3: Action items (FR-KP04)
+    path('api/action-items/', include((action_item_urlpatterns, 'action-items'))),
 ]

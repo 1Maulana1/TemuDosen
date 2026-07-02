@@ -4,6 +4,12 @@ django-cors-headers==4.9.*
 django-environ==0.14.*
 django-filter==25.2
 python-magic==0.4.27
+google-api-python-client==2.*
+google-auth-oauthlib==1.*
+google-auth-httplib2==0.2.*
+APScheduler==3.*
+cryptography==44.*
+reportlab==4.*
 pytest==9.1.*
 pytest-django==4.12.*
 factory-boy==3.3.*

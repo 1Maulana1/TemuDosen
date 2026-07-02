@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+
+<html lang="id"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Kaprodi – Dashboard Statistik - TemuDosen</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Plus+Jakarta+Sans:wght@700&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config -->
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "primary": "#F59E0B", // Amber
+                      "on-primary": "#1F2937", // Dark text for amber elements
+                      "surface": "#ffffff",
+                      "on-surface": "#121c2a",
+                      "on-surface-variant": "#6b7280",
+                      "background-start": "#FFFBEB",
+                      "background-end": "#FEF3C7",
+                      "outline": "#d1d5db",
+                      "surface-container": "#F9FAFB",
+                      "success": "#059669",
+                      "success-container": "#D1FAE5",
+                      "info": "#3B82F6",
+                      "info-container": "#DBEAFE",
+                      "warning": "#EA580C",
+                      "warning-container": "#FFEDD5",
+                      "error": "#DC2626",
+                      "error-container": "#FEE2E2"
+              },
+              "borderRadius": {
+                      "12": "12px",
+                      "lg": "0.5rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "section-gap": "32px",
+                      "card-padding": "20px",
+                      "gutter": "16px"
+              },
+              "fontFamily": {
+                      "headline": ["Plus Jakarta Sans", "sans-serif"],
+                      "body": ["Inter", "sans-serif"]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3, h4 { font-family: 'Plus Jakarta Sans', sans-serif; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-background-start to-background-end text-on-surface min-h-screen flex flex-col">
+<!-- Navbar -->
+<header class="sticky top-0 w-full z-50 bg-white shadow-sm h-[64px] flex items-center">
+<div class="w-full max-w-[1100px] mx-auto px-gutter flex justify-between items-center">
+<div class="flex items-center gap-8">
+<h1 class="text-2xl font-bold text-primary">TemuDosen</h1>
+<nav class="hidden md:flex gap-6 items-center">
+<a class="text-on-surface-variant hover:text-primary transition-colors text-sm font-semibold" href="#">Dashboard</a>
+<a class="text-primary border-b-2 border-primary font-bold pb-1 text-sm" href="#">Statistik</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors text-sm font-semibold" href="#">Dosen</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors text-sm font-semibold" href="#">Mahasiswa</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-3">
+<img alt="Profil Kaprodi" class="w-8 h-8 rounded-full object-cover border border-outline" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBUf4Kc7fcZkJ9VhaHmw1VrwBDq8Rv4DZjJWMbxN6AzmTabAjtlxv-cfA0ylf4PTsYkARl8sn-ecvuR3VQaw4X_OpS8CQOtX8vKHI8yvViJio4D6ptiLjGgp7Q8OuXKS4EY_dafuVsiPhHQo68fj9XwBxCXwvyRQ4udbWBtu7jBsfrRD_hfSIt9l5ZsNwZeHtIk8GsI3GbWwpm2Cz-3Qtu8Sl4n2dMsQMqaeR6gU6WClY7Fgf-Sc31Ju2JUBLEBc5mo-Qtq64InM2k"/>
+<div class="hidden sm:flex flex-col text-right">
+<span class="text-sm font-bold text-on-surface leading-tight">Dr. Ani Kusuma</span>
+<span class="text-xs text-on-surface-variant">Kaprodi</span>
+</div>
+</div>
+<button class="flex items-center gap-2 px-4 py-1.5 border border-outline text-on-surface text-sm font-semibold rounded-lg hover:bg-gray-50 transition-colors">
+<span class="material-symbols-outlined text-[18px]" data-icon="logout">logout</span>
+                Keluar
+            </button>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="w-full max-w-[1100px] mx-auto pt-8 pb-12 px-gutter flex-grow">
+<!-- Row 1: Header & Actions -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+<div>
+<h2 class="text-2xl font-bold text-on-surface">Dashboard Statistik Bimbingan</h2>
+<p class="text-sm text-on-surface-variant">Pantau performa bimbingan dosen dan progres mahasiswa secara real-time.</p>
+</div>
+<div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+<div class="relative flex-grow md:flex-grow-0">
+<select class="w-full appearance-none bg-white border border-outline text-on-surface text-sm rounded-lg pl-4 pr-10 py-2.5 focus:ring-2 focus:ring-primary focus:border-primary outline-none">
+<option>Semester Genap 2025/2026</option>
+<option>Semester Ganjil 2025/2026</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none text-[20px]" data-icon="expand_more">expand_more</span>
+</div>
+<div class="relative flex-grow md:flex-grow-0">
+<select class="w-full appearance-none bg-white border border-outline text-on-surface text-sm rounded-lg pl-4 pr-10 py-2.5 focus:ring-2 focus:ring-primary focus:border-primary outline-none">
+<option>Semua Dosen</option>
+<option>Kelompok Keahlian A</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none text-[20px]" data-icon="expand_more">expand_more</span>
+</div>
+<button class="bg-primary hover:bg-[#D97706] text-on-primary font-bold rounded-lg px-5 py-2.5 flex items-center gap-2 transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[20px]" data-icon="download">download</span>
+                Export CSV
+            </button>
+</div>
+</div>
+<!-- Row 2: Stats Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+<!-- Card A -->
+<div class="bg-white rounded-12 shadow-sm p-card-padding flex flex-col gap-3 border border-gray-100">
+<div class="flex justify-between items-start">
+<div class="w-10 h-10 rounded-full bg-warning-container flex items-center justify-center text-warning">
+<span class="material-symbols-outlined" data-icon="hourglass_top">hourglass_top</span>
+</div>
+<span class="bg-success-container text-success font-bold text-[11px] px-2 py-0.5 rounded-full">
+                    ▼ 0,8 hari lebih cepat
+                </span>
+</div>
+<div>
+<p class="text-sm text-on-surface-variant font-medium">Rata-rata Waktu Tunggu</p>
+<p class="text-2xl font-bold text-on-surface">3,2 hari</p>
+</div>
+</div>
+<!-- Card B -->
+<div class="bg-white rounded-12 shadow-sm p-card-padding flex flex-col gap-3 border border-gray-100">
+<div class="flex justify-between items-start">
+<div class="w-10 h-10 rounded-full bg-info-container flex items-center justify-center text-info">
+<span class="material-symbols-outlined" data-icon="calendar_month">calendar_month</span>
+</div>
+<span class="bg-info-container text-info font-bold text-[11px] px-2 py-0.5 rounded-full">
+                    ▲ 12%
+                </span>
+</div>
+<div>
+<p class="text-sm text-on-surface-variant font-medium">Total Sesi Bulan Ini</p>
+<p class="text-2xl font-bold text-on-surface">148</p>
+</div>
+</div>
+<!-- Card C -->
+<div class="bg-white rounded-12 shadow-sm p-card-padding flex flex-col gap-3 border border-gray-100">
+<div class="flex justify-between items-start">
+<div class="w-10 h-10 rounded-full bg-success-container flex items-center justify-center text-success">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+</div>
+</div>
+<div>
+<p class="text-sm text-on-surface-variant font-medium">Mahasiswa Aktif</p>
+<div class="flex items-baseline gap-1">
+<p class="text-2xl font-bold text-on-surface">87</p>
+<p class="text-xs text-on-surface-variant">dari 104 terdaftar</p>
+</div>
+</div>
+</div>
+<!-- Card D -->
+<div class="bg-white rounded-12 shadow-sm p-card-padding flex flex-col gap-3 border border-gray-100">
+<div class="flex justify-between items-start">
+<div class="w-10 h-10 rounded-full bg-error-container flex items-center justify-center text-error">
+<span class="material-symbols-outlined" data-icon="warning">warning</span>
+</div>
+</div>
+<div>
+<p class="text-sm text-on-surface-variant font-medium">Belum Bimbingan &gt;14 Hari</p>
+<div class="flex items-baseline gap-1">
+<p class="text-2xl font-bold text-warning">11</p>
+<p class="text-xs text-on-surface-variant">perlu perhatian</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Row 3: Table -->
+<div class="mb-8">
+<h3 class="text-lg font-bold text-on-surface mb-4">Beban Kerja Dosen</h3>
+<div class="bg-white rounded-12 shadow-md border border-gray-100 overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container border-b border-gray-100">
+<th class="py-4 px-6 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Nama Dosen</th>
+<th class="py-4 px-6 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Beban Mhs</th>
+<th class="py-4 px-6 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Total Sesi</th>
+<th class="py-4 px-6 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Rata-rata Respon</th>
+<th class="py-4 px-6 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Aktivitas Terakhir</th>
+<th class="py-4 px-6 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Status Beban</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-gray-100">
+<tr class="hover:bg-gray-50 transition-colors">
+<td class="py-4 px-6 text-sm font-bold text-on-surface">Dr. Siti Rahayu, M.Kom</td>
+<td class="py-4 px-6 text-sm text-on-surface">12 Mhs</td>
+<td class="py-4 px-6 text-sm text-on-surface">38 Sesi</td>
+<td class="py-4 px-6 text-sm text-on-surface">2,1 hari</td>
+<td class="py-4 px-6 text-sm text-on-surface-variant">2 jam lalu</td>
+<td class="py-4 px-6">
+<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-success-container text-success">Normal</span>
+</td>
+</tr>
+<tr class="hover:bg-gray-50 transition-colors">
+<td class="py-4 px-6 text-sm font-bold text-on-surface">Dr. Hendra Wijaya</td>
+<td class="py-4 px-6 text-sm text-on-surface">15 Mhs</td>
+<td class="py-4 px-6 text-sm text-on-surface">42 Sesi</td>
+<td class="py-4 px-6 text-sm text-on-surface">3,8 hari</td>
+<td class="py-4 px-6 text-sm text-on-surface-variant">Kemarin</td>
+<td class="py-4 px-6">
+<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-warning-container text-warning">Tinggi</span>
+</td>
+</tr>
+<tr class="hover:bg-gray-50 transition-colors">
+<td class="py-4 px-6 text-sm font-bold text-on-surface">Prof. Budi Santoso, Ph.D</td>
+<td class="py-4 px-6 text-sm text-on-surface">18 Mhs</td>
+<td class="py-4 px-6 text-sm text-on-surface">29 Sesi</td>
+<td class="py-4 px-6 text-sm text-on-surface">5,1 hari</td>
+<td class="py-4 px-6 text-sm text-on-surface-variant">3 hari lalu</td>
+<td class="py-4 px-6">
+<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-error-container text-error">Kritis</span>
+</td>
+</tr>
+<tr class="hover:bg-gray-50 transition-colors">
+<td class="py-4 px-6 text-sm font-bold text-on-surface">Dr. Rina Marlina, M.T</td>
+<td class="py-4 px-6 text-sm text-on-surface">9 Mhs</td>
+<td class="py-4 px-6 text-sm text-on-surface">21 Sesi</td>
+<td class="py-4 px-6 text-sm text-on-surface">1,9 hari</td>
+<td class="py-4 px-6 text-sm text-on-surface-variant">1 jam lalu</td>
+<td class="py-4 px-6">
+<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-success-container text-success">Normal</span>
+</td>
+</tr>
+<tr class="hover:bg-gray-50 transition-colors">
+<td class="py-4 px-6 text-sm font-bold text-on-surface">Dr. Farhan Ismail</td>
+<td class="py-4 px-6 text-sm text-on-surface">11 Mhs</td>
+<td class="py-4 px-6 text-sm text-on-surface">18 Sesi</td>
+<td class="py-4 px-6 text-sm text-on-surface">4,3 hari</td>
+<td class="py-4 px-6 text-sm text-on-surface-variant">5 hari lalu</td>
+<td class="py-4 px-6">
+<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-warning-container text-warning">Tinggi</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-between items-center">
+<span class="text-xs text-on-surface-variant">5 dari 22 dosen aktif</span>
+<a class="text-sm font-bold text-primary hover:text-[#D97706] transition-colors flex items-center gap-1" href="#">
+                    Lihat Semua Dosen <span class="material-symbols-outlined text-[16px]" data-icon="arrow_forward">arrow_forward</span>
+</a>
+</div>
+</div>
+</div>
+<!-- Row 4: Bottom Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<!-- Left: Distribusi Topik -->
+<div class="bg-white rounded-12 shadow-sm p-6 border border-gray-100">
+<h3 class="text-lg font-bold text-on-surface mb-6">Distribusi Topik Bimbingan</h3>
+<div class="flex flex-col gap-5">
+<div>
+<div class="flex justify-between text-sm mb-1.5">
+<span class="font-bold text-on-surface">Revisi Bab</span>
+<span class="text-on-surface-variant">80% (48 sesi)</span>
+</div>
+<div class="w-full bg-gray-100 rounded-full h-2">
+<div class="bg-primary h-2 rounded-full" style="width: 80%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-sm mb-1.5">
+<span class="font-bold text-on-surface">Diskusi Judul</span>
+<span class="text-on-surface-variant">55% (33 sesi)</span>
+</div>
+<div class="w-full bg-gray-100 rounded-full h-2">
+<div class="bg-info h-2 rounded-full" style="width: 55%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-sm mb-1.5">
+<span class="font-bold text-on-surface">Masalah Teknis</span>
+<span class="text-on-surface-variant">40% (24 sesi)</span>
+</div>
+<div class="w-full bg-gray-100 rounded-full h-2">
+<div class="bg-success h-2 rounded-full" style="width: 40%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-sm mb-1.5">
+<span class="font-bold text-on-surface">Persiapan Sidang</span>
+<span class="text-on-surface-variant">28% (17 sesi)</span>
+</div>
+<div class="w-full bg-gray-100 rounded-full h-2">
+<div class="bg-warning h-2 rounded-full" style="width: 28%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-sm mb-1.5">
+<span class="font-bold text-on-surface">Review Pustaka</span>
+<span class="text-on-surface-variant">20% (12 sesi)</span>
+</div>
+<div class="w-full bg-gray-100 rounded-full h-2">
+<div class="bg-gray-400 h-2 rounded-full" style="width: 20%"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right: Mahasiswa Tanpa Aktivitas -->
+<div class="bg-white rounded-12 shadow-sm p-6 border border-gray-100 flex flex-col h-full">
+<div class="flex justify-between items-center mb-6">
+<h3 class="text-lg font-bold text-on-surface">Mahasiswa Tanpa Aktivitas &gt; 14 Hari</h3>
+<span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-error-container text-error font-bold text-xs">11</span>
+</div>
+<div class="flex flex-col gap-4 flex-grow">
+<div class="flex justify-between items-center p-3 rounded-lg hover:bg-gray-50 transition-colors border border-transparent">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-on-surface-variant font-bold text-sm">AF</div>
+<div>
+<p class="text-sm font-bold text-on-surface">Ahmad Fauzi</p>
+<p class="text-[11px] text-on-surface-variant leading-tight">NIM: 10293847 • Dosbing: Dr. Hendra</p>
+</div>
+</div>
+<span class="bg-error-container text-error font-bold text-[11px] px-2 py-1 rounded">22 hari</span>
+</div>
+<div class="flex justify-between items-center p-3 rounded-lg hover:bg-gray-50 transition-colors border border-transparent">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-on-surface-variant font-bold text-sm">SW</div>
+<div>
+<p class="text-sm font-bold text-on-surface">Sari Wulandari</p>
+<p class="text-[11px] text-on-surface-variant leading-tight">NIM: 10293855 • Dosbing: Prof. Budi</p>
+</div>
+</div>
+<span class="bg-error-container text-error font-bold text-[11px] px-2 py-1 rounded">18 hari</span>
+</div>
+<div class="flex justify-between items-center p-3 rounded-lg hover:bg-gray-50 transition-colors border border-transparent">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-on-surface-variant font-bold text-sm">RP</div>
+<div>
+<p class="text-sm font-bold text-on-surface">Riko Pratama</p>
+<p class="text-[11px] text-on-surface-variant leading-tight">NIM: 10293891 • Dosbing: Dr. Siti</p>
+</div>
+</div>
+<span class="bg-error-container text-error font-bold text-[11px] px-2 py-1 rounded">16 hari</span>
+</div>
+<div class="flex justify-between items-center p-3 rounded-lg hover:bg-gray-50 transition-colors border border-transparent">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-on-surface-variant font-bold text-sm">MP</div>
+<div>
+<p class="text-sm font-bold text-on-surface">Mega Putri</p>
+<p class="text-[11px] text-on-surface-variant leading-tight">NIM: 10293902 • Dosbing: Prof. Budi</p>
+</div>
+</div>
+<span class="bg-error-container text-error font-bold text-[11px] px-2 py-1 rounded">15 hari</span>
+</div>
+</div>
+<div class="mt-4 pt-4 border-t border-gray-100 text-center">
+<a class="text-sm font-bold text-primary hover:text-[#D97706] transition-colors inline-flex items-center gap-1" href="#">
+                    Lihat semua 11 mahasiswa <span class="material-symbols-outlined text-[16px]" data-icon="arrow_forward">arrow_forward</span>
+</a>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="w-full py-8 px-gutter flex flex-col md:flex-row justify-between items-center gap-4 bg-white/50 backdrop-blur-sm border-t border-gray-100 mt-auto">
+<div class="w-full max-w-[1100px] mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+<p class="text-xs text-on-surface-variant">
+            © 2024 TemuDosen - Sistem Konsultasi Akademik Institusi
+        </p>
+<div class="flex gap-4 flex-wrap justify-center">
+<a class="text-xs text-on-surface-variant hover:text-primary transition-colors" href="#">Tentang Kami</a>
+<a class="text-xs text-on-surface-variant hover:text-primary transition-colors" href="#">Pusat Bantuan</a>
+<a class="text-xs text-on-surface-variant hover:text-primary transition-colors" href="#">Kebijakan Privasi</a>
+<a class="text-xs text-on-surface-variant hover:text-primary transition-colors" href="#">Kontak</a>
+</div>
+</div>
+</footer>
+</body></html>

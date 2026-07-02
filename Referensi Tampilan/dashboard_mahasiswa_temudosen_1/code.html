@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+
+<html class="light" lang="id"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Dashboard Mahasiswa - TemuDosen</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700&amp;family=Inter:wght@400;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface": "#121c2a",
+                        "surface-container": "#e6eeff",
+                        "error": "#ba1a1a",
+                        "background": "#f8f9ff",
+                        "outline-variant": "#d8c3ad",
+                        "tertiary": "#a73a00",
+                        "on-error-container": "#93000a",
+                        "on-tertiary-container": "#7a2800",
+                        "inverse-on-surface": "#eaf1ff",
+                        "on-secondary-fixed": "#002113",
+                        "on-secondary": "#ffffff",
+                        "tertiary-fixed": "#ffdbce",
+                        "on-primary-container": "#613b00",
+                        "tertiary-fixed-dim": "#ffb599",
+                        "surface-dim": "#d0dbed",
+                        "secondary": "#006c49",
+                        "on-error": "#ffffff",
+                        "surface-container-high": "#dee9fc",
+                        "primary-container": "#f59e0b",
+                        "primary-fixed": "#ffddb8",
+                        "surface-tint": "#855300",
+                        "primary-fixed-dim": "#ffb95f",
+                        "error-container": "#ffdad6",
+                        "secondary-container": "#7ef6be",
+                        "primary": "#855300",
+                        "secondary-fixed": "#81f9c1",
+                        "surface-container-low": "#eff4ff",
+                        "surface-bright": "#f8f9ff",
+                        "on-secondary-container": "#00714c",
+                        "on-primary-fixed": "#2a1700",
+                        "secondary-fixed-dim": "#63dca6",
+                        "on-primary-fixed-variant": "#653e00",
+                        "on-primary": "#ffffff",
+                        "inverse-surface": "#27313f",
+                        "inverse-primary": "#ffb95f",
+                        "on-tertiary-fixed": "#370e00",
+                        "on-secondary-fixed-variant": "#005236",
+                        "outline": "#867461",
+                        "tertiary-container": "#ff956b",
+                        "on-surface-variant": "#534434",
+                        "on-background": "#121c2a",
+                        "surface-container-lowest": "#ffffff",
+                        "surface": "#f8f9ff",
+                        "surface-container-highest": "#d9e3f6",
+                        "on-tertiary-fixed-variant": "#7f2b00",
+                        "on-tertiary": "#ffffff",
+                        "surface-variant": "#d9e3f6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "container-margin": "24px",
+                        "gutter": "16px",
+                        "section-gap": "32px",
+                        "card-padding": "24px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "label-bold": ["Inter"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "body-lg": ["Inter"],
+                        "body-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-bold": ["14px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "1.3", "fontWeight": "700" }],
+                        "body-lg": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "body-sm": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gradient-to-b from-[#FFFBEB] to-[#FEF3C7] text-on-surface font-body-lg min-h-screen">
+<!-- TopNav -->
+<nav class="bg-surface-container-lowest dark:bg-inverse-surface shadow-sm docked full-width top-0 sticky z-50">
+<div class="flex justify-between items-center px-container-margin w-full h-16 max-w-7xl mx-auto">
+<div class="flex items-center gap-2 text-primary dark:text-inverse-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">local_fire_department</span>
+<span class="font-headline-md text-headline-md">TemuDosen</span>
+</div>
+<div class="hidden md:flex gap-8 items-center h-full">
+<a class="h-full flex items-center font-label-bold text-label-bold text-primary dark:text-inverse-primary border-b-2 border-primary dark:border-inverse-primary pb-1" href="#">Dashboard</a>
+<a class="h-full flex items-center font-label-bold text-label-bold text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-inverse-primary transition-colors active:opacity-80 transition-all" href="#">Riwayat Sesi</a>
+<a class="h-full flex items-center font-label-bold text-label-bold text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-inverse-primary transition-colors active:opacity-80 transition-all" href="#">Profil</a>
+</div>
+<div class="flex items-center gap-4">
+<button class="hidden md:flex items-center justify-center w-10 h-10 rounded-full hover:bg-surface-variant transition-colors text-primary">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center font-label-bold text-on-surface-variant overflow-hidden">
+<img alt="User Profile Avatar" class="w-full h-full object-cover" data-alt="A professional headshot of a young male university student in a bright, modern academic setting. Warm lighting, clean and friendly atmosphere, highly detailed, photorealistic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBl9ityuy65euqVita6kK6r_zM-gtlZoppc_VovRttcH4umxu7ePyMxYGGrD9Typ4ocBFo7tuu37nwHy_qtCHd2a1o2q02bO3FIUuMxONeqHS7TQKS36CIi5PpCteiA1dOi7_LVZPRL8uLCeAMbqKPQZAp8_pzr0XWECbDOPESrhJxnIte-Ah1BXVbPwno6feGN54yvOkUpX19bTRNMNYhMT85VsZ98sxVOEug02F8BhLKHffC3Wl2eP55KvPbMn5o6YF56ItTZx5E"/>
+</div>
+<span class="hidden md:block font-label-bold">Arifin Rahmat</span>
+<button class="hidden md:block px-4 py-2 border border-outline rounded-full font-label-bold text-on-surface hover:bg-surface-variant transition-colors">Keluar</button>
+</div>
+</div>
+</div>
+</nav>
+<main class="max-w-7xl mx-auto px-container-margin py-section-gap space-y-8">
+<!-- Hero Section -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface mb-2">Selamat datang, Arifin! 👋</h1>
+<p class="text-on-surface-variant font-body-lg">Pantau progres bimbingan skripsimu di sini.</p>
+</div>
+<button class="bg-primary-container text-[#1F2937] font-label-bold px-6 h-[52px] rounded-full hover:opacity-90 transition-opacity shadow-sm flex items-center gap-2">
+<span class="material-symbols-outlined">add</span>
+                Ajukan Bimbingan Baru
+            </button>
+</div>
+<!-- Stats Row -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="bg-white rounded-[12px] p-card-padding shadow-sm flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-primary-container/20 flex items-center justify-center text-primary-container">
+<span class="material-symbols-outlined text-2xl">calendar_today</span>
+</div>
+<div>
+<p class="text-on-surface-variant font-body-sm mb-1">Total Sesi</p>
+<p class="font-headline-md text-headline-md text-on-surface">12</p>
+</div>
+</div>
+<div class="bg-white rounded-[12px] p-card-padding shadow-sm flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-[#D1FAE5]/50 flex items-center justify-center text-[#065F46]">
+<span class="material-symbols-outlined text-2xl">check_circle</span>
+</div>
+<div>
+<p class="text-on-surface-variant font-body-sm mb-1">Sesi Selesai</p>
+<p class="font-headline-md text-headline-md text-on-surface">8</p>
+</div>
+</div>
+<div class="bg-white rounded-[12px] p-card-padding shadow-sm flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-[#FEF3C7]/50 flex items-center justify-center text-[#EA580C]">
+<span class="material-symbols-outlined text-2xl">schedule</span>
+</div>
+<div>
+<p class="text-on-surface-variant font-body-sm mb-1">Menunggu Konfirmasi</p>
+<p class="font-headline-md text-headline-md text-on-surface">2</p>
+</div>
+</div>
+</div>
+<!-- Main Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- Main Column (65%) -->
+<div class="lg:col-span-8 space-y-8">
+<!-- Antrean Aktif Saya -->
+<section class="bg-white rounded-[12px] shadow-sm overflow-hidden">
+<div class="p-card-padding border-b border-surface-variant">
+<h2 class="font-headline-md text-[20px] font-bold text-on-surface">Antrean Aktif Saya</h2>
+</div>
+<div class="p-card-padding space-y-4">
+<!-- Item 1 -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center p-4 border border-surface-variant rounded-lg gap-4 hover:bg-surface/50 transition-colors cursor-pointer">
+<div>
+<h3 class="font-label-bold text-on-surface text-[16px] mb-1">Bimbingan Bab III – Metodologi Penelitian</h3>
+<p class="text-on-surface-variant font-body-sm">Dr. Siti Rahayu</p>
+</div>
+<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-label-bold bg-[#FEF3C7] text-[#EA580C]">
+                                Menunggu
+                            </span>
+</div>
+<!-- Item 2 -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center p-4 border border-surface-variant rounded-lg gap-4 hover:bg-surface/50 transition-colors cursor-pointer">
+<div>
+<h3 class="font-label-bold text-on-surface text-[16px] mb-1">Revisi Bab II – Tinjauan Pustaka</h3>
+<p class="text-on-surface-variant font-body-sm">Dr. Siti Rahayu</p>
+</div>
+<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-label-bold bg-[#DBEAFE] text-[#1D4ED8]">
+                                Disetujui
+                            </span>
+</div>
+</div>
+</section>
+<!-- Riwayat Sesi Bimbingan -->
+<section class="bg-white rounded-[12px] shadow-sm overflow-hidden">
+<div class="p-card-padding border-b border-surface-variant flex justify-between items-center">
+<h2 class="font-headline-md text-[20px] font-bold text-on-surface">Riwayat Sesi Bimbingan</h2>
+<a class="text-primary font-label-bold hover:underline" href="#">Lihat Semua</a>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left font-body-sm">
+<thead class="bg-surface text-on-surface-variant font-label-bold">
+<tr>
+<th class="p-4 w-12">No</th>
+<th class="p-4">Tanggal</th>
+<th class="p-4">Topik</th>
+<th class="p-4">Dosen</th>
+<th class="p-4">Status</th>
+<th class="p-4">Aksi</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-variant">
+<tr class="hover:bg-surface/50 transition-colors">
+<td class="p-4">1</td>
+<td class="p-4">12 Okt 2024</td>
+<td class="p-4 font-label-bold">Bab I</td>
+<td class="p-4">Dr. Siti Rahayu</td>
+<td class="p-4"><span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-label-bold bg-[#D1FAE5] text-[#065F46]">Selesai</span></td>
+<td class="p-4">
+<button class="text-primary hover:text-primary-container p-1 rounded-full"><span class="material-symbols-outlined text-[20px]">visibility</span></button>
+</td>
+</tr>
+<tr class="hover:bg-surface/50 transition-colors">
+<td class="p-4">2</td>
+<td class="p-4">05 Okt 2024</td>
+<td class="p-4 font-label-bold">Judul</td>
+<td class="p-4">Dr. Siti Rahayu</td>
+<td class="p-4"><span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-label-bold bg-[#D1FAE5] text-[#065F46]">Selesai</span></td>
+<td class="p-4">
+<button class="text-primary hover:text-primary-container p-1 rounded-full"><span class="material-symbols-outlined text-[20px]">visibility</span></button>
+</td>
+</tr>
+<tr class="hover:bg-surface/50 transition-colors">
+<td class="p-4">3</td>
+<td class="p-4">28 Sep 2024</td>
+<td class="p-4 font-label-bold">Proposal</td>
+<td class="p-4">Dr. Siti Rahayu</td>
+<td class="p-4"><span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-label-bold bg-[#FEE2E2] text-[#B91C1C]">Dibatalkan</span></td>
+<td class="p-4">
+<button class="text-primary hover:text-primary-container p-1 rounded-full"><span class="material-symbols-outlined text-[20px]">visibility</span></button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</div>
+<!-- Sidebar (35%) -->
+<div class="lg:col-span-4 space-y-8">
+<!-- Dosen Pembimbing Saya -->
+<section class="bg-white rounded-[12px] shadow-sm p-card-padding flex flex-col items-center text-center">
+<h2 class="font-headline-md text-[18px] font-bold text-on-surface self-start w-full mb-6">Dosen Pembimbing Saya</h2>
+<div class="w-24 h-24 rounded-full bg-teal-100 flex items-center justify-center text-teal-800 font-headline-md text-3xl mb-4">
+                        SR
+                    </div>
+<h3 class="font-label-bold text-lg text-on-surface mb-1">Dr. Siti Rahayu, M.Kom.</h3>
+<p class="text-on-surface-variant font-body-sm mb-6">Total Bimbingan: 12 sesi</p>
+<button class="w-full py-3 border-2 border-primary-container text-primary-container font-label-bold rounded-full hover:bg-primary-container/10 transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[20px]">mail</span>
+                        Hubungi via Email
+                    </button>
+</section>
+<!-- Progres Skripsi -->
+<section class="bg-white rounded-[12px] shadow-sm p-card-padding">
+<h2 class="font-headline-md text-[18px] font-bold text-on-surface mb-6">Progres Skripsi</h2>
+<div class="mb-6">
+<div class="flex justify-between font-label-bold mb-2">
+<span class="text-on-surface-variant">Keseluruhan</span>
+<span class="text-on-surface">60%</span>
+</div>
+<div class="w-full bg-surface-variant rounded-full h-2.5">
+<div class="bg-primary-container h-2.5 rounded-full" style="width: 60%"></div>
+</div>
+<p class="text-center font-label-bold text-on-surface mt-3">Bab III dari V</p>
+</div>
+<ul class="space-y-4">
+<li class="flex items-center gap-3">
+<span class="material-symbols-outlined text-green-600" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-body-sm text-on-surface line-through text-on-surface-variant">Bab I - Pendahuluan</span>
+</li>
+<li class="flex items-center gap-3">
+<span class="material-symbols-outlined text-green-600" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-body-sm text-on-surface line-through text-on-surface-variant">Bab II - Tinjauan Pustaka</span>
+</li>
+<li class="flex items-center gap-3">
+<span class="material-symbols-outlined text-green-600" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-body-sm text-on-surface font-label-bold text-primary">Bab III - Metodologi</span>
+</li>
+<li class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant">radio_button_unchecked</span>
+<span class="font-body-sm text-on-surface">Bab IV - Hasil &amp; Pembahasan</span>
+</li>
+<li class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant">radio_button_unchecked</span>
+<span class="font-body-sm text-on-surface">Bab V - Kesimpulan</span>
+</li>
+</ul>
+</section>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container dark:bg-surface-container-high w-full mt-auto">
+<div class="w-full py-section-gap px-container-margin flex flex-col md:flex-row justify-between items-center gap-4 max-w-7xl mx-auto">
+<div class="font-headline-md text-[20px] text-primary">TemuDosen</div>
+<div class="flex gap-6 font-body-sm text-on-surface-variant">
+<a class="hover:text-primary transition-colors" href="#">Tentang Kami</a>
+<a class="hover:text-primary transition-colors" href="#">Panduan</a>
+<a class="hover:text-primary transition-colors" href="#">Kontak</a>
+</div>
+<div class="font-body-sm text-on-surface-variant">
+                © 2024 TemuDosen. Semua hak dilindungi.
+            </div>
+</div>
+</footer>
+</body></html>

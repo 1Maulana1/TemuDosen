@@ -203,7 +203,7 @@ export default function RegisterLecturerPage() {
               type="submit"
               disabled={loading}
               aria-busy={loading}
-              className="bg-primary text-white w-full py-4 rounded-xl font-bold text-sm font-body shadow-xl shadow-primary/25 min-h-[44px] focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] transition-all"
+              className="bg-primary text-on-primary w-full py-4 rounded-xl font-bold text-sm font-body shadow-xl shadow-primary/25 min-h-[44px] focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] transition-all"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">

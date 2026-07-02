@@ -35,6 +35,7 @@ interface RowState {
   /** null id = unsaved new row */
   id: number | null;
   name: string;
+  category: string;
   duration_minutes: number;
   is_active: boolean;
   /** Whether this row is currently in edit mode */
@@ -53,12 +54,13 @@ const SIDEBAR_LINKS = [
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-function toRowState(category: SymptomCategory): RowState {
+function toRowState(symptom: SymptomCategory): RowState {
   return {
-    id: category.id,
-    name: category.name,
-    duration_minutes: category.duration_minutes,
-    is_active: category.is_active,
+    id: symptom.id,
+    name: symptom.name,
+    category: symptom.category,
+    duration_minutes: symptom.duration_minutes,
+    is_active: symptom.is_active,
     editing: false,
     isNew: false,
   };
@@ -107,7 +109,7 @@ export default function SymptomConfig() {
 
   function handleRowChange(
     index: number,
-    field: 'name' | 'duration_minutes',
+    field: 'name' | 'category' | 'duration_minutes',
     value: string
   ) {
     setRows((prev) =>
@@ -128,6 +130,7 @@ export default function SymptomConfig() {
     const newRow: RowState = {
       id: null,
       name: '',
+      category: 'Umum',
       duration_minutes: 30,
       is_active: true,
       editing: true,
@@ -184,18 +187,24 @@ export default function SymptomConfig() {
       // Create new rows one by one (no bulk-create endpoint)
       const createdCategories: SymptomCategory[] = [];
       for (const row of newRows) {
-        if (!row.name.trim()) {
-          setError('Nama gejala tidak boleh kosong.');
+        if (row.name.trim().length < 3) {
+          setError('Nama gejala minimal 3 karakter.');
           setSaving(false);
           return;
         }
-        if (row.duration_minutes <= 0) {
-          setError('Durasi harus berupa angka positif.');
+        if (!row.category.trim()) {
+          setError('Kategori wajib diisi.');
+          setSaving(false);
+          return;
+        }
+        if (row.duration_minutes < 15 || row.duration_minutes > 180) {
+          setError('Estimasi durasi harus antara 15 dan 180 menit.');
           setSaving(false);
           return;
         }
         const created = await createSymptom({
           name: row.name.trim(),
+          category: row.category.trim(),
           duration_minutes: row.duration_minutes,
           is_active: row.is_active,
         });
@@ -207,6 +216,7 @@ export default function SymptomConfig() {
         const bulkPayload = editedRows.map((r) => ({
           id: r.id as number,
           name: r.name.trim(),
+          category: r.category.trim(),
           duration_minutes: r.duration_minutes,
           is_active: r.is_active,
         }));
@@ -245,7 +255,7 @@ export default function SymptomConfig() {
               href={link.href}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg mb-1 text-sm font-body transition-colors min-h-[44px] focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none ${
                 link.active
-                  ? 'bg-blue-50 text-primary font-bold'
+                  ? 'bg-primary/10 text-accent-link font-bold'
                   : 'text-slate-600 hover:bg-gray-50 hover:text-slate-800'
               }`}
               aria-current={link.active ? 'page' : undefined}
@@ -276,7 +286,7 @@ export default function SymptomConfig() {
           <button
             type="button"
             onClick={handleAddRow}
-            className="flex items-center gap-2 border border-primary text-primary text-sm font-bold font-body px-4 py-2.5 rounded-lg min-h-[44px] hover:bg-blue-50 active:scale-[0.98] transition-all focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+            className="flex items-center gap-2 border border-primary text-accent-link text-sm font-bold font-body px-4 py-2.5 rounded-lg min-h-[44px] hover:bg-primary/10 active:scale-[0.98] transition-all focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
           >
             <span className="material-symbols-outlined text-xl" aria-hidden="true">add</span>
             Tambah Gejala
@@ -323,8 +333,11 @@ export default function SymptomConfig() {
                     <th className="text-left px-4 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider font-label">
                       Nama Gejala
                     </th>
+                    <th className="text-left px-4 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider font-label w-40">
+                      Kategori
+                    </th>
                     <th className="text-left px-4 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider font-label w-36">
-                      Durasi (menit)
+                      Estimasi (menit)
                     </th>
                     <th className="text-left px-4 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider font-label w-28">
                       Aksi
@@ -355,12 +368,29 @@ export default function SymptomConfig() {
                         )}
                       </td>
 
-                      {/* Durasi (menit) */}
+                      {/* Kategori */}
+                      <td className="px-4 py-3">
+                        {row.editing ? (
+                          <input
+                            type="text"
+                            value={row.category}
+                            onChange={(e) => handleRowChange(index, 'category', e.target.value)}
+                            placeholder="Kategori"
+                            aria-label={`Kategori baris ${index + 1}`}
+                            className="w-full text-sm font-body text-slate-800 border border-gray-200 rounded-lg px-3 py-2 min-h-[44px] focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none focus:border-primary"
+                          />
+                        ) : (
+                          <span className="text-sm text-slate-700 font-body">{row.category}</span>
+                        )}
+                      </td>
+
+                      {/* Estimasi (menit) */}
                       <td className="px-4 py-3">
                         {row.editing ? (
                           <input
                             type="number"
-                            min="1"
+                            min="15"
+                            max="180"
                             value={row.duration_minutes}
                             onChange={(e) => handleRowChange(index, 'duration_minutes', e.target.value)}
                             aria-label={`Durasi menit baris ${index + 1}`}
@@ -392,7 +422,7 @@ export default function SymptomConfig() {
                                 onClick={() => handleEdit(index)}
                                 aria-label="Edit gejala"
                                 disabled={row.editing}
-                                className="flex items-center justify-center w-[44px] h-[44px] rounded-lg text-slate-400 hover:bg-blue-50 hover:text-primary transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none disabled:opacity-30 disabled:cursor-default"
+                                className="flex items-center justify-center w-[44px] h-[44px] rounded-lg text-slate-400 hover:bg-primary/10 hover:text-accent-link transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none disabled:opacity-30 disabled:cursor-default"
                               >
                                 <span className="material-symbols-outlined text-xl" aria-hidden="true">edit</span>
                               </button>
@@ -415,7 +445,7 @@ export default function SymptomConfig() {
 
                   {rows.length === 0 && (
                     <tr>
-                      <td colSpan={4} className="px-4 py-12 text-center text-sm text-slate-400 font-body">
+                      <td colSpan={5} className="px-4 py-12 text-center text-sm text-slate-400 font-body">
                         Belum ada gejala. Klik "Tambah Gejala" untuk menambahkan kategori pertama.
                       </td>
                     </tr>
@@ -433,7 +463,7 @@ export default function SymptomConfig() {
             onClick={handleSaveAll}
             disabled={saving || !hasUnsavedChanges}
             aria-busy={saving}
-            className="flex items-center gap-2 bg-primary text-white text-sm font-bold font-body px-6 py-3 rounded-lg min-h-[44px] shadow-lg shadow-primary/25 hover:bg-blue-700 active:scale-[0.98] transition-all focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 bg-primary text-on-primary text-sm font-bold font-body px-6 py-3 rounded-lg min-h-[44px] shadow-lg shadow-primary/25 hover:bg-primary-hover active:scale-[0.98] transition-all focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? (
               <>
@@ -473,7 +503,7 @@ export default function SymptomConfig() {
               <strong className="text-slate-800">{deleteTargetName}</strong>
             </p>
             <p className="text-sm text-slate-500 font-body mb-6">
-              Tindakan ini tidak dapat dibatalkan.
+              Menghapus gejala ini akan mempengaruhi kalkulasi estimasi antrian. Yakin ingin menghapus?
             </p>
 
             <div className="flex items-center gap-3 justify-end">

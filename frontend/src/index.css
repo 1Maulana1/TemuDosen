@@ -7,14 +7,43 @@
 @plugin "@tailwindcss/forms";
 
 @theme {
-  /* ── Colors (UI-SPEC Tailwind Config Contract) ── */
-  --color-primary: #1A56DB;          /* CTA, header accent, active nav */
-  --color-success: #0E9F6E;          /* upload success, status Selesai/Disetujui */
-  --color-error: #E02424;            /* validation error, status Dibatalkan */
-  --color-warning: #FF8A4C;          /* status Menunggu, caution banners */
-  --color-neutral-gray: #6B7280;     /* secondary text, borders */
+  /* ── Colors — locked in Referensi Tampilan/temudosen/DESIGN.md "CSS Variables" ── */
+
+  /* Brand (Amber) */
+  --color-primary: #F59E0B;          /* fill tombol/aksen — JANGAN untuk teks di atas putih */
+  --color-primary-hover: #D97706;    /* hover/active state tombol */
+  --color-on-primary: #1F2937;       /* teks/ikon di atas amber (dark, bukan putih) */
+  --color-accent-link: #B45309;      /* teks link di atas putih */
+
+  /* Surface & Text */
+  --color-background: #FAFAF9;
   --color-surface: #FFFFFF;          /* card background */
-  --color-on-surface-variant: #4B5563; /* muted body text */
+  --color-on-surface: #111827;
+  --color-on-surface-variant: #6B7280; /* muted body text */
+  --color-neutral-gray: #6B7280;     /* alias dipertahankan, dipakai di komponen existing */
+  --color-border: #E5E7EB;
+
+  /* Generic feedback (toast, validasi form, upload — bukan status badge) */
+  --color-success: #0E9F6E;
+  --color-error: #E02424;
+  --color-warning: #92400E;          /* alias generik, dipakai luas di komponen existing (icon/border/text) */
+  --color-warning-bg: #FEF3C7;
+  --color-warning-text: #92400E;
+
+  /* Status Badge (semantik, lepas dari brand amber) */
+  --color-status-pending-bg: #FEF3C7;
+  --color-status-pending-text: #92400E;
+  --color-status-approved-bg: #DBEAFE;
+  --color-status-approved-text: #1E40AF;
+  --color-status-ongoing-bg: #CCFBF1;
+  --color-status-ongoing-text: #0F766E;
+  --color-status-done-bg: #D1FAE5;
+  --color-status-done-text: #065F46;
+  --color-status-cancelled-bg: #FEE2E2;
+  --color-status-cancelled-text: #991B1B;
+
+  /* Auth gradient (Opsi B — dipakai di Langkah 3, layar login/auth saja) */
+  --gradient-auth: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
 
   /* ── Border Radius (UI-SPEC) ── */
   --radius-DEFAULT: 0.25rem;  /* 4px — inline badges */

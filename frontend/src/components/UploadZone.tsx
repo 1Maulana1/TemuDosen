@@ -181,7 +181,7 @@ export default function UploadZone({
         </div>
         <div className="text-center">
           <p className="text-xs font-bold text-slate-700">Pilih file PDF</p>
-          <p className="text-[10px] text-gray-400">Ukuran maksimal 5MB</p>
+          <p className="text-[10px] text-gray-400">PDF, maks 5MB</p>
         </div>
       </div>
 

@@ -17,12 +17,12 @@ import SymptomConfig from './SymptomConfig';
 // ── MSW fixture data ───────────────────────────────────────────────────────────
 
 const SEEDED_SYMPTOMS = [
-  { id: 1, name: 'Analisis data', duration_minutes: 45, is_active: true, created_at: '2026-06-25T00:00:00Z', updated_at: '2026-06-25T00:00:00Z' },
-  { id: 2, name: 'Konflik dengan pembimbing', duration_minutes: 45, is_active: true, created_at: '2026-06-25T00:00:00Z', updated_at: '2026-06-25T00:00:00Z' },
-  { id: 3, name: 'Manajemen waktu', duration_minutes: 30, is_active: true, created_at: '2026-06-25T00:00:00Z', updated_at: '2026-06-25T00:00:00Z' },
-  { id: 4, name: 'Metodologi penelitian', duration_minutes: 60, is_active: true, created_at: '2026-06-25T00:00:00Z', updated_at: '2026-06-25T00:00:00Z' },
-  { id: 5, name: 'Penulisan & struktur', duration_minutes: 30, is_active: true, created_at: '2026-06-25T00:00:00Z', updated_at: '2026-06-25T00:00:00Z' },
-  { id: 6, name: 'Tinjauan pustaka', duration_minutes: 30, is_active: true, created_at: '2026-06-25T00:00:00Z', updated_at: '2026-06-25T00:00:00Z' },
+  { id: 1, name: 'Analisis data', category: 'Umum', duration_minutes: 45, is_active: true, created_at: '2026-06-25T00:00:00Z', updated_at: '2026-06-25T00:00:00Z' },
+  { id: 2, name: 'Konflik dengan pembimbing', category: 'Umum', duration_minutes: 45, is_active: true, created_at: '2026-06-25T00:00:00Z', updated_at: '2026-06-25T00:00:00Z' },
+  { id: 3, name: 'Manajemen waktu', category: 'Umum', duration_minutes: 30, is_active: true, created_at: '2026-06-25T00:00:00Z', updated_at: '2026-06-25T00:00:00Z' },
+  { id: 4, name: 'Metodologi penelitian', category: 'Umum', duration_minutes: 60, is_active: true, created_at: '2026-06-25T00:00:00Z', updated_at: '2026-06-25T00:00:00Z' },
+  { id: 5, name: 'Penulisan & struktur', category: 'Umum', duration_minutes: 30, is_active: true, created_at: '2026-06-25T00:00:00Z', updated_at: '2026-06-25T00:00:00Z' },
+  { id: 6, name: 'Tinjauan pustaka', category: 'Umum', duration_minutes: 30, is_active: true, created_at: '2026-06-25T00:00:00Z', updated_at: '2026-06-25T00:00:00Z' },
 ];
 
 describe('SymptomConfig (S-10)', () => {
@@ -118,9 +118,11 @@ describe('SymptomConfig (S-10)', () => {
     expect(deleteButtons.length).toBeGreaterThan(0);
     fireEvent.click(deleteButtons[0]);
 
-    // Modal should render with exact Copywriting Contract copy
+    // Modal should render with exact Copywriting Contract copy (FR-AD01)
     expect(screen.getByText('Hapus gejala ini?')).toBeInTheDocument();
-    expect(screen.getByText('Tindakan ini tidak dapat dibatalkan.')).toBeInTheDocument();
+    expect(screen.getByText(
+      'Menghapus gejala ini akan mempengaruhi kalkulasi estimasi antrian. Yakin ingin menghapus?'
+    )).toBeInTheDocument();
 
     // "Batal" and "Hapus" buttons in the modal
     expect(screen.getByRole('button', { name: /^Batal$/i })).toBeInTheDocument();
