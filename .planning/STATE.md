@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Phase 02 Implemented & Verified — Ready for Phase 03
-last_updated: "2026-06-30T12:00:00.000Z"
+last_updated: "2026-07-02T08:15:00.018Z"
 progress:
   total_phases: 8
-  completed_phases: 2
+  completed_phases: 1
   total_plans: 5
   completed_plans: 5
-  percent: 40
+  percent: 13
 ---
 
 # State: TemuDosen
@@ -73,9 +73,12 @@ Phase: 02 (Approval & Queue Placement) — IMPLEMENTED & VERIFIED
 
 ## Session Continuity
 
-**Last updated**: 2026-06-30
+**Last updated**: 2026-07-02
 **Next step**: Phase 3 — Live Queue Management & Quota. Note: queue self-cancel + daily quota enforcement code already landed in commit 55aefb3 and has partial test coverage; Phase 3 work is mostly verification + UAT + any gaps (real-time refresh, edge cases).
 **Stopped at**: Phase 2 retroactively verified — added `apps/bimbingan/tests/` (32 passing) and `02-VERIFICATION.md`; updated STATE + ROADMAP.
 
+**Out-of-sequence note (2026-07-02)**: At user request, `05-CONTEXT.md` was captured for Phase 5 (Session Execution with Recording & Consent) ahead of Phase 3/4 — exploratory only, no plan/execution yet. Roadmap execution order (Phase 3 next) is unchanged; Phase 5 is still deferred post-July-15 per the 2026-06-21 roadmap decision. Scout during discussion found SESSION-01, SESSION-05, SESSION-06 already fully implemented (same commit 55aefb3), and SESSION-03 partially implemented (`ts1` + status transition, no consent/recording yet). See `.planning/phases/05-session-execution-with-recording-consent/05-CONTEXT.md`.
+
 ### Known pre-existing issue (not Phase 2)
+
 - `apps/submissions/tests/test_upload.py::test_missing_file_returns_400_with_exact_copy` fails: when `draft_file` is sent as `null` (not absent), DRF returns the `null` error code instead of the custom `required` copy. Fix = add a `'null'` key to `draft_file` error_messages in `apps/submissions/serializers.py`. Phase 1 / Person B area.
