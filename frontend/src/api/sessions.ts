@@ -116,3 +116,7 @@ export async function getCalendarStatus(): Promise<{ enabled: boolean; connected
   if (!res.ok) throw new Error('Gagal memeriksa status Calendar.');
   return res.json();
 }
+
+export function getCalendarAuthUrl(): string {
+  return '/api/calendar/auth/';
+}

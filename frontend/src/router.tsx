@@ -18,6 +18,7 @@ import StudentQueue from './pages/student/StudentQueue';
 import LecturerDashboard from './pages/lecturer/LecturerDashboard';
 import LecturerRequests from './pages/lecturer/LecturerRequests';
 import LecturerQueue from './pages/lecturer/LecturerQueue';
+import LecturerSettings from './pages/lecturer/LecturerSettings';
 import KaprodiDashboard from './pages/kaprodi/KaprodiDashboard';
 import { getCurrentUser } from './api/auth';
 import type { User } from './api/auth';
@@ -83,6 +84,7 @@ export const router = createBrowserRouter([
       { index: true, element: <LecturerDashboard /> },
       { path: 'requests', element: <LecturerRequests /> },
       { path: 'queue', element: <LecturerQueue /> },
+      { path: 'pengaturan', element: <LecturerSettings /> },
     ],
   },
 
