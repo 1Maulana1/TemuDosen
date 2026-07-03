@@ -105,7 +105,7 @@ export default function UserApproval() {
               href={link.href}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg mb-1 text-sm font-body transition-colors min-h-[44px] focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none ${
                 link.active
-                  ? 'bg-blue-50 text-primary border-r-4 border-primary font-bold'
+                  ? 'bg-primary/10 text-accent-link border-r-4 border-primary font-bold'
                   : 'text-slate-600 hover:bg-gray-50 hover:text-slate-800'
               }`}
             >

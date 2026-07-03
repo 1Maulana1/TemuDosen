@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+
+<html lang="id"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TemuDosen - Dashboard Mahasiswa</title>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config injected from Style Guidance -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container": "#e6eeff",
+                    "inverse-on-surface": "#eaf1ff",
+                    "tertiary-container": "#ff956b",
+                    "surface-container-lowest": "#ffffff",
+                    "on-background": "#121c2a",
+                    "on-primary-fixed-variant": "#653e00",
+                    "tertiary-fixed": "#ffdbce",
+                    "outline-variant": "#d8c3ad",
+                    "background": "#f8f9ff",
+                    "on-secondary": "#ffffff",
+                    "inverse-surface": "#27313f",
+                    "primary-container": "#f59e0b",
+                    "on-tertiary-fixed": "#370e00",
+                    "surface-tint": "#855300",
+                    "surface": "#f8f9ff",
+                    "secondary-fixed-dim": "#63dca6",
+                    "secondary": "#006c49",
+                    "surface-dim": "#d0dbed",
+                    "error": "#ba1a1a",
+                    "on-surface": "#121c2a",
+                    "surface-bright": "#f8f9ff",
+                    "outline": "#867461",
+                    "surface-container-low": "#eff4ff",
+                    "surface-container-high": "#dee9fc",
+                    "on-secondary-fixed": "#002113",
+                    "surface-variant": "#d9e3f6",
+                    "tertiary": "#a73a00",
+                    "on-tertiary-container": "#7a2800",
+                    "on-tertiary": "#ffffff",
+                    "on-error": "#ffffff",
+                    "on-tertiary-fixed-variant": "#7f2b00",
+                    "on-surface-variant": "#534434",
+                    "on-secondary-fixed-variant": "#005236",
+                    "on-error-container": "#93000a",
+                    "error-container": "#ffdad6",
+                    "primary-fixed": "#ffddb8",
+                    "inverse-primary": "#ffb95f",
+                    "surface-container-highest": "#d9e3f6",
+                    "on-primary-fixed": "#2a1700",
+                    "primary": "#855300",
+                    "on-secondary-container": "#00714c",
+                    "on-primary": "#ffffff",
+                    "secondary-fixed": "#81f9c1",
+                    "tertiary-fixed-dim": "#ffb599",
+                    "secondary-container": "#7ef6be",
+                    "on-primary-container": "#613b00",
+                    "primary-fixed-dim": "#ffb95f"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "section-gap": "32px",
+                    "gutter": "16px",
+                    "container-margin": "24px",
+                    "card-padding": "24px"
+            },
+            "fontFamily": {
+                    "headline-lg": [
+                            "Plus Jakarta Sans", "sans-serif"
+                    ],
+                    "headline-md": [
+                            "Plus Jakarta Sans", "sans-serif"
+                    ],
+                    "label-bold": [
+                            "Inter", "sans-serif"
+                    ],
+                    "body-sm": [
+                            "Inter", "sans-serif"
+                    ],
+                    "body-lg": [
+                            "Inter", "sans-serif"
+                    ]
+            },
+            "fontSize": {
+                    "headline-lg": [
+                            "32px",
+                            {
+                                    "lineHeight": "1.2",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "headline-md": [
+                            "24px",
+                            {
+                                    "lineHeight": "1.3",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "label-bold": [
+                            "14px",
+                            {
+                                    "lineHeight": "1.2",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "body-sm": [
+                            "14px",
+                            {
+                                    "lineHeight": "1.5",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "body-lg": [
+                            "16px",
+                            {
+                                    "lineHeight": "1.6",
+                                    "fontWeight": "400"
+                            }
+                    ]
+            }
+          }
+        }
+      }
+    </script>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;family=Plus+Jakarta+Sans:wght@700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body {
+            /* Custom gradient based on user prompt */
+            background: linear-gradient(180deg, #FFFBEB 0%, #FEF3C7 100%);
+            min-height: 100vh;
+        }
+    </style>
+</head>
+<body class="font-body-lg text-on-surface antialiased flex flex-col">
+<!-- TopNavBar Component -->
+<!-- Applying exact styles from JSON style_ keys -->
+<nav class="sticky top-0 z-50 flex justify-between items-center px-container-margin py-4 w-full bg-surface-container-lowest dark:bg-inverse-surface shadow-sm">
+<div class="flex items-center gap-8">
+<!-- Brand Logo -->
+<a class="flex items-center gap-2 text-headline-md font-headline-md text-primary dark:text-primary-fixed" href="#">
+<span class="material-symbols-outlined" data-icon="menu_book" style="font-variation-settings: 'FILL' 1;">menu_book</span>
+<span>TemuDosen</span>
+</a>
+<!-- Navigation Links (Web) -->
+<ul class="hidden md:flex items-center gap-6 font-body-lg text-body-lg">
+<!-- Active Nav Item based on Intent -->
+<li class="flex flex-col">
+<a class="text-primary dark:text-primary-fixed font-bold border-b-2 border-primary dark:border-primary-fixed pb-1 cursor-pointer active:opacity-80 transition-colors" href="#">Beranda</a>
+</li>
+<li>
+<a class="text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed transition-colors cursor-pointer active:opacity-80" href="#">Jadwal</a>
+</li>
+<li>
+<a class="text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed transition-colors cursor-pointer active:opacity-80" href="#">Riwayat</a>
+</li>
+<li>
+<a class="text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed transition-colors cursor-pointer active:opacity-80" href="#">Panduan</a>
+</li>
+</ul>
+</div>
+<div class="flex items-center gap-4">
+<!-- User Avatar & Actions -->
+<div class="hidden md:flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center font-label-bold text-label-bold">
+                    AR
+                </div>
+<button class="px-4 py-2 font-label-bold text-label-bold text-primary hover:bg-surface-container rounded-lg transition-colors cursor-pointer active:opacity-80">
+                    Keluar
+                </button>
+</div>
+<!-- Mobile Menu Toggle -->
+<button class="md:hidden text-primary">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-grow w-full max-w-7xl mx-auto px-container-margin py-section-gap flex flex-col gap-section-gap">
+<!-- Hero Section -->
+<section class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+<div>
+<h1 class="text-[28px] font-bold text-[#1F2937] leading-tight font-headline-lg">
+                    Selamat datang, Arifin! 👋
+                </h1>
+<p class="text-[#6B7280] font-body-lg mt-2">
+                    Pantau progres bimbingan skripsimu di sini.
+                </p>
+</div>
+<button class="bg-[#F59E0B] text-[#1F2937] h-[52px] px-6 rounded-[12px] font-bold font-label-bold shadow-sm hover:opacity-90 transition-opacity flex items-center gap-2">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+                Ajukan Bimbingan Baru
+            </button>
+</section>
+<!-- Stats Row -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+<!-- Stat 1 -->
+<div class="bg-surface-container-lowest rounded-[12px] p-card-padding shadow-sm border border-surface-container flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="monitoring" style="font-variation-settings: 'FILL' 1;">monitoring</span>
+</div>
+<div>
+<p class="text-on-surface-variant font-body-sm">Total Sesi</p>
+<p class="text-headline-md font-headline-md text-on-surface">12</p>
+</div>
+</div>
+<!-- Stat 2 -->
+<div class="bg-surface-container-lowest rounded-[12px] p-card-padding shadow-sm border border-surface-container flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-[#D1FAE5] flex items-center justify-center text-[#065F46]">
+<span class="material-symbols-outlined" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div>
+<p class="text-on-surface-variant font-body-sm">Sesi Selesai</p>
+<p class="text-headline-md font-headline-md text-[#0E9F6E]">8</p>
+</div>
+</div>
+<!-- Stat 3 -->
+<div class="bg-surface-container-lowest rounded-[12px] p-card-padding shadow-sm border border-surface-container flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-[#FEF3C7] flex items-center justify-center text-[#EA580C]">
+<span class="material-symbols-outlined" data-icon="pending_actions" style="font-variation-settings: 'FILL' 1;">pending_actions</span>
+</div>
+<div>
+<p class="text-on-surface-variant font-body-sm">Menunggu Konfirmasi</p>
+<p class="text-headline-md font-headline-md text-[#EA580C]">2</p>
+</div>
+</div>
+</section>
+<!-- Main Layout (2 Columns) -->
+<div class="flex flex-col lg:flex-row gap-gutter">
+<!-- Left Column (70%) -->
+<div class="w-full lg:w-[70%] flex flex-col gap-gutter">
+<!-- Antrean Aktif Saya -->
+<div class="bg-surface-container-lowest rounded-[12px] shadow-sm border border-surface-container flex flex-col overflow-hidden">
+<div class="p-4 border-b border-surface-container bg-surface-container-low">
+<h2 class="font-headline-md text-[18px] text-on-surface">Antrean Aktif Saya</h2>
+</div>
+<div class="p-card-padding flex flex-col gap-4">
+<!-- Active Item 1 -->
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 rounded-lg border border-surface-variant hover:border-outline-variant transition-colors bg-background">
+<div class="flex gap-4 items-center mb-3 sm:mb-0">
+<div class="hidden sm:flex w-10 h-10 rounded-full bg-[#FEF3C7] text-[#EA580C] items-center justify-center">
+<span class="material-symbols-outlined" data-icon="event">event</span>
+</div>
+<div>
+<h3 class="font-label-bold text-on-surface">Bimbingan Bab III</h3>
+<p class="font-body-sm text-on-surface-variant">Senin, 30 Jun 2026</p>
+</div>
+</div>
+<span class="px-3 py-1 rounded-full text-xs font-label-bold bg-[#FEF3C7] text-[#EA580C]">Menunggu</span>
+</div>
+<!-- Active Item 2 -->
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 rounded-lg border border-surface-variant hover:border-outline-variant transition-colors bg-background">
+<div class="flex gap-4 items-center mb-3 sm:mb-0">
+<div class="hidden sm:flex w-10 h-10 rounded-full bg-[#DBEAFE] text-[#1D4ED8] items-center justify-center">
+<span class="material-symbols-outlined" data-icon="event">event</span>
+</div>
+<div>
+<h3 class="font-label-bold text-on-surface">Revisi Bab II</h3>
+<p class="font-body-sm text-on-surface-variant">Rabu, 2 Jul 2026</p>
+</div>
+</div>
+<span class="px-3 py-1 rounded-full text-xs font-label-bold bg-[#DBEAFE] text-[#1D4ED8]">Disetujui</span>
+</div>
+</div>
+</div>
+<!-- Riwayat Sesi Bimbingan -->
+<div class="bg-surface-container-lowest rounded-[12px] shadow-sm border border-surface-container flex flex-col overflow-hidden">
+<div class="p-4 border-b border-surface-container bg-surface-container-low flex justify-between items-center">
+<h2 class="font-headline-md text-[18px] text-on-surface">Riwayat Sesi Bimbingan</h2>
+<a class="text-primary font-label-bold text-sm hover:underline" href="#">Lihat Semua</a>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface font-label-bold text-on-surface-variant border-b border-surface-container">
+<th class="p-4 whitespace-nowrap">No</th>
+<th class="p-4 whitespace-nowrap">Tanggal</th>
+<th class="p-4 whitespace-nowrap">Topik</th>
+<th class="p-4 whitespace-nowrap">Dosen</th>
+<th class="p-4 whitespace-nowrap">Status</th>
+<th class="p-4 whitespace-nowrap">Aksi</th>
+</tr>
+</thead>
+<tbody class="font-body-sm text-on-surface">
+<tr class="border-b border-surface-container hover:bg-surface-container-low transition-colors">
+<td class="p-4">1</td>
+<td class="p-4 whitespace-nowrap">20 Jun 2026</td>
+<td class="p-4 font-medium">Bab I</td>
+<td class="p-4">Dr. Siti Rahayu</td>
+<td class="p-4">
+<span class="px-2 py-1 rounded-full text-xs font-medium bg-[#D1FAE5] text-[#065F46]">Selesai</span>
+</td>
+<td class="p-4">
+<a class="text-primary hover:underline font-medium" href="#">Lihat Ringkasan</a>
+</td>
+</tr>
+<tr class="border-b border-surface-container hover:bg-surface-container-low transition-colors">
+<td class="p-4">2</td>
+<td class="p-4 whitespace-nowrap">10 Jun 2026</td>
+<td class="p-4 font-medium">Konsultasi Judul</td>
+<td class="p-4">Dr. Siti Rahayu</td>
+<td class="p-4">
+<span class="px-2 py-1 rounded-full text-xs font-medium bg-[#D1FAE5] text-[#065F46]">Selesai</span>
+</td>
+<td class="p-4">
+<span class="text-on-surface-variant opacity-50">-</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="p-4">3</td>
+<td class="p-4 whitespace-nowrap">3 Jun 2026</td>
+<td class="p-4 font-medium">Proposal Awal</td>
+<td class="p-4">Dr. Siti Rahayu</td>
+<td class="p-4">
+<span class="px-2 py-1 rounded-full text-xs font-medium bg-[#FEE2E2] text-[#B91C1C]">Dibatalkan</span>
+</td>
+<td class="p-4">
+<span class="text-on-surface-variant opacity-50">-</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<!-- Right Column (30%) -->
+<div class="w-full lg:w-[30%]">
+<!-- Dosen Pembimbing Saya -->
+<div class="bg-surface-container-lowest rounded-[12px] shadow-sm border border-surface-container p-card-padding flex flex-col items-center text-center sticky top-24">
+<h2 class="font-headline-md text-[18px] text-on-surface self-start w-full mb-6 border-b border-surface-container pb-2">Dosen Pembimbing Saya</h2>
+<div class="w-24 h-24 rounded-full bg-surface-container-highest text-primary-fixed-dim flex items-center justify-center font-headline-md text-3xl mb-4 border-4 border-surface shadow-inner">
+                        SR
+                    </div>
+<h3 class="font-label-bold text-lg text-on-surface mb-1">Dr. Siti Rahayu, M.Kom.</h3>
+<p class="font-body-sm text-on-surface-variant mb-6">NIDN: 0011223344</p>
+<button class="w-full py-3 px-4 rounded-lg border-2 border-[#F59E0B] text-[#F59E0B] font-label-bold hover:bg-[#FEF3C7] transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined" data-icon="mail">mail</span>
+                        Hubungi via Email
+                    </button>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer Component -->
+<!-- Applying exact styles from JSON style_ keys -->
+<footer class="w-full py-section-gap px-container-margin flex flex-col md:flex-row justify-between items-center gap-4 bg-surface-dim dark:bg-on-background border-t border-outline-variant flat no shadows mt-auto">
+<div class="font-label-bold text-label-bold text-primary text-center md:text-left">
+            © 2024 TemuDosen - Sistem Informasi Konsultasi Skripsi Akademik
+        </div>
+<ul class="flex flex-wrap justify-center gap-4 font-body-sm text-body-sm">
+<li>
+<a class="text-on-surface-variant hover:text-primary transition-colors" href="#">Tentang Kami</a>
+</li>
+<li>
+<a class="text-on-surface-variant hover:text-primary transition-colors" href="#">Pusat Bantuan</a>
+</li>
+<li>
+<a class="text-on-surface-variant hover:text-primary transition-colors" href="#">Kebijakan Privasi</a>
+</li>
+</ul>
+</footer>
+</body></html>

@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+
+<html class="light" lang="id"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Dosen - Dashboard Antrean Bimbingan | TemuDosen</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-fixed": "#ffddb8",
+                        "inverse-primary": "#ffb95f",
+                        "on-surface": "#121c2a",
+                        "surface-container-low": "#eff4ff",
+                        "secondary": "#006c49",
+                        "on-primary-fixed-variant": "#653e00",
+                        "on-tertiary-container": "#7a2800",
+                        "error-container": "#ffdad6",
+                        "tertiary": "#a73a00",
+                        "surface-container": "#e6eeff",
+                        "secondary-container": "#7ef6be",
+                        "on-tertiary-fixed": "#370e00",
+                        "surface-tint": "#855300",
+                        "tertiary-fixed": "#ffdbce",
+                        "on-primary": "#ffffff",
+                        "primary-fixed-dim": "#ffb95f",
+                        "surface-bright": "#f8f9ff",
+                        "surface": "#f8f9ff",
+                        "error": "#ba1a1a",
+                        "surface-container-highest": "#d9e3f6",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-fixed-dim": "#ffb599",
+                        "primary-container": "#f59e0b",
+                        "on-background": "#121c2a",
+                        "on-tertiary": "#ffffff",
+                        "on-surface-variant": "#534434",
+                        "tertiary-container": "#ff956b",
+                        "outline": "#867461",
+                        "on-tertiary-fixed-variant": "#7f2b00",
+                        "on-primary-container": "#613b00",
+                        "primary": "#855300",
+                        "on-error-container": "#93000a",
+                        "surface-container-high": "#dee9fc",
+                        "secondary-fixed": "#81f9c1",
+                        "outline-variant": "#d8c3ad",
+                        "on-error": "#ffffff",
+                        "background": "#f8f9ff",
+                        "on-secondary": "#ffffff",
+                        "surface-dim": "#d0dbed",
+                        "secondary-fixed-dim": "#63dca6",
+                        "on-secondary-fixed-variant": "#005236",
+                        "inverse-on-surface": "#eaf1ff",
+                        "surface-variant": "#d9e3f6",
+                        "on-secondary-container": "#00714c",
+                        "on-primary-fixed": "#2a1700",
+                        "inverse-surface": "#27313f",
+                        "on-secondary-fixed": "#002113"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px",
+                        "12": "0.75rem"
+                    },
+                    "spacing": {
+                        "card-padding": "24px",
+                        "gutter": "16px",
+                        "container-margin": "24px",
+                        "section-gap": "32px",
+                        "20": "1.25rem",
+                        "24": "1.5rem",
+                        "64": "4rem",
+                        "1100": "1100px",
+                        "1280": "1280px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Plus Jakarta Sans", "sans-serif"],
+                        "label-bold": ["Inter", "sans-serif"],
+                        "headline-md": ["Plus Jakarta Sans", "sans-serif"],
+                        "body-lg": ["Inter", "sans-serif"],
+                        "body-sm": ["Inter", "sans-serif"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-bold": ["14px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "1.3", "fontWeight": "700" }],
+                        "body-lg": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "body-sm": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gradient-to-b from-[#FFFBEB] to-[#FEF3C7] min-h-screen text-on-background font-body-lg antialiased overflow-x-hidden">
+<!-- Navbar -->
+<nav class="bg-surface-container-lowest dark:bg-inverse-surface shadow-sm h-64 sticky top-0 w-full z-50 flex justify-between items-center px-container-margin py-4 max-w-1280 mx-auto">
+<div class="flex items-center">
+<span class="font-headline-md text-headline-md text-primary-container dark:text-inverse-primary font-bold">TemuDosen</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden md:flex flex-col items-end mr-4">
+<span class="font-label-bold text-label-bold text-on-surface">Dr. Siti Rahayu, M.Kom</span>
+</div>
+<button class="px-4 py-2 rounded-lg border border-primary text-primary font-label-bold hover:bg-primary-fixed transition-colors active:scale-95 duration-150">
+                Keluar
+            </button>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="w-full max-w-1100 mx-auto px-container-margin py-section-gap flex flex-col gap-section-gap">
+<!-- Header Area / Dashboard Intro -->
+<header class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface">Dashboard Antrean Bimbingan</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant mt-2">Selamat datang kembali. Berikut adalah jadwal bimbingan Anda hari ini.</p>
+</div>
+<!-- Google Calendar Sync Card -->
+<div class="bg-surface-container-lowest rounded-12 shadow-sm p-20 flex items-center gap-4 border border-surface-variant">
+<div class="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center shrink-0 overflow-hidden">
+<img class="w-8 h-8 object-contain" data-alt="A clean, flat, stylized vector illustration of a digital calendar icon, primarily in vibrant blue and white, representing Google Calendar integration, against a transparent or solid light background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDtpMhROH31R7bc06iej1oiSEOow_iaIJgwPoRDQ60hJQ21Z466d9EqKoYKBBOxv1HdpRgzX1SgqakI6ocdBHLjqehVF6vLQgPQ2IxKZh3ZcFCmLrYFXgCzp3Q3YxAHHKJyYkpdP5qoc-RHJzMNa6wts8guzE2RoNSrpRp-QpvpmZhrOURO2fqeYdM5A_sDrHM8ljySL3bE6Xnih9ogbmOFO9RdUN1vTfwYFTeLYlpHKRys3kHS5PN_N9BRND0pla9fxR7kfcRu-V4"/>
+</div>
+<div class="flex flex-col flex-1">
+<span class="font-label-bold text-label-bold text-on-surface">Google Calendar</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Sinkronisasi jadwal otomatis</span>
+</div>
+<div class="bg-[#D1FAE5] text-[#065F46] px-3 py-1 rounded-full font-label-bold text-xs flex items-center gap-1 shrink-0">
+<span class="w-2 h-2 rounded-full bg-[#065F46] inline-block"></span>
+                    Terhubung
+                </div>
+</div>
+</header>
+<!-- Section: Perlu Ditinjau -->
+<section class="flex flex-col gap-4">
+<div class="flex items-center gap-3 border-b border-surface-variant pb-2">
+<h2 class="font-headline-md text-headline-md text-on-surface">Perlu Ditinjau</h2>
+<span class="bg-primary-container text-[#1F2937] font-label-bold text-label-bold w-6 h-6 rounded-full flex items-center justify-center">2</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<!-- Request Card 1 -->
+<div class="bg-surface-container-lowest rounded-12 shadow-sm p-card-padding border border-surface-variant flex flex-col gap-4 hover:shadow-md transition-shadow relative overflow-hidden group">
+<div class="absolute top-0 left-0 w-1 h-full bg-primary-container"></div>
+<div class="flex justify-between items-start">
+<div>
+<h3 class="font-label-bold text-label-bold text-on-surface text-lg">Ahmad Fauzi</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">NIM: 21030001</p>
+</div>
+<span class="bg-surface-container px-2 py-1 rounded text-xs font-label-bold text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined" style="font-size: 14px;">timer</span>
+                            60 menit
+                        </span>
+</div>
+<div>
+<p class="font-body-sm text-body-sm text-on-surface-variant font-medium">Topik:</p>
+<p class="font-body-sm text-body-sm text-on-surface line-clamp-2">Sistem Rekomendasi UMKM Berbasis Collaborative Filtering</p>
+</div>
+<div class="flex items-center gap-3 mt-auto pt-2">
+<button class="flex-1 bg-primary-container text-[#1F2937] font-label-bold text-label-bold py-2 rounded-lg hover:bg-inverse-primary transition-colors active:scale-95 duration-150 flex justify-center items-center gap-1">
+<span class="material-symbols-outlined" style="font-size: 18px;">check</span>
+                            Setujui
+                        </button>
+<button class="flex-1 border border-[#EF4444] text-[#EF4444] font-label-bold text-label-bold py-2 rounded-lg hover:bg-[#FEE2E2] transition-colors active:scale-95 duration-150 flex justify-center items-center gap-1">
+<span class="material-symbols-outlined" style="font-size: 18px;">close</span>
+                            Tolak
+                        </button>
+</div>
+</div>
+<!-- Request Card 2 -->
+<div class="bg-surface-container-lowest rounded-12 shadow-sm p-card-padding border border-surface-variant flex flex-col gap-4 hover:shadow-md transition-shadow relative overflow-hidden group">
+<div class="absolute top-0 left-0 w-1 h-full bg-primary-container"></div>
+<div class="flex justify-between items-start">
+<div>
+<h3 class="font-label-bold text-label-bold text-on-surface text-lg">Dewi Lestari</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">NIM: 21030047</p>
+</div>
+<span class="bg-surface-container px-2 py-1 rounded text-xs font-label-bold text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined" style="font-size: 14px;">timer</span>
+                            45 menit
+                        </span>
+</div>
+<div>
+<p class="font-body-sm text-body-sm text-on-surface-variant font-medium">Topik:</p>
+<p class="font-body-sm text-body-sm text-on-surface line-clamp-2">Analisis Sentimen Ulasan E-Commerce dengan BERT</p>
+</div>
+<div class="flex items-center gap-3 mt-auto pt-2">
+<button class="flex-1 bg-primary-container text-[#1F2937] font-label-bold text-label-bold py-2 rounded-lg hover:bg-inverse-primary transition-colors active:scale-95 duration-150 flex justify-center items-center gap-1">
+<span class="material-symbols-outlined" style="font-size: 18px;">check</span>
+                            Setujui
+                        </button>
+<button class="flex-1 border border-[#EF4444] text-[#EF4444] font-label-bold text-label-bold py-2 rounded-lg hover:bg-[#FEE2E2] transition-colors active:scale-95 duration-150 flex justify-center items-center gap-1">
+<span class="material-symbols-outlined" style="font-size: 18px;">close</span>
+                            Tolak
+                        </button>
+</div>
+</div>
+</div>
+</section>
+<!-- Section: Antrean Aktif -->
+<section class="flex flex-col gap-4">
+<div class="flex items-center gap-3 border-b border-surface-variant pb-2">
+<h2 class="font-headline-md text-headline-md text-on-surface">Antrean Aktif</h2>
+<span class="bg-primary-container text-[#1F2937] font-label-bold text-label-bold w-6 h-6 rounded-full flex items-center justify-center">3</span>
+</div>
+<div class="flex flex-col gap-4">
+<!-- Queue Item 1 (Active) -->
+<div class="bg-surface-container-lowest rounded-12 shadow-sm p-24 border border-[#0E9F6E]/30 flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-6 hover:shadow-md transition-shadow relative overflow-hidden">
+<div class="absolute top-0 left-0 w-1 h-full bg-[#0E9F6E]"></div>
+<!-- Queue Number -->
+<div class="bg-primary-container text-[#1F2937] w-12 h-12 rounded-full flex items-center justify-center font-headline-md text-headline-md shrink-0 shadow-sm">
+                        1
+                    </div>
+<!-- Info -->
+<div class="flex-1 flex flex-col gap-1 min-w-0">
+<div class="flex items-center gap-2 flex-wrap">
+<h3 class="font-label-bold text-label-bold text-on-surface text-lg">Budi Santoso</h3>
+<span class="font-body-sm text-body-sm text-on-surface-variant">(20210001)</span>
+<span class="bg-[#D1FAE5] text-[#065F46] px-2 py-0.5 rounded-full font-label-bold text-xs flex items-center gap-1 ml-auto md:ml-2">
+<span class="w-1.5 h-1.5 rounded-full bg-[#065F46] inline-block animate-pulse"></span>
+                                Berlangsung
+                            </span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface truncate">Machine Learning Deteksi Penyakit Tanaman</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined" style="font-size: 16px;">schedule</span>
+                            60 menit · 10.00–11.00
+                        </p>
+</div>
+<!-- Action -->
+<div class="w-full md:w-auto shrink-0 mt-4 md:mt-0">
+<button class="w-full md:w-auto bg-[#0E9F6E] text-white font-label-bold text-label-bold py-3 px-6 rounded-lg hover:bg-[#057A55] transition-colors active:scale-95 duration-150 shadow-sm flex justify-center items-center gap-2">
+                            Lihat Sesi
+                            <span class="material-symbols-outlined" style="font-size: 18px;">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Queue Item 2 (Waiting) -->
+<div class="bg-surface-container-lowest rounded-12 shadow-sm p-24 border border-surface-variant flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-6 hover:shadow-md transition-shadow relative overflow-hidden opacity-90">
+<!-- Queue Number -->
+<div class="bg-surface-container text-on-surface-variant w-12 h-12 rounded-full flex items-center justify-center font-headline-md text-headline-md shrink-0">
+                        2
+                    </div>
+<!-- Info -->
+<div class="flex-1 flex flex-col gap-1 min-w-0">
+<div class="flex items-center gap-2 flex-wrap">
+<h3 class="font-label-bold text-label-bold text-on-surface text-lg">Sari Wulandari</h3>
+<span class="font-body-sm text-body-sm text-on-surface-variant">(20210015)</span>
+<span class="bg-[#DBEAFE] text-[#1D4ED8] px-2 py-0.5 rounded-full font-label-bold text-xs flex items-center gap-1 ml-auto md:ml-2">
+                                Disetujui
+                            </span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface truncate">Optimasi Dijkstra Rute Pengiriman</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined" style="font-size: 16px;">schedule</span>
+                            45 menit · 11.00–11.45
+                        </p>
+</div>
+<!-- Action -->
+<div class="w-full md:w-auto shrink-0 mt-4 md:mt-0">
+<button class="w-full md:w-auto bg-primary-container text-[#1F2937] font-label-bold text-label-bold py-3 px-6 rounded-lg hover:bg-inverse-primary transition-colors active:scale-95 duration-150 shadow-sm flex justify-center items-center gap-2">
+                            Mulai Sesi
+                        </button>
+</div>
+</div>
+<!-- Queue Item 3 (Waiting) -->
+<div class="bg-surface-container-lowest rounded-12 shadow-sm p-24 border border-surface-variant flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-6 hover:shadow-md transition-shadow relative overflow-hidden opacity-90">
+<!-- Queue Number -->
+<div class="bg-surface-container text-on-surface-variant w-12 h-12 rounded-full flex items-center justify-center font-headline-md text-headline-md shrink-0">
+                        3
+                    </div>
+<!-- Info -->
+<div class="flex-1 flex flex-col gap-1 min-w-0">
+<div class="flex items-center gap-2 flex-wrap">
+<h3 class="font-label-bold text-label-bold text-on-surface text-lg">Riko Pratama</h3>
+<span class="font-body-sm text-body-sm text-on-surface-variant">(20210032)</span>
+<span class="bg-[#DBEAFE] text-[#1D4ED8] px-2 py-0.5 rounded-full font-label-bold text-xs flex items-center gap-1 ml-auto md:ml-2">
+                                Disetujui
+                            </span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface truncate">Chatbot Layanan Akademik Rasa NLP</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined" style="font-size: 16px;">schedule</span>
+                            60 menit · 11.45–12.45
+                        </p>
+</div>
+<!-- Action -->
+<div class="w-full md:w-auto shrink-0 mt-4 md:mt-0">
+<button class="w-full md:w-auto bg-primary-container text-[#1F2937] font-label-bold text-label-bold py-3 px-6 rounded-lg hover:bg-inverse-primary transition-colors active:scale-95 duration-150 shadow-sm flex justify-center items-center gap-2">
+                            Mulai Sesi
+                        </button>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container-low dark:bg-surface-dim w-full py-section-gap px-container-margin flex flex-col md:flex-row justify-between items-center gap-gutter border-t border-surface-variant mt-section-gap">
+<div class="font-label-bold text-label-bold text-on-surface dark:text-inverse-on-surface">
+            TemuDosen
+        </div>
+<div class="text-primary dark:text-inverse-primary font-body-sm text-body-sm text-on-surface-variant dark:text-surface-variant text-center md:text-left">
+            © 2024 TemuDosen. Semua Hak Dilindungi.
+        </div>
+<div class="flex gap-4 items-center font-body-sm text-body-sm">
+<a class="text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-secondary transition-colors underline" href="#">Tentang Kami</a>
+<a class="text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-secondary transition-colors underline" href="#">Panduan</a>
+<a class="text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-secondary transition-colors underline" href="#">Kontak</a>
+</div>
+</footer>
+</body></html>

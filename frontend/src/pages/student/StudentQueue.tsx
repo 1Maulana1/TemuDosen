@@ -9,9 +9,10 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useLoaderData } from 'react-router';
+import { useRouteLoaderData, useNavigate } from 'react-router';
 import { getMyQueue, cancelMyQueue, type StudentQueueSession } from '../../api/sessions';
 import type { User } from '../../api/auth';
+import StatusBadge from '../../components/StatusBadge';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -21,24 +22,27 @@ function formatTime(iso: string): string {
   } catch { return '-'; }
 }
 
-function formatDateTime(iso: string): string {
-  try {
-    return new Date(iso).toLocaleString('id-ID', {
-      day: 'numeric', month: 'long', year: 'numeric',
-      hour: '2-digit', minute: '2-digit',
-    });
-  } catch { return '-'; }
+// FR-M02: "Estimasi: 14:30 WIB"
+function formatEstimateLabel(iso: string): string {
+  return `Estimasi: ${formatTime(iso)} WIB`;
 }
+
+const QUEUE_STATUS_BADGE: Record<string, 'MENUNGGU' | 'BERLANGSUNG' | 'SELESAI'> = {
+  waiting: 'MENUNGGU',
+  in_progress: 'BERLANGSUNG',
+  done: 'SELESAI',
+};
 
 // ── Confirm Dialog ─────────────────────────────────────────────────────────────
 
 interface ConfirmDialogProps {
+  dosenName: string;
   onConfirm: () => void;
   onCancel: () => void;
   loading: boolean;
 }
 
-function ConfirmDialog({ onConfirm, onCancel, loading }: ConfirmDialogProps) {
+function ConfirmDialog({ dosenName, onConfirm, onCancel, loading }: ConfirmDialogProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6" role="dialog" aria-modal="true" aria-label="Konfirmasi Batalkan Antrian">
       <div className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-xl">
@@ -48,7 +52,8 @@ function ConfirmDialog({ onConfirm, onCancel, loading }: ConfirmDialogProps) {
           </div>
           <h2 className="font-headline font-bold text-lg text-slate-900">Batalkan Antrian?</h2>
           <p className="text-sm text-neutral-gray">
-            Antrian Anda akan dihapus dan Anda perlu mengajukan bimbingan kembali dari awal.
+            Yakin ingin membatalkan antrian bimbingan dengan <span className="font-bold text-slate-700">{dosenName}</span>?
+            Kamu harus mengajukan ulang jika ingin bimbingan lagi.
           </p>
         </div>
         <div className="flex gap-3">
@@ -75,33 +80,36 @@ interface QueueInfoProps {
 
 function QueueInfo({ session, onCancelClick }: QueueInfoProps) {
   const isWaiting = session.status === 'waiting';
-  const isInProgress = session.status === 'in_progress';
 
   return (
     <div className="flex flex-col items-center gap-6 pt-8">
       {/* Queue number */}
       <div className="text-center">
-        <p className="text-sm text-neutral-gray mb-1">Nomor Antrian Anda</p>
+        <p className="text-sm text-neutral-gray mb-1">
+          {isWaiting
+            ? `Antrian ke-${session.queue_position ?? '-'} dari ${session.total_in_queue ?? '-'}`
+            : 'Nomor Antrian Anda'}
+        </p>
         <div className="w-36 h-36 rounded-full bg-primary/10 border-4 border-primary flex items-center justify-center mx-auto">
           <span className="font-headline font-bold text-6xl text-primary" aria-label={`Nomor antrian ${session.queue_position}`}>
             {session.queue_position ?? '-'}
           </span>
         </div>
-        {isInProgress && (
-          <div className="mt-3 flex items-center justify-center gap-2 text-success font-bold text-sm">
-            <span className="w-2 h-2 rounded-full bg-success animate-pulse" aria-hidden="true" />
-            Berlangsung Sekarang
-          </div>
-        )}
+        <div className="mt-3 flex justify-center">
+          <StatusBadge status={QUEUE_STATUS_BADGE[session.status] ?? 'MENUNGGU'} />
+        </div>
         {isWaiting && (
           <p className="text-sm text-neutral-gray mt-2">
             Estimasi tunggu:
             <span className="font-bold text-slate-800 ml-1">
               {session.estimated_wait_minutes > 0
-                ? `±${session.estimated_wait_minutes} menit`
+                ? `±${session.estimated_wait_minutes} menit lagi`
                 : 'Segera dipanggil'}
             </span>
           </p>
+        )}
+        {isWaiting && session.scheduled_at && (
+          <p className="text-sm text-neutral-gray mt-0.5">{formatEstimateLabel(session.scheduled_at)}</p>
         )}
       </div>
 
@@ -121,30 +129,20 @@ function QueueInfo({ session, onCancelClick }: QueueInfoProps) {
           <span className="material-symbols-outlined text-primary text-xl mt-0.5" aria-hidden="true">
             {session.method === 'online' ? 'videocam' : 'location_on'}
           </span>
-          <div>
+          <div className="flex-1">
             <p className="text-[11px] text-neutral-gray">Metode Bimbingan</p>
             <p className="font-bold text-sm text-slate-900">
               {session.method === 'online' ? 'Online' : 'Offline (Tatap Muka)'}
             </p>
             {session.method === 'online' && session.meeting_link && (
               <a href={session.meeting_link} target="_blank" rel="noopener noreferrer"
-                className="text-primary text-xs underline block mt-0.5 break-all focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none rounded">
-                {session.meeting_link}
+                className="mt-2 inline-flex items-center gap-2 px-4 py-2.5 bg-success text-white text-sm font-bold rounded-xl hover:bg-green-700 min-h-[44px] focus-visible:ring-2 focus-visible:ring-success focus-visible:outline-none">
+                <span className="material-symbols-outlined text-base" aria-hidden="true">videocam</span>
+                Bergabung ke Meeting
               </a>
             )}
           </div>
         </div>
-
-        {/* Scheduled time */}
-        {session.scheduled_at && (
-          <div className="flex items-start gap-3">
-            <span className="material-symbols-outlined text-primary text-xl mt-0.5" aria-hidden="true">schedule</span>
-            <div>
-              <p className="text-[11px] text-neutral-gray">Jadwal Sesi</p>
-              <p className="font-bold text-sm text-slate-900">{formatDateTime(session.scheduled_at)}</p>
-            </div>
-          </div>
-        )}
 
         {/* Notification status */}
         {session.notification_sent && (
@@ -169,12 +167,14 @@ function QueueInfo({ session, onCancelClick }: QueueInfoProps) {
 // ── Main component ─────────────────────────────────────────────────────────────
 
 export default function StudentQueue() {
-  const user = useLoaderData() as User;
+  const user = useRouteLoaderData('mahasiswa') as User;
+  const navigate = useNavigate();
   const [data, setData] = useState<Awaited<ReturnType<typeof getMyQueue>> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const refreshRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const loadQueue = useCallback(async () => {
@@ -182,6 +182,7 @@ export default function StudentQueue() {
     try {
       const res = await getMyQueue();
       setData(res);
+      setLastUpdated(new Date());
     } catch {
       setError('Gagal memuat status antrian.');
     } finally {
@@ -201,8 +202,7 @@ export default function StudentQueue() {
     setCancelling(true);
     try {
       await cancelMyQueue(data.session.id);
-      setShowConfirm(false);
-      await loadQueue();
+      navigate('/mahasiswa', { state: { toast: 'Antrian berhasil dibatalkan' } });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal membatalkan antrian.');
       setShowConfirm(false);
@@ -225,6 +225,11 @@ export default function StudentQueue() {
       </nav>
 
       <main className="pt-16 pb-32 px-4 max-w-md mx-auto">
+        {!loading && lastUpdated && (
+          <p className="text-center text-[11px] text-gray-400 pt-3" aria-live="polite">
+            Diperbarui pukul {formatTime(lastUpdated.toISOString())}
+          </p>
+        )}
         {loading && (
           <div className="text-center py-16 text-neutral-gray text-sm" aria-live="polite" aria-busy="true">
             <span className="material-symbols-outlined animate-spin text-3xl block mb-2">progress_activity</span>
@@ -247,7 +252,7 @@ export default function StudentQueue() {
               Anda belum memiliki sesi bimbingan yang dijadwalkan.
             </p>
             <a href="/mahasiswa/ajukan"
-              className="px-6 py-3 bg-primary text-white text-sm font-bold rounded-xl hover:bg-blue-700 min-h-[44px] flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">
+              className="px-6 py-3 bg-primary text-on-primary text-sm font-bold rounded-xl hover:bg-primary-hover min-h-[44px] flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">
               <span className="material-symbols-outlined text-base" aria-hidden="true">add</span>
               Ajukan Bimbingan
             </a>
@@ -276,8 +281,13 @@ export default function StudentQueue() {
       </nav>
 
       {/* Confirm cancel dialog */}
-      {showConfirm && (
-        <ConfirmDialog onConfirm={handleCancelConfirm} onCancel={() => setShowConfirm(false)} loading={cancelling} />
+      {showConfirm && data?.session && (
+        <ConfirmDialog
+          dosenName={data.session.dosen_name}
+          onConfirm={handleCancelConfirm}
+          onCancel={() => setShowConfirm(false)}
+          loading={cancelling}
+        />
       )}
     </div>
   );

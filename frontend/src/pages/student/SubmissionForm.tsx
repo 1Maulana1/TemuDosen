@@ -18,11 +18,11 @@
  */
 
 import { useEffect, useState, type FormEvent } from 'react';
-import { useNavigate, useLoaderData } from 'react-router';
+import { useNavigate, useRouteLoaderData } from 'react-router';
 import type { User } from '../../api/auth';
 import { fetchSymptoms } from '../../api/symptoms';
 import type { SymptomCategory } from '../../api/symptoms';
-import { createSubmission } from '../../api/submissions';
+import { createSubmission, fetchMySubmissions } from '../../api/submissions';
 import SymptomChips from '../../components/SymptomChips';
 import UploadZone from '../../components/UploadZone';
 
@@ -34,7 +34,7 @@ interface FormErrors {
 }
 
 export default function SubmissionForm() {
-  const user = useLoaderData() as User;
+  const user = useRouteLoaderData('mahasiswa') as User;
   const navigate = useNavigate();
 
   const [symptoms, setSymptoms] = useState<SymptomCategory[]>([]);
@@ -43,6 +43,11 @@ export default function SubmissionForm() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // FR-D01: status submission terakhir — REJECTED memblokir form, REVISION menampilkan catatan
+  const [latestStatus, setLatestStatus] = useState<'rejected' | 'revision' | null>(null);
+  const [revisionNote, setRevisionNote] = useState('');
+  const [checkingHistory, setCheckingHistory] = useState(true);
 
   // Load available symptoms
   useEffect(() => {
@@ -54,6 +59,22 @@ export default function SubmissionForm() {
           general: 'Gagal memuat daftar gejala. Coba muat ulang halaman.',
         }));
       });
+  }, []);
+
+  // FR-D01: cek status submission terakhir sebelum mengizinkan pengajuan baru
+  useEffect(() => {
+    fetchMySubmissions()
+      .then((subs) => {
+        const latest = subs[0];
+        if (latest?.status === 'rejected') {
+          setLatestStatus('rejected');
+        } else if (latest?.status === 'revision') {
+          setLatestStatus('revision');
+          setRevisionNote(latest.rejection_reason);
+        }
+      })
+      .catch(() => null)
+      .finally(() => setCheckingHistory(false));
   }, []);
 
   // Compute estimated duration from selected symptoms
@@ -155,9 +176,37 @@ export default function SubmissionForm() {
         </div>
       </header>
 
+      {/* FR-D01: submission terakhir DITOLAK — blokir pengajuan baru */}
+      {!checkingHistory && latestStatus === 'rejected' ? (
+        <main className="pt-32 pb-8 px-4 max-w-md mx-auto">
+          <div className="flex flex-col items-center text-center gap-3 py-10">
+            <div className="w-14 h-14 rounded-full bg-error/10 flex items-center justify-center">
+              <span className="material-symbols-outlined text-error text-2xl" aria-hidden="true">block</span>
+            </div>
+            <h2 className="font-headline font-bold text-lg text-slate-900">Pengajuan Tidak Dapat Dibuat</h2>
+            <p className="text-sm text-neutral-gray max-w-xs">
+              Pengajuan bimbingan Anda sebelumnya ditolak secara final. Anda tidak dapat mengajukan
+              bimbingan baru. Hubungi admin jika ada pertanyaan.
+            </p>
+            <button type="button" onClick={() => navigate('/mahasiswa')}
+              className="mt-2 px-6 py-3 bg-primary text-on-primary text-sm font-bold rounded-xl hover:bg-primary-hover min-h-[44px]">
+              Kembali ke Dashboard
+            </button>
+          </div>
+        </main>
+      ) : (
+      <>
       {/* Main form */}
       <main className="pt-32 pb-32 px-4 max-w-md mx-auto">
         <form id="submissionForm" onSubmit={handleSubmit} className="space-y-6" noValidate>
+
+          {/* FR-D01: catatan revisi dosen untuk pengajuan ulang */}
+          {latestStatus === 'revision' && revisionNote && (
+            <div className="p-3 bg-orange-50 border border-orange-200 rounded-xl text-sm text-orange-700">
+              <span className="font-bold">Catatan revisi dari dosen: </span>
+              {revisionNote}
+            </div>
+          )}
 
           {/* General error */}
           {errors.general && (
@@ -311,8 +360,8 @@ export default function SubmissionForm() {
             'w-full py-4 px-6 rounded-xl font-bold text-sm flex items-center justify-center space-x-2',
             'transition-all active:scale-[0.98]',
             canSubmit && !isSubmitting
-              ? 'bg-primary text-white shadow-xl shadow-primary/25 cursor-pointer'
-              : 'bg-primary text-white opacity-50 cursor-not-allowed',
+              ? 'bg-primary text-on-primary shadow-xl shadow-primary/25 cursor-pointer'
+              : 'bg-primary text-on-primary opacity-50 cursor-not-allowed',
           ].join(' ')}
         >
           {isSubmitting ? (
@@ -330,6 +379,8 @@ export default function SubmissionForm() {
           )}
         </button>
       </footer>
+      </>
+      )}
     </div>
   );
 }

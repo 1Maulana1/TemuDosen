@@ -1,6 +1,7 @@
 """
 Serializers for Phase 2 — approve/reject, queue display.
 """
+from django.core.validators import URLValidator
 from rest_framework import serializers
 
 from apps.submissions.models import Submission
@@ -11,7 +12,13 @@ from .models import Session
 
 class ApproveSubmissionSerializer(serializers.Serializer):
     method = serializers.ChoiceField(choices=[('offline', 'Offline'), ('online', 'Online')])
-    meeting_link = serializers.URLField(required=False, allow_null=True, allow_blank=True)
+    # FR-D04: meeting_link, jika diisi, harus berskema http:// atau https:// saja.
+    meeting_link = serializers.URLField(
+        required=False,
+        allow_null=True,
+        allow_blank=True,
+        validators=[URLValidator(schemes=['http', 'https'])],
+    )
 
     def validate(self, attrs):
         if attrs['method'] == 'online' and not attrs.get('meeting_link'):
@@ -64,13 +71,14 @@ class SessionDetailSerializer(serializers.ModelSerializer):
 
 class StudentQueueSerializer(serializers.ModelSerializer):
     queue_position = serializers.SerializerMethodField()
+    total_in_queue = serializers.SerializerMethodField()
     estimated_wait_minutes = serializers.SerializerMethodField()
     dosen_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Session
         fields = [
-            'id', 'status', 'queue_position', 'estimated_wait_minutes',
+            'id', 'status', 'queue_position', 'total_in_queue', 'estimated_wait_minutes',
             'scheduled_at', 'dosen_name', 'method', 'meeting_link',
             'notification_sent',
         ]
@@ -85,6 +93,16 @@ class StudentQueueSerializer(serializers.ModelSerializer):
             scheduled_at__lt=obj.scheduled_at,
         ).count()
         return count + 1
+
+    def get_total_in_queue(self, obj):
+        """FR-M02: 'Antrian ke-X dari Y' — Y = total sesi WAITING dosen ini."""
+        dosen = obj.submission.student.adviser
+        if not dosen:
+            return 1
+        return Session.objects.filter(
+            submission__student__adviser=dosen,
+            status=Session.Status.WAITING,
+        ).count()
 
     def get_estimated_wait_minutes(self, obj):
         from django.utils import timezone

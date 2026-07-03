@@ -20,6 +20,7 @@ export interface SessionInfo {
 export interface StudentQueueSession extends SessionInfo {
   estimated_wait_minutes: number;
   dosen_name: string;
+  total_in_queue: number;
 }
 
 export interface LecturerQueueItem {

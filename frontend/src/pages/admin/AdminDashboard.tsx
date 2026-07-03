@@ -8,11 +8,88 @@ function fmtTime(iso: string) {
   catch { return iso; }
 }
 
+// ── Emergency Cancel Modal (FR-AD02) ────────────────────────────────────────────
+
+interface EmergencyCancelModalProps {
+  dosenName: string;
+  activeSessions: number;
+  onConfirm: (alasan: string) => void;
+  onClose: () => void;
+  loading: boolean;
+}
+
+function EmergencyCancelModal({ dosenName, activeSessions, onConfirm, onClose, loading }: EmergencyCancelModalProps) {
+  const [alasan, setAlasan] = useState('');
+  const [error, setError] = useState('');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (alasan.trim().length < 10) {
+      setError('Alasan wajib diisi (minimal 10 karakter).');
+      return;
+    }
+    setError('');
+    onConfirm(alasan.trim());
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 px-4" role="dialog" aria-modal="true" aria-label="Konfirmasi Emergency Cancel">
+      <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-md p-6 shadow-xl">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-full bg-error/10 flex items-center justify-center">
+            <span className="material-symbols-outlined text-error" aria-hidden="true">warning</span>
+          </div>
+          <h2 className="font-headline font-bold text-lg text-slate-900">Konfirmasi Emergency Cancel</h2>
+        </div>
+        <p className="text-sm text-slate-600 mb-1">
+          Dosen: <span className="font-bold text-slate-800">{dosenName}</span>
+        </p>
+        <p className="text-sm text-slate-600 mb-4">
+          <span className="font-bold text-error">{activeSessions}</span> antrian aktif akan dibatalkan.
+        </p>
+
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+          <div>
+            <label htmlFor="alasan" className="text-sm font-bold text-slate-700 block mb-1">
+              Alasan <span className="text-error">*</span>
+              <span className="font-normal text-neutral-gray ml-1">(min. 10 karakter)</span>
+            </label>
+            <textarea
+              id="alasan"
+              value={alasan}
+              onChange={(e) => setAlasan(e.target.value)}
+              rows={3}
+              placeholder="Contoh: Dosen berhalangan mendadak"
+              className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"
+            />
+          </div>
+
+          {error && <p className="text-error text-sm">{error}</p>}
+
+          <div className="flex gap-3 mt-2">
+            <button type="button" onClick={onClose} disabled={loading}
+              className="flex-1 py-3 rounded-xl border border-gray-200 text-sm font-bold text-slate-600 hover:bg-gray-50 min-h-[44px]">
+              Batal
+            </button>
+            <button type="submit" disabled={loading}
+              className="flex-1 py-3 rounded-xl bg-error text-white text-sm font-bold hover:bg-red-700 disabled:opacity-60 min-h-[44px]">
+              {loading ? 'Membatalkan...' : 'Emergency Cancel'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
   const user = useLoaderData() as User;
   const [data, setData] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [cancelMsg, setCancelMsg] = useState('');
+  const [selectedDosenId, setSelectedDosenId] = useState<number | ''>('');
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   const load = useCallback(() => {
     getAdminStats().then(setData).catch(() => null).finally(() => setLoading(false));
@@ -20,15 +97,23 @@ export default function AdminDashboard() {
 
   useEffect(() => { load(); }, [load]);
 
-  const handleEmergencyCancel = async () => {
-    const id = prompt('Masukkan ID Dosen untuk Emergency Cancel semua sesinya:');
-    if (!id) return;
+  const selectedDosen = data?.lecturers.find((l) => l.id === selectedDosenId) ?? null;
+
+  const handleEmergencyCancel = async (alasan: string) => {
+    if (!selectedDosen) return;
+    setCancelling(true);
     try {
-      const r = await adminEmergencyCancel(Number(id));
-      setCancelMsg(r.message);
+      const r = await adminEmergencyCancel(selectedDosen.id, alasan);
+      setCancelMsg(`${r.message} — ${r.sessions_cancelled} sesi dosen ${r.dosen_name} dibatalkan.`);
+      setShowCancelModal(false);
+      setSelectedDosenId('');
       load();
-    } catch (e) { setCancelMsg(e instanceof Error ? e.message : 'Gagal.'); }
-    setTimeout(() => setCancelMsg(''), 4000);
+    } catch (e) {
+      setCancelMsg(e instanceof Error ? e.message : 'Gagal.');
+    } finally {
+      setCancelling(false);
+      setTimeout(() => setCancelMsg(''), 5000);
+    }
   };
 
   return (
@@ -90,21 +175,37 @@ export default function AdminDashboard() {
             </div>
           </section>
 
-          {/* Emergency Cancel */}
+          {/* Emergency Cancel (FR-AD02) */}
           <section className="bg-error/5 border border-error/20 rounded-xl p-4">
             <h2 className="font-headline font-bold text-base text-error mb-2 flex items-center gap-2">
               <span className="material-symbols-outlined">warning</span>Emergency Cancel
             </h2>
             <p className="text-sm text-slate-600 mb-3">Batalkan semua sesi aktif milik satu dosen sekaligus. Gunakan hanya dalam keadaan darurat.</p>
-            <button type="button" onClick={handleEmergencyCancel}
-              className="px-4 py-2.5 bg-error text-white text-sm font-bold rounded-xl hover:bg-red-700 min-h-[44px] focus-visible:ring-2 focus-visible:ring-error focus-visible:outline-none">
-              Batalkan Sesi Dosen
-            </button>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <select
+                value={selectedDosenId}
+                onChange={(e) => setSelectedDosenId(e.target.value ? Number(e.target.value) : '')}
+                aria-label="Pilih dosen"
+                className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-error/30 focus:border-error min-h-[44px]"
+              >
+                <option value="">Pilih dosen...</option>
+                {data.lecturers.map((l) => (
+                  <option key={l.id} value={l.id}>{l.full_name} ({l.active_sessions} antrian aktif)</option>
+                ))}
+              </select>
+              <button type="button" onClick={() => setShowCancelModal(true)} disabled={!selectedDosen}
+                className="px-4 py-2.5 bg-error text-white text-sm font-bold rounded-xl hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] focus-visible:ring-2 focus-visible:ring-error focus-visible:outline-none">
+                Emergency Cancel
+              </button>
+            </div>
           </section>
 
-          {/* Log error terbaru */}
+          {/* Log error terbaru (FR-AD03) */}
           <section>
-            <h2 className="font-headline font-bold text-lg text-slate-900 mb-3">Log Error Terbaru</h2>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-headline font-bold text-lg text-slate-900">Log Error Terbaru</h2>
+              <Link to="/admin/logs" className="text-xs text-primary font-bold">Lihat Semua Log →</Link>
+            </div>
             {data.recent_errors.length === 0 ? (
               <div className="bg-white rounded-xl border border-gray-100 p-6 text-center">
                 <span className="material-symbols-outlined text-success text-3xl block mb-1">check_circle</span>
@@ -137,8 +238,22 @@ export default function AdminDashboard() {
             <span className="material-symbols-outlined text-primary text-2xl">category</span>
             <div><p className="font-bold text-sm text-slate-800">Katalog Gejala</p><p className="text-[11px] text-neutral-gray">Atur kategori</p></div>
           </Link>
+          <Link to="/admin/logs" className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm flex items-center gap-3 hover:shadow-md transition-shadow">
+            <span className="material-symbols-outlined text-primary text-2xl">receipt_long</span>
+            <div><p className="font-bold text-sm text-slate-800">Log Sistem</p><p className="text-[11px] text-neutral-gray">Semua event & error</p></div>
+          </Link>
         </section>
       </main>
+
+      {showCancelModal && selectedDosen && (
+        <EmergencyCancelModal
+          dosenName={selectedDosen.full_name}
+          activeSessions={selectedDosen.active_sessions}
+          onConfirm={handleEmergencyCancel}
+          onClose={() => setShowCancelModal(false)}
+          loading={cancelling}
+        />
+      )}
     </div>
   );
 }

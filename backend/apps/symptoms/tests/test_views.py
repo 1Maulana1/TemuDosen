@@ -47,7 +47,7 @@ class TestSymptomCategoryList:
 
     def test_admin_can_create_category(self, authenticated_admin):
         """Admin can POST a new symptom category (D-03)."""
-        payload = {'name': 'Masalah teknis', 'duration_minutes': 20, 'is_active': True}
+        payload = {'name': 'Masalah teknis', 'category': 'Umum', 'duration_minutes': 20, 'is_active': True}
         response = authenticated_admin.post(
             '/api/symptoms/', data=payload, format='json'
         )

@@ -114,7 +114,7 @@ def check_auto_cancel():
 
             SystemLog.objects.create(
                 level=SystemLog.Level.WARNING,
-                event_type='AUTO_CANCEL',
+                event_type='EMERGENCY_CANCEL',
                 message=f'Auto-cancel sesi #{session.id} — mahasiswa tidak hadir >30 menit',
                 context={
                     'session_id': session.id,

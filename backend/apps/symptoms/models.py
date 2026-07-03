@@ -4,6 +4,8 @@ from django.db import models
 
 class SymptomCategory(models.Model):
     name = models.CharField(max_length=255, unique=True)
+    # FR-AD01: kategori gejala (mis. "Akademik", "Administratif") — wajib diisi
+    category = models.CharField(max_length=100, default='Umum')
     duration_minutes = models.PositiveIntegerField(
         help_text='Estimated guidance duration in minutes (absolute, D-04)'
     )

@@ -27,7 +27,7 @@ export default function RegisterRolePage() {
       <div className="w-full max-w-md">
         {/* Brand header */}
         <header className="text-center mb-10">
-          <div className="mb-4 inline-flex items-center justify-center w-16 h-16 bg-blue-50 rounded-2xl">
+          <div className="mb-4 inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-2xl">
             <span className="material-symbols-outlined text-primary text-4xl">school</span>
           </div>
           <h1 className="font-headline font-bold text-2xl text-primary tracking-tight mb-2">
@@ -56,7 +56,7 @@ export default function RegisterRolePage() {
                 : 'border border-gray-200 hover:border-primary/50'
             }`}
           >
-            <div className="p-2.5 bg-blue-50 rounded-lg mr-4 flex-shrink-0">
+            <div className="p-2.5 bg-primary/10 rounded-lg mr-4 flex-shrink-0">
               <span className="material-symbols-outlined text-primary">school</span>
             </div>
             <div className="flex-grow">
@@ -97,7 +97,7 @@ export default function RegisterRolePage() {
           type="button"
           onClick={handleContinue}
           disabled={selected === null}
-          className="bg-primary text-white w-full py-4 rounded-xl font-bold text-sm font-body shadow-xl shadow-primary/25 min-h-[44px] focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] transition-all"
+          className="bg-primary text-on-primary w-full py-4 rounded-xl font-bold text-sm font-body shadow-xl shadow-primary/25 min-h-[44px] focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] transition-all"
         >
           Daftar sebagai {selected === 'mahasiswa' ? 'Mahasiswa' : selected === 'dosen' ? 'Dosen' : '...'}
         </button>

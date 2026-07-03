@@ -1,6 +1,9 @@
 import { createBrowserRouter, redirect } from 'react-router';
 
 import LoginPage from './pages/auth/LoginPage';
+import LoginMahasiswaPage from './pages/auth/LoginMahasiswaPage';
+import LoginDosenPage from './pages/auth/LoginDosenPage';
+import LoginKaprodiPage from './pages/auth/LoginKaprodiPage';
 import RegisterRolePage from './pages/auth/RegisterRolePage';
 import RegisterStudentPage from './pages/auth/RegisterStudentPage';
 import RegisterLecturerPage from './pages/auth/RegisterLecturerPage';
@@ -8,6 +11,7 @@ import PendingApprovalPage from './pages/auth/PendingApprovalPage';
 import UserApproval from './pages/admin/UserApproval';
 import SymptomConfig from './pages/admin/SymptomConfig';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminLogs from './pages/admin/AdminLogs';
 import StudentDashboard from './pages/student/StudentDashboard';
 import SubmissionForm from './pages/student/SubmissionForm';
 import StudentQueue from './pages/student/StudentQueue';
@@ -50,6 +54,9 @@ async function rootLoader(): Promise<never> {
 export const router = createBrowserRouter([
   // Public
   { path: '/login', element: <LoginPage /> },
+  { path: '/login/mahasiswa', element: <LoginMahasiswaPage /> },
+  { path: '/login/dosen', element: <LoginDosenPage /> },
+  { path: '/login/kaprodi', element: <LoginKaprodiPage /> },
   { path: '/register', element: <RegisterRolePage /> },
   { path: '/register/mahasiswa', element: <RegisterStudentPage /> },
   { path: '/register/dosen', element: <RegisterLecturerPage /> },
@@ -57,6 +64,7 @@ export const router = createBrowserRouter([
 
   // Student
   {
+    id: 'mahasiswa',
     path: '/mahasiswa',
     loader: requireRole('student'),
     children: [
@@ -68,6 +76,7 @@ export const router = createBrowserRouter([
 
   // Lecturer
   {
+    id: 'dosen',
     path: '/dosen',
     loader: requireRole('lecturer'),
     children: [
@@ -85,11 +94,13 @@ export const router = createBrowserRouter([
       { index: true, element: <AdminDashboard /> },
       { path: 'pengguna', element: <UserApproval /> },
       { path: 'katalog-gejala', element: <SymptomConfig /> },
+      { path: 'logs', element: <AdminLogs /> },
     ],
   },
 
   // Kaprodi
   {
+    id: 'kaprodi',
     path: '/kaprodi',
     loader: requireRole('kaprodi'),
     children: [

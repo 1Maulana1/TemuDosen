@@ -158,7 +158,8 @@ def create_event(dosen, event_data: dict) -> Optional[str]:
     """
     FR-S07: Create a Google Calendar event.
     event_data keys: title, description, start_time (datetime), end_time (datetime),
-                     attendee_email (optional).
+                     attendee_email (optional, single) or attendee_emails (optional, list),
+                     location (optional — meeting_link when method=ONLINE).
     Returns googleEventId string or None on failure.
     """
     if not _calendar_enabled():
@@ -183,9 +184,17 @@ def create_event(dosen, event_data: dict) -> Optional[str]:
             },
         }
 
-        attendee_email = event_data.get('attendee_email')
-        if attendee_email:
-            event_body['attendees'] = [{'email': attendee_email}]
+        attendee_emails = event_data.get('attendee_emails')
+        if not attendee_emails:
+            single = event_data.get('attendee_email')
+            attendee_emails = [single] if single else []
+        attendee_emails = [e for e in attendee_emails if e]
+        if attendee_emails:
+            event_body['attendees'] = [{'email': e} for e in attendee_emails]
+
+        location = event_data.get('location')
+        if location:
+            event_body['location'] = location
 
         created = service.events().insert(calendarId='primary', body=event_body).execute()
         event_id = created.get('id')

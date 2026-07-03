@@ -25,10 +25,11 @@ export interface SubmissionSummary {
   id: number;
   status: 'pending' | 'approved' | 'rejected' | 'revision' | 'cancelled';
   description: string;
+  rejection_reason: string;
+  previous_submission: number | null;
   symptoms: SubmissionSymptom[];
   file_uuid: string | null;
   file_name: string | null;
-  rejection_reason: string;  // lecturer's note on reject/revision (empty otherwise)
   created_at: string;
   updated_at: string;
 }

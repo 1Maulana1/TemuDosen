@@ -75,6 +75,29 @@ class SubmissionCreateSerializer(serializers.Serializer):
         validators=[FileExtensionValidator(allowed_extensions=['pdf'])],
     )
 
+    def validate(self, attrs):
+        """
+        FR-D01: cek status submission terakhir mahasiswa sebelum membuat yang baru.
+          - REJECTED (final): mahasiswa tidak boleh mengajukan submission baru sama sekali.
+          - REVISION: diperbolehkan, dan submission baru ditautkan ke submission REVISION
+            tersebut lewat previous_submission (dipakai FE untuk menampilkan catatan revisi).
+        """
+        student = self.context['request'].user
+        latest = Submission.objects.filter(student=student).order_by('-created_at').first()
+
+        if latest and latest.status == Submission.Status.REJECTED:
+            raise serializers.ValidationError({
+                'non_field_errors': [
+                    'Pengajuan Anda sebelumnya ditolak secara final. '
+                    'Anda tidak dapat mengajukan bimbingan baru. Hubungi admin jika ada pertanyaan.'
+                ]
+            })
+
+        attrs['_previous_submission'] = (
+            latest if latest and latest.status == Submission.Status.REVISION else None
+        )
+        return attrs
+
     def validate_symptom_ids(self, value):
         """Validate that at least one symptom_id is provided and all IDs exist."""
         if not value:
@@ -152,6 +175,7 @@ class SubmissionCreateSerializer(serializers.Serializer):
             student=student,
             description=description,
             status=Submission.Status.PENDING,
+            previous_submission=validated_data.get('_previous_submission'),
         )
         submission.symptoms.set(symptom_ids)
 
@@ -187,9 +211,8 @@ class SubmissionListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Submission
         fields = [
-            'id', 'status', 'description',
+            'id', 'status', 'description', 'rejection_reason', 'previous_submission',
             'symptoms', 'file_uuid', 'file_name',
-            'rejection_reason',  # Phase 2 SC1: student must see lecturer's reject/revision note
             'created_at', 'updated_at',
         ]
 

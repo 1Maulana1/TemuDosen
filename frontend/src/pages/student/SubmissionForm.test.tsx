@@ -17,12 +17,12 @@ import { MemoryRouter } from 'react-router';
 import { server } from '../../test/setup';
 import SubmissionForm from './SubmissionForm';
 
-// Mock useLoaderData — SubmissionForm uses it to get the current user
+// Mock useRouteLoaderData — SubmissionForm uses it to get the current user
 vi.mock('react-router', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react-router')>();
   return {
     ...actual,
-    useLoaderData: () => ({
+    useRouteLoaderData: () => ({
       id: 1,
       email: 'student@test.com',
       full_name: 'Budi Santoso',

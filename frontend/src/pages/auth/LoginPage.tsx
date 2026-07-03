@@ -3,38 +3,28 @@
  *
  * Elements:
  * - TemuDosen wordmark (text-primary font-headline font-bold text-2xl)
- * - Email input
- * - Password input
+ * - Email input (with mail icon)
+ * - Password input (with lock icon + show/hide toggle)
  * - "Masuk ke Akun" primary CTA (full-width, bg-primary)
  * - "Belum punya akun? Daftar" link (text-primary text-sm font-bold)
+ *
+ * Visual style aligned to Referensi Tampilan/login_temudosen mockup (amber gradient background,
+ * icon inputs). Role tabs and "Lupa kata sandi?" from the mockup are intentionally omitted —
+ * role is server-derived from credentials, and password reset isn't implemented in this MVP.
  *
  * On submit: calls auth.login(), then redirects by role.
  */
 import { useState, type FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { login } from '../../api/auth';
-import type { User } from '../../api/auth';
-
-function getRoleRedirect(user: User): string {
-  switch (user.role) {
-    case 'student':
-      return '/mahasiswa';
-    case 'lecturer':
-      return '/dosen';
-    case 'admin':
-      return '/admin/pengguna';
-    case 'kaprodi':
-      return '/';
-    default:
-      return '/';
-  }
-}
+import { getRoleRedirect } from './roleRedirect';
 
 export default function LoginPage() {
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -63,10 +53,10 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-[image:var(--gradient-auth)] flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         {/* Card */}
-        <div className="bg-surface rounded-2xl shadow-sm border border-neutral-gray/20 p-8">
+        <div className="bg-surface rounded-2xl shadow-2xl border border-neutral-gray/20 p-10">
           {/* Wordmark */}
           <h1 className="font-headline font-bold text-2xl text-primary text-center mb-8">
             TemuDosen
@@ -81,21 +71,29 @@ export default function LoginPage() {
               >
                 Email
               </label>
-              <input
-                id="email"
-                type="email"
-                autoComplete="email"
-                required
-                aria-required="true"
-                aria-describedby={error ? 'login-error' : undefined}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="email@kampus.ac.id"
-                className="w-full border border-gray-200 bg-white rounded-xl px-4 py-3 text-sm
-                           focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary
-                           disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed"
-                disabled={loading}
-              />
+              <div className="relative">
+                <span
+                  className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-neutral-gray text-[20px]"
+                  aria-hidden="true"
+                >
+                  mail
+                </span>
+                <input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  aria-required="true"
+                  aria-describedby={error ? 'login-error' : undefined}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="email@kampus.ac.id"
+                  className="w-full border border-gray-200 bg-white rounded-xl pl-10 pr-4 py-3 text-sm
+                             focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary
+                             disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed"
+                  disabled={loading}
+                />
+              </div>
             </div>
 
             {/* Password */}
@@ -106,20 +104,40 @@ export default function LoginPage() {
               >
                 Password
               </label>
-              <input
-                id="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                aria-required="true"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full border border-gray-200 bg-white rounded-xl px-4 py-3 text-sm
-                           focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary
-                           disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed"
-                disabled={loading}
-              />
+              <div className="relative">
+                <span
+                  className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-neutral-gray text-[20px]"
+                  aria-hidden="true"
+                >
+                  lock
+                </span>
+                <input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  required
+                  aria-required="true"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full border border-gray-200 bg-white rounded-xl pl-10 pr-12 py-3 text-sm
+                             focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary
+                             disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed"
+                  disabled={loading}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 text-neutral-gray hover:text-on-surface
+                             p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded
+                             focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+                >
+                  <span className="material-symbols-outlined text-[20px]" aria-hidden="true">
+                    {showPassword ? 'visibility_off' : 'visibility'}
+                  </span>
+                </button>
+              </div>
             </div>
 
             {/* Error message */}
@@ -139,8 +157,8 @@ export default function LoginPage() {
               type="submit"
               disabled={loading}
               aria-busy={loading}
-              className="w-full bg-primary text-white font-bold text-sm py-4 rounded-xl
-                         shadow-xl shadow-primary/25 active:scale-[0.98] transition-all
+              className="w-full bg-primary text-on-primary font-bold text-sm py-4 rounded-xl
+                         shadow-xl shadow-primary/25 hover:bg-primary-hover active:scale-[0.98] transition-all
                          disabled:opacity-50 disabled:cursor-not-allowed
                          min-h-[44px] focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
             >

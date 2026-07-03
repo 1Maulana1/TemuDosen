@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useLoaderData } from 'react-router';
+import { useRouteLoaderData } from 'react-router';
 import { getLecturerQueue, type LecturerQueueItem } from '../../api/sessions';
 import type { User } from '../../api/auth';
 
@@ -41,7 +41,7 @@ function QueueCard({ item }: { item: LecturerQueueItem }) {
   return (
     <div className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm flex items-start gap-4">
       {/* Position badge */}
-      <div className="w-10 h-10 min-w-[40px] rounded-full bg-primary flex items-center justify-center font-bold text-white text-base flex-shrink-0">
+      <div className="w-10 h-10 min-w-[40px] rounded-full bg-primary flex items-center justify-center font-bold text-on-primary text-base flex-shrink-0">
         {item.position}
       </div>
 
@@ -95,7 +95,7 @@ function QueueCard({ item }: { item: LecturerQueueItem }) {
 // ── Main component ─────────────────────────────────────────────────────────────
 
 export default function LecturerQueue() {
-  const user = useLoaderData() as User;
+  const user = useRouteLoaderData('dosen') as User;
   const [data, setData] = useState<Awaited<ReturnType<typeof getLecturerQueue>> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

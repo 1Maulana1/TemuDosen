@@ -49,6 +49,10 @@ class Session(models.Model):
     notification_sent = models.BooleanField(default=False)
     google_event_id = models.CharField(max_length=255, null=True, blank=True)
     ts1 = models.DateTimeField(null=True, blank=True)  # "Mulai & Rekam" timestamp
+    # FR-M04: consent perekaman sesi — kedua pihak harus setuju sebelum ts1 dianggap "direkam"
+    consent_given_at = models.DateTimeField(null=True, blank=True)
+    consent_by_dosen = models.BooleanField(default=False)
+    consent_by_mahasiswa = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -75,6 +79,29 @@ class DosenCalendarToken(models.Model):
 
     def __str__(self):
         return f'CalendarToken({self.dosen.email})'
+
+
+class ActionItem(models.Model):
+    """
+    FR-KP04: "saran" (recommendation) a dosen gives during/after a session, and
+    whether the mahasiswa has followed up ("tindak lanjut"). Backs the kaprodi
+    compliance report.
+    """
+    session = models.ForeignKey(
+        Session,
+        on_delete=models.CASCADE,
+        related_name='action_items',
+    )
+    description = models.TextField()
+    is_completed = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'ActionItem #{self.pk} [{"selesai" if self.is_completed else "belum"}] – {self.description[:40]}'
 
 
 class SystemLog(models.Model):

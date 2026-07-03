@@ -3,7 +3,7 @@
  *
  * UI-SPEC states:
  * - Unselected: border border-gray-200 bg-white text-slate-600 font-medium
- * - Selected: border-2 border-primary bg-primary text-white font-bold shadow-md shadow-primary/20
+ * - Selected: border-2 border-primary bg-primary text-on-primary font-bold shadow-md shadow-primary/20
  * - Hover (unselected): hover:border-primary/50
  * - Min 1 chip required; caller gates the submit CTA
  *
@@ -55,7 +55,7 @@ export default function SymptomChips({
                 'px-3 py-2 rounded-full text-xs min-h-[44px] min-w-[44px]',
                 'transition-all focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none',
                 isSelected
-                  ? 'border-2 border-primary bg-primary text-white font-bold shadow-md shadow-primary/20'
+                  ? 'border-2 border-primary bg-primary text-on-primary font-bold shadow-md shadow-primary/20'
                   : 'border border-gray-200 bg-white text-slate-600 font-normal hover:border-primary/50',
               ].join(' ')}
             >

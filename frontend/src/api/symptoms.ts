@@ -16,6 +16,7 @@ import { apiRequest } from './client';
 export interface SymptomCategory {
   id: number;
   name: string;
+  category: string;
   duration_minutes: number;
   is_active: boolean;
   created_at: string;
@@ -25,6 +26,7 @@ export interface SymptomCategory {
 export interface BulkUpdateItem {
   id: number;
   name?: string;
+  category?: string;
   duration_minutes?: number;
   is_active?: boolean;
 }
@@ -46,7 +48,7 @@ export async function fetchSymptoms(): Promise<SymptomCategory[]> {
  * Requires IsAdmin.
  */
 export async function createSymptom(
-  data: Pick<SymptomCategory, 'name' | 'duration_minutes'> & Partial<Pick<SymptomCategory, 'is_active'>>
+  data: Pick<SymptomCategory, 'name' | 'category' | 'duration_minutes'> & Partial<Pick<SymptomCategory, 'is_active'>>
 ): Promise<SymptomCategory> {
   const response = await apiRequest('/api/symptoms/', {
     method: 'POST',
@@ -65,7 +67,7 @@ export async function createSymptom(
  */
 export async function updateSymptom(
   id: number,
-  data: Partial<Pick<SymptomCategory, 'name' | 'duration_minutes' | 'is_active'>>
+  data: Partial<Pick<SymptomCategory, 'name' | 'category' | 'duration_minutes' | 'is_active'>>
 ): Promise<SymptomCategory> {
   const response = await apiRequest(`/api/symptoms/${id}/`, {
     method: 'PATCH',

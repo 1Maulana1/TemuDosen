@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+
+<html class="light" lang="id"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Ajukan Bimbingan - TemuDosen</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-error-container": "#93000a",
+                    "secondary": "#006c49",
+                    "on-error": "#ffffff",
+                    "secondary-fixed-dim": "#63dca6",
+                    "on-tertiary-fixed": "#370e00",
+                    "surface-container-highest": "#d9e3f6",
+                    "primary-fixed-dim": "#ffb95f",
+                    "tertiary-container": "#ff956b",
+                    "surface-variant": "#d9e3f6",
+                    "error": "#ba1a1a",
+                    "secondary-fixed": "#81f9c1",
+                    "inverse-on-surface": "#eaf1ff",
+                    "on-primary-fixed": "#2a1700",
+                    "on-secondary-fixed-variant": "#005236",
+                    "on-background": "#121c2a",
+                    "inverse-surface": "#27313f",
+                    "on-primary": "#ffffff",
+                    "on-primary-fixed-variant": "#653e00",
+                    "surface-container-high": "#dee9fc",
+                    "surface-container": "#e6eeff",
+                    "on-secondary": "#ffffff",
+                    "background": "#f8f9ff",
+                    "outline": "#867461",
+                    "tertiary": "#a73a00",
+                    "on-tertiary": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "outline-variant": "#d8c3ad",
+                    "surface-bright": "#f8f9ff",
+                    "primary-fixed": "#ffddb8",
+                    "on-surface": "#121c2a",
+                    "on-surface-variant": "#534434",
+                    "surface-container-lowest": "#ffffff",
+                    "primary-container": "#f59e0b",
+                    "on-secondary-container": "#00714c",
+                    "on-tertiary-fixed-variant": "#7f2b00",
+                    "tertiary-fixed": "#ffdbce",
+                    "primary": "#855300",
+                    "inverse-primary": "#ffb95f",
+                    "on-primary-container": "#613b00",
+                    "surface-container-low": "#eff4ff",
+                    "on-tertiary-container": "#7a2800",
+                    "surface-dim": "#d0dbed",
+                    "tertiary-fixed-dim": "#ffb599",
+                    "surface-tint": "#855300",
+                    "secondary-container": "#7ef6be",
+                    "on-secondary-fixed": "#002113",
+                    "surface": "#f8f9ff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "gutter": "16px",
+                    "section-gap": "32px",
+                    "container-margin": "24px",
+                    "card-padding": "24px"
+            },
+            "fontFamily": {
+                    "label-bold": ["Inter", "sans-serif"],
+                    "headline-lg": ["Plus Jakarta Sans", "sans-serif"],
+                    "headline-md": ["Plus Jakarta Sans", "sans-serif"],
+                    "body-sm": ["Inter", "sans-serif"],
+                    "body-lg": ["Inter", "sans-serif"]
+            },
+            "fontSize": {
+                    "label-bold": ["14px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "700"}],
+                    "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    "body-lg": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%);
+            min-height: 100vh;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .custom-checkbox:checked {
+            background-color: #F59E0B;
+            border-color: #F59E0B;
+        }
+    </style>
+</head>
+<body class="font-body-lg text-on-surface selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopNavBar -->
+<nav class="sticky top-0 z-50 bg-surface shadow-sm h-[64px] flex items-center">
+<div class="max-w-7xl mx-auto w-full px-container-margin flex justify-between items-center">
+<!-- Brand Logo -->
+<div class="flex items-center gap-2">
+<span class="font-headline-md text-headline-md font-bold text-primary-container">TemuDosen</span>
+</div>
+<!-- Profile & Actions -->
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-outline-variant bg-surface-container-highest">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a young male Indonesian university student with a friendly smile, wearing a neat white collared shirt and glasses. The lighting is soft and natural, suggesting a clean, bright academic environment. The overall aesthetic is professional, minimalist, and trustworthy, perfectly fitting the TemuDosen brand's warm and corporate tone." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD_Pyz9u62KXh445zOEeJGLvxDl0E4tvboheimbSghttuJj9XdHhoAV1MDNWaROxpxLivDaTQQ0r0T6EQ0cw6QN2k6OXDRjbl2fGo8ApdbvsjmT4C_f-5asFMyARluMA1Oqdvi48hC57MWgDk4HZGMS6f9QmRWJYiLFG0ajH8Mh_OpI8qF4QlzBALQpJvpuGNwOepYJpcaFMr5mq6Z7WuPHY8X57u8CMgYGlSbz_oYEDe3SoDI_GYx_TWhJi2ChwDxkiigFDmc7hrQ"/>
+</div>
+<span class="font-label-bold text-label-bold text-on-surface">Budi Santoso</span>
+</div>
+<button class="px-4 py-2 rounded-lg border border-outline text-primary font-label-bold text-label-bold hover:bg-surface-container-low transition-colors duration-200">
+                    Keluar
+                </button>
+</div>
+</div>
+</nav>
+<!-- Main Content -->
+<main class="max-w-[720px] mx-auto px-container-margin pt-12 pb-16">
+<!-- Header Section -->
+<header class="mb-10 text-center md:text-left">
+<h1 class="font-headline-lg text-[28px] text-on-surface leading-tight mb-2">Ajukan Sesi Bimbingan</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Isi form berikut untuk mengajukan jadwal bimbingan ke dosen pembimbing Anda.</p>
+</header>
+<!-- Form Card -->
+<div class="bg-surface-container-lowest rounded-[16px] shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] p-10 border border-outline-variant/30">
+<form class="space-y-8">
+<!-- Field 1: Pilih Dosen -->
+<div class="space-y-2">
+<label class="block font-label-bold text-label-bold text-on-surface">
+                        Pilih Dosen Pembimbing <span class="text-error">*</span>
+</label>
+<div class="relative">
+<select class="w-full h-12 px-4 rounded-lg border border-outline-variant bg-surface-bright focus:ring-2 focus:ring-primary-container focus:border-primary outline-none transition-all appearance-none cursor-pointer">
+<option disabled="" selected="" value="">— Pilih dosen —</option>
+<option value="1">Dr. Siti Rahayu, M.Kom</option>
+<option value="2">Prof. Ahmad Subagyo</option>
+</select>
+<div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+<span class="material-symbols-outlined text-on-surface-variant">expand_more</span>
+</div>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant flex items-center gap-1.5 mt-1.5">
+<span class="material-symbols-outlined text-[16px]">info</span>
+                        Dr. Siti Rahayu, M.Kom · Teknik Informatika
+                    </p>
+</div>
+<!-- Field 2: Topik -->
+<div class="space-y-4">
+<label class="block font-label-bold text-label-bold text-on-surface">
+                        Topik yang Ingin Dibahas <span class="text-error">*</span>
+</label>
+<div class="grid grid-cols-1 gap-3">
+<label class="flex items-center gap-3 p-3.5 rounded-xl border border-outline-variant hover:border-primary-container bg-surface cursor-pointer transition-all">
+<input checked="" class="w-5 h-5 rounded border-outline-variant text-primary-container focus:ring-primary-container custom-checkbox" type="checkbox"/>
+<span class="font-body-lg text-on-surface">Diskusi Judul &amp; Rumusan Masalah</span>
+</label>
+<label class="flex items-center gap-3 p-3.5 rounded-xl border border-outline-variant hover:border-primary-container bg-surface cursor-pointer transition-all">
+<input class="w-5 h-5 rounded border-outline-variant text-primary-container focus:ring-primary-container custom-checkbox" type="checkbox"/>
+<span class="font-body-lg text-on-surface">Review Bab I, II, &amp; III</span>
+</label>
+<label class="flex items-center gap-3 p-3.5 rounded-xl border border-outline-variant hover:border-primary-container bg-surface cursor-pointer transition-all">
+<input class="w-5 h-5 rounded border-outline-variant text-primary-container focus:ring-primary-container custom-checkbox" type="checkbox"/>
+<span class="font-body-lg text-on-surface">Progres Penelitian &amp; Coding</span>
+</label>
+<label class="flex items-center gap-3 p-3.5 rounded-xl border border-outline-variant hover:border-primary-container bg-surface cursor-pointer transition-all">
+<input class="w-5 h-5 rounded border-outline-variant text-primary-container focus:ring-primary-container custom-checkbox" type="checkbox"/>
+<span class="font-body-lg text-on-surface">Persiapan Seminar/Sidang</span>
+</label>
+</div>
+</div>
+<!-- Field 3: Upload Zone -->
+<div class="space-y-2">
+<label class="block font-label-bold text-label-bold text-on-surface">
+                        Upload Draft (PDF, opsional)
+                    </label>
+<div class="border-2 border-dashed border-outline-variant bg-surface-container-lowest hover:bg-surface-container-low transition-colors rounded-xl p-8 flex flex-col items-center justify-center gap-2 cursor-pointer group">
+<span class="material-symbols-outlined text-[32px] text-on-surface-variant group-hover:text-primary transition-colors">upload_file</span>
+<p class="font-label-bold text-label-bold text-on-surface group-hover:text-primary">Seret &amp; lepas file PDF di sini</p>
+<p class="text-body-sm font-body-sm text-on-surface-variant">atau klik untuk pilih file · Maks. 10 MB</p>
+</div>
+</div>
+<!-- Field 4: Estimasi Durasi (Read-only) -->
+<div class="space-y-2">
+<label class="block font-label-bold text-label-bold text-on-surface">
+                        Estimasi Durasi Sesi
+                    </label>
+<div class="flex items-center gap-3 bg-[#FEF3C7] border border-primary-container px-4 py-3.5 rounded-xl">
+<span class="material-symbols-outlined text-primary-container" style="font-variation-settings: 'FILL' 1;">schedule</span>
+<span class="font-label-bold text-label-bold text-on-primary-container">Perkiraan: 45 menit</span>
+</div>
+</div>
+<!-- Field 5: Catatan -->
+<div class="space-y-2">
+<label class="block font-label-bold text-label-bold text-on-surface">
+                        Catatan untuk Dosen (opsional)
+                    </label>
+<textarea class="w-full p-4 rounded-lg border border-outline-variant bg-surface-bright focus:ring-2 focus:ring-primary-container focus:border-primary outline-none transition-all resize-none" placeholder="Tuliskan pesan singkat jika ada permintaan khusus..." rows="4"></textarea>
+</div>
+<!-- CTA Section -->
+<div class="pt-6 space-y-4">
+<button class="w-full h-14 bg-primary-container hover:bg-[#D97706] active:scale-[0.98] transition-all rounded-xl flex items-center justify-center gap-2 text-[#1F2937] font-bold text-[17px] shadow-sm" type="submit">
+<span>Kirim Pengajuan</span>
+<span class="material-symbols-outlined">send</span>
+</button>
+<p class="text-center font-body-sm text-body-sm text-on-surface-variant max-w-sm mx-auto">
+                        Pengajuan akan diteruskan ke dashboard dosen. Anda akan menerima notifikasi jika jadwal disetujui.
+                    </p>
+</div>
+</form>
+</div>
+</main>
+<!-- Footer -->
+<footer class="w-full bg-surface-container-low border-t border-outline-variant mt-12">
+<div class="max-w-7xl mx-auto px-container-margin py-12 flex flex-col md:flex-row justify-between items-center gap-8">
+<div class="flex flex-col items-center md:items-start gap-2">
+<span class="font-label-bold text-label-bold text-on-surface">TemuDosen</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">© 2024 TemuDosen. All rights reserved.</p>
+</div>
+<div class="flex gap-8">
+<a class="text-on-surface-variant hover:text-primary transition-colors font-body-sm text-body-sm" href="#">Bantuan</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors font-body-sm text-body-sm" href="#">Kebijakan Privasi</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors font-body-sm text-body-sm" href="#">Syarat &amp; Ketentuan</a>
+</div>
+</div>
+</footer>
+<script>
+        // Micro-interaction for form elements
+        document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const parent = this.closest('label');
+                if (this.checked) {
+                    parent.classList.add('border-primary-container', 'bg-primary-fixed/20');
+                } else {
+                    parent.classList.remove('border-primary-container', 'bg-primary-fixed/20');
+                }
+            });
+        });
+
+        // Initialize state for checked items
+        document.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
+            const parent = checkbox.closest('label');
+            parent.classList.add('border-primary-container', 'bg-primary-fixed/20');
+        });
+
+        // Form submission prevent default for demo
+        document.querySelector('form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            alert('Pengajuan berhasil dikirim!');
+        });
+    </script>
+</body></html>

@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link, useLoaderData } from 'react-router';
+import { Link, useRouteLoaderData } from 'react-router';
 import type { User } from '../../api/auth';
 import { getLecturerQueue, type LecturerQueueItem } from '../../api/sessions';
 import { getLecturerStats, startSession, type LecturerStats } from '../../api/stats';
+import ConsentModal from '../../components/ConsentModal';
 
 function fmt(iso: string) {
   return new Date(iso).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
@@ -16,11 +17,12 @@ function initials(name: string) {
 }
 
 export default function LecturerDashboard() {
-  const user = useLoaderData() as User;
+  const user = useRouteLoaderData('dosen') as User;
   const [queue, setQueue] = useState<{totalWaiting:number;estimatedEndTime:string;queue:LecturerQueueItem[]}|null>(null);
   const [stats, setStats] = useState<LecturerStats|null>(null);
   const [starting, setStarting] = useState<number|null>(null);
   const [msg, setMsg] = useState('');
+  const [consentTarget, setConsentTarget] = useState<LecturerQueueItem | null>(null);
 
   const load = useCallback(async () => {
     const [q, s] = await Promise.all([
@@ -32,10 +34,20 @@ export default function LecturerDashboard() {
 
   useEffect(() => { load(); const t = setInterval(load, 30_000); return () => clearInterval(t); }, [load]);
 
-  const handleStart = async (id: number) => {
+  // FR-M04: dosen menekan "Mulai" → tampilkan modal consent sebelum sesi benar-benar dimulai
+  const handleStart = async (withRecording: boolean) => {
+    if (!consentTarget) return;
+    const id = consentTarget.id;
     setStarting(id);
-    try { await startSession(id); setMsg('Sesi berhasil dimulai!'); load(); }
-    catch (e) { setMsg(e instanceof Error ? e.message : 'Gagal.'); }
+    try {
+      await startSession(id, {
+        consent_by_dosen: withRecording,
+        consent_by_mahasiswa: withRecording,
+      });
+      setMsg('Sesi berhasil dimulai!');
+      setConsentTarget(null);
+      load();
+    } catch (e) { setMsg(e instanceof Error ? e.message : 'Gagal.'); }
     finally { setStarting(null); setTimeout(() => setMsg(''), 3000); }
   };
 
@@ -100,7 +112,7 @@ export default function LecturerDashboard() {
           ) : queue.queue.map((item, idx) => (
             <div key={item.id} className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
               <div className="flex items-start gap-3">
-                <div className="w-8 h-8 min-w-[32px] rounded-full bg-primary flex items-center justify-center text-white font-bold text-sm">{item.position}</div>
+                <div className="w-8 h-8 min-w-[32px] rounded-full bg-primary flex items-center justify-center text-on-primary font-bold text-sm">{item.position}</div>
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-sm text-slate-900 truncate">{item.mahasiswa_name}</p>
                   <p className="text-[11px] text-neutral-gray">{item.nim} · {item.symptom_name}</p>
@@ -115,7 +127,7 @@ export default function LecturerDashboard() {
                   </div>
                 </div>
                 {idx === 0 && (
-                  <button type="button" disabled={starting === item.id} onClick={() => handleStart(item.id)}
+                  <button type="button" disabled={starting === item.id} onClick={() => setConsentTarget(item)}
                     className="px-3 py-2 bg-success text-white text-xs font-bold rounded-lg hover:bg-green-700 disabled:opacity-60 min-h-[44px] flex items-center gap-1 flex-shrink-0 focus-visible:ring-2 focus-visible:ring-success focus-visible:outline-none">
                     <span className="material-symbols-outlined text-sm">play_arrow</span>
                     Mulai
@@ -145,6 +157,16 @@ export default function LecturerDashboard() {
           <span className="text-[11px]">Profil</span>
         </button>
       </nav>
+
+      {consentTarget && (
+        <ConsentModal
+          studentName={consentTarget.mahasiswa_name}
+          dosenName={user?.full_name ?? 'Dosen'}
+          onConfirm={handleStart}
+          onClose={() => setConsentTarget(null)}
+          loading={starting === consentTarget.id}
+        />
+      )}
     </div>
   );
 }

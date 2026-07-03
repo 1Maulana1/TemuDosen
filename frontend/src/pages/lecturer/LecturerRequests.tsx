@@ -8,7 +8,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useLoaderData } from 'react-router';
+import { useRouteLoaderData } from 'react-router';
 import StatusBadge from '../../components/StatusBadge';
 import PDFPreview from '../../components/PDFPreview';
 import { fetchLecturerSubmissions, type LecturerSubmissionItem } from '../../api/submissions';
@@ -17,13 +17,15 @@ import type { User } from '../../api/auth';
 
 // ── Status map ────────────────────────────────────────────────────────────────
 
-const STATUS_MAP: Record<string, 'MENUNGGU' | 'DISETUJUI' | 'DIBATALKAN' | 'REVISI' | 'BERLANGSUNG' | 'SELESAI'> = {
+const STATUS_MAP: Record<string, 'MENUNGGU' | 'DISETUJUI' | 'DIBATALKAN' | 'REVISI' | 'BERLANGSUNG' | 'SELESAI' | 'DITOLAK'> = {
   pending: 'MENUNGGU',
   approved: 'DISETUJUI',
-  rejected: 'DIBATALKAN',
+  rejected: 'DITOLAK',
   revision: 'REVISI',
   cancelled: 'DIBATALKAN',
 };
+
+const MEETING_LINK_PATTERN = /^https?:\/\/.+/i;
 
 // ── Helper: initials ──────────────────────────────────────────────────────────
 
@@ -55,9 +57,16 @@ function ApproveModal({ submissionId, studentName, onClose, onSuccess }: Approve
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    if (method === 'online' && !meetingLink.trim()) {
-      setError('Link meeting wajib diisi untuk metode Online.');
-      return;
+    if (method === 'online') {
+      const trimmed = meetingLink.trim();
+      if (!trimmed) {
+        setError('Link meeting wajib diisi untuk metode Online.');
+        return;
+      }
+      if (!MEETING_LINK_PATTERN.test(trimmed)) {
+        setError('Link meeting harus diawali dengan http:// atau https://');
+        return;
+      }
     }
     setLoading(true);
     try {
@@ -91,7 +100,7 @@ function ApproveModal({ submissionId, studentName, onClose, onSuccess }: Approve
                 ].join(' ')}>
                   <input type="radio" name="method" value={m} checked={method === m} onChange={() => setMethod(m)} className="sr-only" />
                   <span className="material-symbols-outlined text-base">{m === 'offline' ? 'person' : 'videocam'}</span>
-                  {m === 'offline' ? 'Offline' : 'Online'}
+                  {m === 'offline' ? 'Tatap Muka' : 'Online'}
                 </label>
               ))}
             </div>
@@ -106,7 +115,7 @@ function ApproveModal({ submissionId, studentName, onClose, onSuccess }: Approve
                 type="url"
                 value={meetingLink}
                 onChange={(e) => setMeetingLink(e.target.value)}
-                placeholder="https://meet.google.com/..."
+                placeholder="https://meet.google.com/xxx"
                 className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary min-h-[44px]"
               />
             </div>
@@ -120,7 +129,7 @@ function ApproveModal({ submissionId, studentName, onClose, onSuccess }: Approve
               Batal
             </button>
             <button type="submit" disabled={loading}
-              className="flex-1 py-3 rounded-xl bg-primary text-white text-sm font-bold hover:bg-blue-700 disabled:opacity-60 min-h-[44px]">
+              className="flex-1 py-3 rounded-xl bg-primary text-on-primary text-sm font-bold hover:bg-primary-hover disabled:opacity-60 min-h-[44px]">
               {loading ? 'Menyimpan...' : 'Setujui'}
             </button>
           </div>
@@ -295,7 +304,7 @@ function SubmissionCard({ item, onPreview, onApprove, onReject }: SubmissionCard
               Tolak/Revisi
             </button>
             <button type="button" onClick={() => onApprove(item.id, item.student_name)}
-              className="px-3 py-2 bg-primary text-white text-xs font-bold rounded-lg hover:bg-blue-700 min-h-[44px] flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+              className="px-3 py-2 bg-primary text-on-primary text-xs font-bold rounded-lg hover:bg-primary-hover min-h-[44px] flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
               aria-label={`Setujui submission dari ${item.student_name}`}>
               <span className="material-symbols-outlined text-base" aria-hidden="true">check_circle</span>
               Setujui
@@ -318,7 +327,7 @@ const FILTER_TABS = [
 ];
 
 export default function LecturerRequests() {
-  const user = useLoaderData() as User;
+  const user = useRouteLoaderData('dosen') as User;
   const [submissions, setSubmissions] = useState<LecturerSubmissionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
