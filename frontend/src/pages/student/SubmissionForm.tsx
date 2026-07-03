@@ -8,7 +8,7 @@
  *   - Deskripsi Masalah — optional textarea, 500-char counter
  *   - Upload Draft — required (UploadZone)
  *   - Estimasi Durasi — dark bento card computed from selected symptoms
- *   - Sticky footer CTA: "Lanjutkan ke Jadwal" disabled until >=1 symptom AND file present
+ *   - Sticky footer CTA: "Kirim Pengajuan" disabled until >=1 symptom AND file present
  *
  * On submit: POST multipart to /api/submissions/ via createSubmission().
  * On success: navigate to /mahasiswa (dashboard S-06).
@@ -18,7 +18,7 @@
  */
 
 import { useEffect, useState, type FormEvent } from 'react';
-import { useNavigate, useLoaderData } from 'react-router';
+import { useNavigate, useRouteLoaderData } from 'react-router';
 import type { User } from '../../api/auth';
 import { fetchSymptoms } from '../../api/symptoms';
 import type { SymptomCategory } from '../../api/symptoms';
@@ -34,7 +34,7 @@ interface FormErrors {
 }
 
 export default function SubmissionForm() {
-  const user = useLoaderData() as User;
+  const user = useRouteLoaderData('student-root') as User;
   const navigate = useNavigate();
 
   const [symptoms, setSymptoms] = useState<SymptomCategory[]>([]);
@@ -125,20 +125,20 @@ export default function SubmissionForm() {
   const adviser = user.adviser ?? null;
 
   return (
-    <div className="font-body text-slate-900 bg-gray-50 min-h-screen overflow-x-hidden">
+    <div className="font-body text-slate-900 min-h-screen overflow-x-hidden max-w-lg mx-auto">
       {/* Fixed header with step progress */}
-      <header className="fixed top-0 w-full z-50 bg-white shadow-sm border-b border-gray-200 max-w-md mx-auto left-0 right-0">
+      <header className="fixed top-0 w-full z-50 bg-white/95 backdrop-blur-sm shadow-sm border-b border-amber-100 max-w-lg mx-auto left-0 right-0">
         <div className="flex items-center px-4 h-14 w-full">
           <button
             type="button"
             onClick={() => navigate('/mahasiswa')}
-            className="p-2 -ml-2 active:scale-95 transition-transform min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+            className="p-2 -ml-2 active:scale-95 transition-transform min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:ring-2 focus-visible:ring-primary-light focus-visible:outline-none"
             aria-label="Kembali ke dashboard"
           >
             <span className="material-symbols-outlined text-gray-700">arrow_back</span>
           </button>
-          <h1 className="ml-2 font-headline font-bold text-lg text-slate-900">
-            Ajukan Bimbingan Baru
+          <h1 className="ml-2 font-headline font-bold text-lg text-gray-900">
+            Ajukan Sesi Bimbingan
           </h1>
         </div>
         {/* Step progress bar */}
@@ -150,7 +150,7 @@ export default function SubmissionForm() {
             <span className="text-[11px] font-bold text-primary">50%</span>
           </div>
           <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
-            <div className="h-full bg-primary rounded-full w-1/2 transition-all duration-300" />
+            <div className="h-full bg-primary-light rounded-full w-1/2 transition-all duration-300" />
           </div>
         </div>
       </header>
@@ -308,24 +308,22 @@ export default function SubmissionForm() {
           aria-busy={isSubmitting}
           aria-disabled={!canSubmit}
           className={[
-            'w-full py-4 px-6 rounded-xl font-bold text-sm flex items-center justify-center space-x-2',
+            'w-full h-14 rounded-xl font-bold text-[17px] flex items-center justify-center gap-2',
             'transition-all active:scale-[0.98]',
             canSubmit && !isSubmitting
-              ? 'bg-primary text-white shadow-xl shadow-primary/25 cursor-pointer'
-              : 'bg-primary text-white opacity-50 cursor-not-allowed',
+              ? 'bg-primary-light text-gray-900 shadow-lg shadow-amber-200 cursor-pointer hover:bg-amber-500'
+              : 'bg-primary-light text-gray-900 opacity-50 cursor-not-allowed',
           ].join(' ')}
         >
           {isSubmitting ? (
             <>
-              <span className="material-symbols-outlined text-sm animate-spin">
-                autorenew
-              </span>
+              <span className="material-symbols-outlined text-sm animate-spin">autorenew</span>
               <span>Memproses...</span>
             </>
           ) : (
             <>
-              <span>Lanjutkan ke Jadwal</span>
-              <span className="material-symbols-outlined text-sm">arrow_forward</span>
+              <span>Kirim Pengajuan</span>
+              <span className="material-symbols-outlined text-sm">send</span>
             </>
           )}
         </button>

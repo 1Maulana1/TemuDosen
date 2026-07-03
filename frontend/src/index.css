@@ -1,31 +1,55 @@
-/* TemuDosen Design System — Tailwind v4 CSS-based config (RESEARCH Pattern 8).
- * Do NOT create tailwind.config.js — Tailwind v4 does NOT auto-detect it (Pitfall 4).
- * All design tokens from UI-SPEC are translated to CSS custom properties in @theme.
+/* TemuDosen Design System — Tailwind v4 CSS-based config.
+ * Do NOT create tailwind.config.js — Tailwind v4 does NOT auto-detect it.
+ * Design source: stitch_temudosen_dashboard_mahasiswa/temudosen/DESIGN.md
  */
 
 @import "tailwindcss";
 @plugin "@tailwindcss/forms";
 
 @theme {
-  /* ── Colors (UI-SPEC Tailwind Config Contract) ── */
-  --color-primary: #1A56DB;          /* CTA, header accent, active nav */
-  --color-success: #0E9F6E;          /* upload success, status Selesai/Disetujui */
-  --color-error: #E02424;            /* validation error, status Dibatalkan */
-  --color-warning: #FF8A4C;          /* status Menunggu, caution banners */
-  --color-neutral-gray: #6B7280;     /* secondary text, borders */
-  --color-surface: #FFFFFF;          /* card background */
-  --color-on-surface-variant: #4B5563; /* muted body text */
+  /* ── Brand Colors ── */
+  --color-primary: #B45309;           /* Amber-700 — logo, nav active, text accent, avatar bg */
+  --color-primary-light: #F59E0B;     /* Amber-400 — CTA button bg (pair with text-gray-900) */
+  --color-on-primary: #ffffff;        /* Text on --color-primary bg */
+  --color-on-primary-light: #1F2937; /* Text on --color-primary-light bg (MUST be dark) */
 
-  /* ── Border Radius (UI-SPEC) ── */
-  --radius-DEFAULT: 0.25rem;  /* 4px — inline badges */
-  --radius-lg: 0.5rem;        /* 8px — buttons, small cards */
-  --radius-xl: 0.75rem;       /* 12px — form inputs, cards */
-  --radius-2xl: 1rem;         /* 16px — large summary cards */
-  --radius-full: 9999px;      /* pills, chips, avatars */
+  /* ── Semantic Colors ── */
+  --color-success: #0E9F6E;           /* Status Selesai / Disetujui */
+  --color-error: #E02424;             /* Status Dibatalkan / validation error */
+  --color-warning: #EA580C;           /* Status Menunggu / caution */
+  --color-info: #1D4ED8;              /* Status Disetujui badge (blue pill) */
+  --color-neutral-gray: #6B7280;      /* Secondary text, muted */
+  --color-surface: #FFFFFF;           /* Card background */
+  --color-on-surface-variant: #4B5563;
 
-  /* ── Font Families (UI-SPEC) ── */
-  --font-headline: 'Plus Jakarta Sans', sans-serif;  /* Section/page headings, weight 700 */
-  --font-display: 'Plus Jakarta Sans', sans-serif;   /* Display large, weight 700 */
-  --font-body: 'Inter', sans-serif;                  /* Body text, weight 400 */
-  --font-label: 'Public Sans', sans-serif;           /* Labels/captions, weight 400 */
+  /* ── Background ── */
+  --color-bg-warm: #FFFBEB;           /* Page background warm cream */
+  --color-bg-warm-end: #FEF3C7;       /* Gradient end */
+
+  /* ── Border Radius ── */
+  --radius-DEFAULT: 0.25rem;   /* 4px — inline badges */
+  --radius-lg: 0.5rem;         /* 8px — buttons, small cards */
+  --radius-xl: 0.75rem;        /* 12px — inputs, cards */
+  --radius-2xl: 1rem;          /* 16px — large cards */
+  --radius-full: 9999px;       /* pills, avatars */
+
+  /* ── Font Families ── */
+  --font-headline: 'Plus Jakarta Sans', sans-serif;
+  --font-display: 'Plus Jakarta Sans', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-label: 'Inter', sans-serif;
+}
+
+@layer base {
+  body {
+    background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%);
+    background-attachment: fixed;
+    font-family: 'Inter', sans-serif;
+    color: #1F2937;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 }

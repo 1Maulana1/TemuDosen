@@ -2,7 +2,7 @@
  * Vitest tests for SubmissionForm (S-07) — Plan 04.
  *
  * Tests (per plan acceptance criteria):
- * 1. CTA "Lanjutkan ke Jadwal" is disabled when no symptom AND no file selected
+ * 1. CTA "Kirim Pengajuan" is disabled when no symptom AND no file selected
  * 2. CTA is disabled when symptom selected but no file
  * 3. CTA is disabled when file attached but no symptom selected
  * 4. CTA is enabled after selecting >=1 chip AND attaching a valid PDF
@@ -17,12 +17,12 @@ import { MemoryRouter } from 'react-router';
 import { server } from '../../test/setup';
 import SubmissionForm from './SubmissionForm';
 
-// Mock useLoaderData — SubmissionForm uses it to get the current user
+// Mock useRouteLoaderData — SubmissionForm uses it to get the current user
 vi.mock('react-router', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react-router')>();
   return {
     ...actual,
-    useLoaderData: () => ({
+    useRouteLoaderData: () => ({
       id: 1,
       email: 'student@test.com',
       full_name: 'Budi Santoso',
@@ -68,7 +68,7 @@ describe('SubmissionForm (S-07)', () => {
       expect(screen.getByText('Metodologi Penelitian')).toBeInTheDocument();
     });
 
-    const cta = screen.getByRole('button', { name: /Lanjutkan ke Jadwal/i });
+    const cta = screen.getByRole('button', { name: /Kirim Pengajuan/i });
     expect(cta).toBeDisabled();
   });
 
@@ -83,7 +83,7 @@ describe('SubmissionForm (S-07)', () => {
     const chip = screen.getByRole('button', { name: 'Metodologi Penelitian' });
     fireEvent.click(chip);
 
-    const cta = screen.getByRole('button', { name: /Lanjutkan ke Jadwal/i });
+    const cta = screen.getByRole('button', { name: /Kirim Pengajuan/i });
     expect(cta).toBeDisabled();
   });
 
@@ -106,7 +106,7 @@ describe('SubmissionForm (S-07)', () => {
       fireEvent.change(fileInput, { target: { files: [fakeFile] } });
     });
 
-    const cta = screen.getByRole('button', { name: /Lanjutkan ke Jadwal/i });
+    const cta = screen.getByRole('button', { name: /Kirim Pengajuan/i });
     expect(cta).not.toBeDisabled();
   });
 
@@ -165,11 +165,11 @@ describe('SubmissionForm (S-07)', () => {
     }
   });
 
-  it('shows "Lanjutkan ke Jadwal" CTA with arrow_forward icon', async () => {
+  it('shows "Kirim Pengajuan" CTA with send icon', async () => {
     renderForm();
 
     await waitFor(() => {
-      expect(screen.getByText('Lanjutkan ke Jadwal')).toBeInTheDocument();
+      expect(screen.getByText('Kirim Pengajuan')).toBeInTheDocument();
     });
   });
 

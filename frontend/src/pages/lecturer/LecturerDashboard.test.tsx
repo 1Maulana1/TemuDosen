@@ -1,13 +1,13 @@
 /**
- * Vitest tests for LecturerDashboard (S-08) — Plan 05.
+ * Vitest tests for LecturerDashboard — Stitch redesign (overview page).
  *
- * Tests (per plan acceptance criteria):
- * 1. Renders submission cards with student NIM + symptom + status badge
- * 2. Switching the status tab issues a request with the status param
- * 3. The search field issues a request with the search param
- * 4. NO Approve/Reject button is rendered (D-12 compliance)
- * 5. Empty state renders "Belum Ada Permintaan Masuk" when list is empty
- * 6. "Lihat Draft" button is present on a submission card
+ * Covers:
+ * 1. "Perlu Ditinjau" pending cards render name/NIM/symptoms + Setujui/Tolak links
+ * 2. Empty state for "Perlu Ditinjau" when no pending submissions
+ * 3. "Antrean Aktif" queue cards render name/NIM/symptom + Mulai Sesi action
+ * 4. Empty state for "Antrean Aktif" when queue is empty
+ * 5. Google Calendar connection banner reflects connected/disconnected state
+ * 6. Header renders TemuDosen wordmark and the lecturer's name
  */
 
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
@@ -17,12 +17,13 @@ import { MemoryRouter } from 'react-router';
 import { server } from '../../test/setup';
 import LecturerDashboard from './LecturerDashboard';
 
-// Mock useLoaderData to inject a lecturer user
+// Mock useRouteLoaderData — LecturerDashboard reads the lecturer user from the
+// parent 'lecturer-root' route loader.
 vi.mock('react-router', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react-router')>();
   return {
     ...actual,
-    useLoaderData: () => ({
+    useRouteLoaderData: () => ({
       id: 10,
       email: 'lecturer@test.com',
       full_name: 'Dr. Rina Sari',
@@ -33,9 +34,7 @@ vi.mock('react-router', async (importOriginal) => {
   };
 });
 
-// ── Mock data ─────────────────────────────────────────────────────────────────
-
-const MOCK_SUBMISSIONS = [
+const MOCK_PENDING = [
   {
     id: 1,
     student_nim: '20230101',
@@ -46,19 +45,26 @@ const MOCK_SUBMISSIONS = [
     original_filename: 'draft_bab1.pdf',
     file_url: '/api/files/aaaabbbb-0000-0000-0000-111122223333/',
   },
-  {
-    id: 2,
-    student_nim: '20230202',
-    student_name: 'Siti Rahayu',
-    symptom_names: ['Penulisan & Struktur'],
-    status: 'revision',
-    created_at: '2026-06-24T09:00:00Z',
-    original_filename: 'draft_revisi.pdf',
-    file_url: '/api/files/ccccdddd-0000-0000-0000-444455556666/',
-  },
 ];
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+const MOCK_QUEUE = {
+  totalWaiting: 1,
+  estimatedEndTime: '2026-06-25T12:00:00Z',
+  queue: [
+    {
+      position: 1,
+      id: 5,
+      mahasiswa_name: 'Siti Rahayu',
+      nim: '20230202',
+      symptom_name: 'Penulisan & Struktur',
+      estimated_minutes: 20,
+      scheduled_at: '2026-06-25T11:00:00Z',
+      status: 'approved',
+      method: 'offline' as const,
+      meeting_link: null,
+    },
+  ],
+};
 
 function renderDashboard() {
   return render(
@@ -68,185 +74,115 @@ function renderDashboard() {
   );
 }
 
-// ── Tests ─────────────────────────────────────────────────────────────────────
-
-describe('LecturerDashboard (S-08)', () => {
+describe('LecturerDashboard (Stitch redesign)', () => {
   beforeEach(() => {
-    // Default: return full submission list
     server.use(
-      http.get('/api/submissions/lecturer/', ({ request }) => {
-        const url = new URL(request.url);
-        const statusParam = url.searchParams.get('status');
-        const searchParam = url.searchParams.get('search');
-
-        let filtered = [...MOCK_SUBMISSIONS];
-
-        if (statusParam) {
-          filtered = filtered.filter((s) => s.status === statusParam);
-        }
-        if (searchParam) {
-          const q = searchParam.toLowerCase();
-          filtered = filtered.filter(
-            (s) =>
-              s.student_nim.includes(q) ||
-              s.student_name.toLowerCase().includes(q)
-          );
-        }
-
-        return HttpResponse.json(filtered);
-      })
+      http.get('/api/submissions/lecturer/', () => HttpResponse.json(MOCK_PENDING)),
+      http.get('/api/queue/lecturer/', () => HttpResponse.json(MOCK_QUEUE)),
+      http.get('/api/calendar/status/', () => HttpResponse.json({ enabled: true, connected: false }))
     );
   });
 
-  it('renders submission cards with NIM, symptom labels, and status badge', async () => {
+  it('renders pending cards with student name, NIM, symptoms, and Setujui/Tolak links', async () => {
     renderDashboard();
 
-    // Wait for data to load
     await waitFor(() => {
       expect(screen.getByText('Ahmad Fauzi')).toBeInTheDocument();
     });
 
-    // Student NIM visible
-    expect(screen.getByText('20230101')).toBeInTheDocument();
-    // Second student
-    expect(screen.getByText('Siti Rahayu')).toBeInTheDocument();
+    expect(screen.getByText('NIM: 20230101')).toBeInTheDocument();
+    expect(screen.getByText('"Analisis Data, Metodologi Penelitian"')).toBeInTheDocument();
+
+    const approveLink = screen.getByRole('link', { name: 'Setujui' });
+    expect(approveLink).toHaveAttribute('href', '/dosen/requests?id=1&action=approve');
+
+    const rejectLink = screen.getByRole('link', { name: 'Tolak' });
+    expect(rejectLink).toHaveAttribute('href', '/dosen/requests?id=1&action=reject');
+  });
+
+  it('renders empty state when there are no pending submissions', async () => {
+    server.use(http.get('/api/submissions/lecturer/', () => HttpResponse.json([])));
+
+    renderDashboard();
+
+    await waitFor(() => {
+      expect(screen.getByText('Tidak ada pengajuan yang perlu ditinjau.')).toBeInTheDocument();
+    });
+  });
+
+  it('renders active queue cards with student name, NIM, symptom, and a Mulai Sesi action', async () => {
+    renderDashboard();
+
+    await waitFor(() => {
+      expect(screen.getByText('Siti Rahayu')).toBeInTheDocument();
+    });
+
     expect(screen.getByText('20230202')).toBeInTheDocument();
-
-    // Symptom labels visible
-    expect(screen.getByText('Analisis Data')).toBeInTheDocument();
     expect(screen.getByText('Penulisan & Struktur')).toBeInTheDocument();
-
-    // Status badges visible
-    expect(screen.getByText('MENUNGGU')).toBeInTheDocument();
-    expect(screen.getByText('REVISI')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Mulai Sesi' })).toBeInTheDocument();
   });
 
-  it('renders "Lihat Draft" button for submissions with a file', async () => {
-    renderDashboard();
-
-    await waitFor(() => {
-      expect(screen.getByText('Ahmad Fauzi')).toBeInTheDocument();
-    });
-
-    // "Lihat Draft" buttons visible (one per submission with file)
-    const draftButtons = screen.getAllByText('Lihat Draft');
-    expect(draftButtons.length).toBeGreaterThan(0);
-  });
-
-  it('switching the Menunggu tab filters submissions by status=pending', async () => {
-    let capturedStatusParam: string | null = null;
-
+  it('starting a session calls the start endpoint and shows a success message', async () => {
+    let startCalled = false;
     server.use(
-      http.get('/api/submissions/lecturer/', ({ request }) => {
-        const url = new URL(request.url);
-        capturedStatusParam = url.searchParams.get('status');
-
-        const filtered = capturedStatusParam
-          ? MOCK_SUBMISSIONS.filter((s) => s.status === capturedStatusParam)
-          : MOCK_SUBMISSIONS;
-
-        return HttpResponse.json(filtered);
-      })
-    );
-
-    renderDashboard();
-
-    // Wait for initial load
-    await waitFor(() => {
-      expect(screen.getByText('Ahmad Fauzi')).toBeInTheDocument();
-    });
-
-    // Click "Menunggu" tab
-    const menungguTab = screen.getByRole('tab', { name: 'Menunggu' });
-    fireEvent.click(menungguTab);
-
-    // Wait for filtered results
-    await waitFor(() => {
-      expect(capturedStatusParam).toBe('pending');
-    });
-  });
-
-  it('typing in search field issues a request with the search param', async () => {
-    let capturedSearchParam: string | null = null;
-
-    server.use(
-      http.get('/api/submissions/lecturer/', ({ request }) => {
-        const url = new URL(request.url);
-        capturedSearchParam = url.searchParams.get('search');
-        return HttpResponse.json(MOCK_SUBMISSIONS);
+      http.post('/api/queue/5/start/', () => {
+        startCalled = true;
+        return HttpResponse.json({});
       })
     );
 
     renderDashboard();
 
     await waitFor(() => {
-      expect(screen.getByText('Ahmad Fauzi')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Mulai Sesi' })).toBeInTheDocument();
     });
 
-    // Type in search box
-    const searchInput = screen.getByPlaceholderText('Cari NIM atau nama...');
-    fireEvent.change(searchInput, { target: { value: '20230101' } });
-
-    // Wait for debounced fetch
-    await waitFor(
-      () => {
-        expect(capturedSearchParam).toBe('20230101');
-      },
-      { timeout: 1000 }
-    );
-  });
-
-  it('does NOT render Approve/Reject/Setujui/Tolak buttons (D-12 compliance)', async () => {
-    renderDashboard();
+    fireEvent.click(screen.getByRole('button', { name: 'Mulai Sesi' }));
 
     await waitFor(() => {
-      expect(screen.getByText('Ahmad Fauzi')).toBeInTheDocument();
+      expect(startCalled).toBe(true);
+      expect(screen.getByText('Sesi berhasil dimulai!')).toBeInTheDocument();
     });
-
-    // D-12: No approve/reject action buttons in Phase 1
-    expect(screen.queryByText('Setujui')).not.toBeInTheDocument();
-    expect(screen.queryByText('Tolak')).not.toBeInTheDocument();
-    expect(screen.queryByText('Approve')).not.toBeInTheDocument();
-    expect(screen.queryByText('Reject')).not.toBeInTheDocument();
   });
 
-  it('renders empty state when no submissions', async () => {
+  it('renders empty state when the queue is empty', async () => {
     server.use(
-      http.get('/api/submissions/lecturer/', () => {
-        return HttpResponse.json([]);
-      })
+      http.get('/api/queue/lecturer/', () =>
+        HttpResponse.json({ totalWaiting: 0, estimatedEndTime: '', queue: [] })
+      )
     );
 
     renderDashboard();
 
     await waitFor(() => {
-      expect(screen.getByText('Belum Ada Permintaan Masuk')).toBeInTheDocument();
+      expect(screen.getByText('Antrian kosong hari ini.')).toBeInTheDocument();
     });
-
-    expect(
-      screen.getByText('Mahasiswa bimbingan Anda belum mengajukan sesi bimbingan.')
-    ).toBeInTheDocument();
   });
 
-  it('renders header with TemuDosen wordmark and notification bell', async () => {
+  it('shows "Tidak Terhubung" when Google Calendar is not connected', async () => {
     renderDashboard();
 
-    expect(screen.getByText('TemuDosen')).toBeInTheDocument();
-    expect(screen.getByLabelText('Notifikasi')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Tidak Terhubung')).toBeInTheDocument();
+    });
   });
 
-  it('renders bottom nav with Beranda, Antrean, Riwayat, Profil', async () => {
+  it('shows "Terhubung" when Google Calendar is connected', async () => {
+    server.use(
+      http.get('/api/calendar/status/', () => HttpResponse.json({ enabled: true, connected: true }))
+    );
+
     renderDashboard();
 
-    expect(screen.getByLabelText('Beranda')).toBeInTheDocument();
-    expect(screen.getByLabelText('Antrean')).toBeInTheDocument();
-    expect(screen.getByLabelText('Riwayat')).toBeInTheDocument();
-    expect(screen.getByLabelText('Profil')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Terhubung')).toBeInTheDocument();
+    });
   });
 
-  it('renders search placeholder "Cari NIM atau nama..."', async () => {
+  it('renders header with TemuDosen wordmark and the lecturer name', async () => {
     renderDashboard();
 
-    expect(screen.getByPlaceholderText('Cari NIM atau nama...')).toBeInTheDocument();
+    expect(screen.getAllByText('TemuDosen').length).toBeGreaterThan(0);
+    expect(screen.getByText('Dr. Rina Sari')).toBeInTheDocument();
   });
 });

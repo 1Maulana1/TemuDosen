@@ -57,6 +57,7 @@ export const router = createBrowserRouter([
 
   // Student
   {
+    id: 'student-root',
     path: '/mahasiswa',
     loader: requireRole('student'),
     children: [
@@ -68,6 +69,7 @@ export const router = createBrowserRouter([
 
   // Lecturer
   {
+    id: 'lecturer-root',
     path: '/dosen',
     loader: requireRole('lecturer'),
     children: [

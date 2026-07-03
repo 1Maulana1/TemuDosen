@@ -1,6 +1,6 @@
 /**
  * LoginPage smoke test (Task 3 TDD behavior).
- * Verifies the login page renders the email input and "Masuk ke Akun" CTA.
+ * Verifies the login page renders the NIM/NIDN input and "Masuk" CTA.
  */
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
@@ -8,24 +8,24 @@ import { MemoryRouter } from 'react-router';
 import LoginPage from './LoginPage';
 
 describe('LoginPage', () => {
-  it('renders the email input', () => {
+  it('renders the NIM/NIDN input', () => {
     render(
       <MemoryRouter>
         <LoginPage />
       </MemoryRouter>
     );
-    const emailInput = screen.getByLabelText(/email/i);
-    expect(emailInput).toBeInTheDocument();
-    expect(emailInput).toHaveAttribute('type', 'email');
+    const idInput = screen.getByLabelText(/nim.*nidn/i);
+    expect(idInput).toBeInTheDocument();
+    expect(idInput).toHaveAttribute('type', 'text');
   });
 
-  it('renders the "Masuk ke Akun" CTA button', () => {
+  it('renders the "Masuk" CTA button', () => {
     render(
       <MemoryRouter>
         <LoginPage />
       </MemoryRouter>
     );
-    const ctaButton = screen.getByRole('button', { name: /masuk ke akun/i });
+    const ctaButton = screen.getByRole('button', { name: /^masuk$/i });
     expect(ctaButton).toBeInTheDocument();
     expect(ctaButton).toHaveAttribute('type', 'submit');
   });
@@ -39,13 +39,13 @@ describe('LoginPage', () => {
     expect(screen.getByText('TemuDosen')).toBeInTheDocument();
   });
 
-  it('renders the "Daftar" link', () => {
+  it('renders the "Hubungi Admin" registration link', () => {
     render(
       <MemoryRouter>
         <LoginPage />
       </MemoryRouter>
     );
-    const registerLink = screen.getByRole('link', { name: /daftar/i });
+    const registerLink = screen.getByRole('link', { name: /hubungi admin/i });
     expect(registerLink).toBeInTheDocument();
   });
 
@@ -55,7 +55,7 @@ describe('LoginPage', () => {
         <LoginPage />
       </MemoryRouter>
     );
-    const passwordInput = screen.getByLabelText(/password/i);
+    const passwordInput = screen.getByLabelText(/^kata sandi$/i);
     expect(passwordInput).toBeInTheDocument();
     expect(passwordInput).toHaveAttribute('type', 'password');
   });
