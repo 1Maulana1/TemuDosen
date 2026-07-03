@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+
+<html class="light" lang="id"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Katalog Gejala Akademik - TemuDosen Admin</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=Plus+Jakarta+Sans:wght@700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "on-background": "#121c2a",
+                "secondary": "#006c49",
+                "on-primary": "#ffffff",
+                "surface-container-low": "#eff4ff",
+                "tertiary-fixed-dim": "#ffb599",
+                "on-tertiary-fixed-variant": "#7f2b00",
+                "secondary-container": "#7ef6be",
+                "on-secondary": "#ffffff",
+                "surface": "#f8f9ff",
+                "surface-container-high": "#dee9fc",
+                "outline": "#867461",
+                "on-error-container": "#93000a",
+                "surface-tint": "#855300",
+                "on-tertiary-fixed": "#370e00",
+                "on-primary-container": "#613b00",
+                "surface-container-highest": "#d9e3f6",
+                "background": "#f8f9ff",
+                "tertiary-fixed": "#ffdbce",
+                "inverse-surface": "#27313f",
+                "surface-dim": "#d0dbed",
+                "surface-bright": "#f8f9ff",
+                "on-error": "#ffffff",
+                "secondary-fixed": "#81f9c1",
+                "primary-fixed-dim": "#ffb95f",
+                "on-surface-variant": "#534434",
+                "on-surface": "#121c2a",
+                "on-primary-fixed": "#2a1700",
+                "primary": "#855300",
+                "on-secondary-fixed": "#002113",
+                "surface-variant": "#d9e3f6",
+                "surface-container-lowest": "#ffffff",
+                "on-secondary-fixed-variant": "#005236",
+                "inverse-on-surface": "#eaf1ff",
+                "tertiary-container": "#ff956b",
+                "primary-fixed": "#ffddb8",
+                "error": "#ba1a1a",
+                "on-tertiary-container": "#7a2800",
+                "on-secondary-container": "#00714c",
+                "outline-variant": "#d8c3ad",
+                "on-tertiary": "#ffffff",
+                "tertiary": "#a73a00",
+                "error-container": "#ffdad6",
+                "on-primary-fixed-variant": "#653e00",
+                "primary-container": "#f59e0b",
+                "surface-container": "#e6eeff",
+                "secondary-fixed-dim": "#63dca6",
+                "inverse-primary": "#ffb95f"
+            },
+            "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+            },
+            "spacing": {
+                "container-margin": "24px",
+                "section-gap": "32px",
+                "gutter": "16px",
+                "card-padding": "24px"
+            },
+            "fontFamily": {
+                "body-lg": ["Inter"],
+                "label-bold": ["Inter"],
+                "headline-md": ["Plus Jakarta Sans"],
+                "headline-lg": ["Plus Jakarta Sans"],
+                "body-sm": ["Inter"]
+            },
+            "fontSize": {
+                "body-lg": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                "label-bold": ["14px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "700"}],
+                "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+      body {
+        background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%);
+        min-height: 100vh;
+      }
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      .btn-primary {
+        background-color: #F59E0B;
+        color: #1F2937;
+        transition: all 0.2s ease;
+      }
+      .btn-primary:hover {
+        background-color: #D97706;
+      }
+      .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 44px;
+        height: 22px;
+      }
+      .toggle-switch input { display: none; }
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background-color: #E5E7EB;
+        transition: .4s;
+        border-radius: 34px;
+      }
+      .slider:before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 2px;
+        bottom: 2px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+      }
+      input:checked + .slider { background-color: #0E9F6E; }
+      input:checked + .slider:before { transform: translateX(22px); }
+    </style>
+</head>
+<body class="font-body-lg text-on-surface">
+<!-- Top Navigation Bar -->
+<nav class="fixed top-0 left-0 right-0 h-16 bg-white shadow-sm flex items-center justify-between px-container-margin z-50">
+<div class="flex items-center gap-3">
+<img alt="TemuDosen Logo" class="h-10 w-10" src="https://lh3.googleusercontent.com/aida/AP1WRLvpAJgCxqRRBfxccSRJ0OS9CujxGXBdRKcr5Enwnef2lBlemjXjex-dEJoXPSIBrXfU6mhFljccIzarwrR-15vGgkvlf4kvgtHfSHwHiaIyGF5N1AEYU4YPsj5OD7d1uFV5MCYoe6pHKPfIa-1cB3BfP-WZ_YxnmvyxclkMbqQqYGOMdQZCVhrCM7jSQbQhb5uO5YizB9ilR-I7VzJUdUIVgxuOFSa3oMqKoeGpJK8cBzIfQ75jBVjE5A"/>
+<span class="font-headline-md text-primary tracking-tight">TemuDosen</span>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant">account_circle</span>
+<span class="font-label-bold text-on-surface">Admin Sistem</span>
+</div>
+<button class="flex items-center gap-2 px-4 py-2 border-2 border-primary-container text-on-primary-container font-label-bold rounded-lg hover:bg-primary-container hover:bg-opacity-10 transition-all">
+<span class="material-symbols-outlined text-[20px]">logout</span>
+                Keluar
+            </button>
+</div>
+</nav>
+<!-- Side Navigation Shell -->
+<aside class="fixed left-0 top-16 h-[calc(100vh-64px)] w-64 bg-surface-container-low border-r border-outline-variant hidden md:flex flex-col py-6 px-4">
+<div class="mb-8 px-4">
+<div class="flex items-center gap-3 mb-1">
+<div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container font-bold">A</div>
+<div>
+<p class="font-label-bold text-on-surface">Admin Panel</p>
+<p class="text-[12px] text-on-surface-variant leading-none">Katalog Gejala Akademik</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-bold">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 bg-secondary-container text-on-secondary-container rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">clinical_notes</span>
+<span class="font-label-bold">Katalog Gejala</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">school</span>
+<span class="font-label-bold">Data Dosen</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-label-bold">Data Mahasiswa</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-bold">Pengaturan</span>
+</a>
+</nav>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-64 pt-24 pb-12 px-container-margin">
+<div class="max-w-[1100px] mx-auto">
+<!-- Page Heading -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+<div>
+<h1 class="font-headline-md text-on-surface mb-1">Katalog Gejala Akademik</h1>
+<p class="font-body-sm text-on-surface-variant">Daftar gejala yang digunakan sistem untuk menghitung estimasi durasi bimbingan.</p>
+</div>
+<button class="btn-primary px-6 h-10 flex items-center gap-2 rounded-lg font-bold shadow-sm">
+<span class="material-symbols-outlined">add</span>
+                    Tambah Gejala
+                </button>
+</div>
+<!-- Info Banner -->
+<div class="flex items-start gap-3 bg-[#FEF3C7] border-l-4 border-[#F59E0B] p-4 rounded-lg mb-6">
+<span class="material-symbols-outlined text-[#F59E0B]">info</span>
+<p class="font-body-sm text-[#92400E]">
+                    Bobot durasi menentukan estimasi waktu sesi. <span class="font-bold">Total bobot aktif saat ini: 210 menit.</span>
+</p>
+</div>
+<!-- Table Card Container -->
+<div class="bg-white rounded-xl shadow-md overflow-hidden border border-outline-variant border-opacity-30">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-gray-50 border-bottom border-outline-variant border-opacity-50">
+<th class="px-6 py-4 text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider w-12">No</th>
+<th class="px-6 py-4 text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider">Nama Gejala</th>
+<th class="px-6 py-4 text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider">Deskripsi</th>
+<th class="px-6 py-4 text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider">Bobot (menit)</th>
+<th class="px-6 py-4 text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider text-center">Status</th>
+<th class="px-6 py-4 text-[12px] font-semibold text-on-surface-variant uppercase tracking-wider text-right">Aksi</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant divide-opacity-30">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-lowest transition-colors">
+<td class="px-6 py-4 font-body-sm text-on-surface-variant">1</td>
+<td class="px-6 py-4 font-label-bold text-on-surface">Diskusi Judul &amp; Rumusan Masalah</td>
+<td class="px-6 py-4 font-body-sm text-on-surface-variant text-[13px]">Pembahasan awal topik dan pertanyaan penelitian</td>
+<td class="px-6 py-4">
+<span class="bg-[#FEF3C7] text-[#B45309] font-bold px-3 py-1 rounded-full text-[12px]">30 menit</span>
+</td>
+<td class="px-6 py-4 text-center">
+<label class="toggle-switch">
+<input checked="" type="checkbox"/>
+<span class="slider"></span>
+</label>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex justify-end gap-2 text-on-surface-variant">
+<button class="p-2 hover:bg-surface-container-high rounded-full"><span class="material-symbols-outlined text-[20px]">edit</span></button>
+<button class="p-2 hover:bg-error-container hover:text-error rounded-full"><span class="material-symbols-outlined text-[20px]">delete</span></button>
+</div>
+</td>
+</tr>
+<!-- Row 2 (INLINE EDIT) -->
+<tr class="bg-[#FFFBEB] border-y-2 border-[#F59E0B]">
+<td class="px-6 py-4 font-body-sm text-on-surface-variant">2</td>
+<td class="px-6 py-4">
+<input class="w-full rounded-lg border-outline-variant focus:ring-primary focus:border-primary px-3 py-2 text-[14px]" type="text" value="Revisi Bab 1 – Pendahuluan"/>
+</td>
+<td class="px-6 py-4">
+<input class="w-full rounded-lg border-outline-variant focus:ring-primary focus:border-primary px-3 py-2 text-[13px]" type="text" value="Perbaikan struktur dan konten bab pertama"/>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<input class="w-20 rounded-lg border-outline-variant focus:ring-primary focus:border-primary px-3 py-2 text-[14px]" type="number" value="45"/>
+<span class="text-[12px] font-label-bold text-on-surface-variant">menit</span>
+</div>
+</td>
+<td class="px-6 py-4 text-center">
+<label class="toggle-switch">
+<input checked="" type="checkbox"/>
+<span class="slider"></span>
+</label>
+</td>
+<td class="px-6 py-4">
+<div class="flex justify-end gap-2">
+<button class="px-3 py-1.5 bg-[#F59E0B] text-[#1F2937] font-bold text-[12px] rounded-lg">Simpan</button>
+<button class="px-3 py-1.5 border border-outline-variant text-on-surface font-bold text-[12px] rounded-lg">Batal</button>
+</div>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-lowest transition-colors">
+<td class="px-6 py-4 font-body-sm text-on-surface-variant">3</td>
+<td class="px-6 py-4 font-label-bold text-on-surface">Masalah Teknis / Implementasi</td>
+<td class="px-6 py-4 font-body-sm text-on-surface-variant text-[13px]">Kendala pada kode, tools, atau metodologi</td>
+<td class="px-6 py-4">
+<span class="bg-[#FEF3C7] text-[#B45309] font-bold px-3 py-1 rounded-full text-[12px]">60 menit</span>
+</td>
+<td class="px-6 py-4 text-center">
+<label class="toggle-switch">
+<input checked="" type="checkbox"/>
+<span class="slider"></span>
+</label>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex justify-end gap-2 text-on-surface-variant">
+<button class="p-2 hover:bg-surface-container-high rounded-full"><span class="material-symbols-outlined text-[20px]">edit</span></button>
+<button class="p-2 hover:bg-error-container hover:text-error rounded-full"><span class="material-symbols-outlined text-[20px]">delete</span></button>
+</div>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-container-lowest transition-colors">
+<td class="px-6 py-4 font-body-sm text-on-surface-variant">4</td>
+<td class="px-6 py-4 font-label-bold text-on-surface">Persiapan Sidang Skripsi</td>
+<td class="px-6 py-4 font-body-sm text-on-surface-variant text-[13px]">Latihan presentasi dan tanya jawab penguji</td>
+<td class="px-6 py-4">
+<span class="bg-[#FEF3C7] text-[#B45309] font-bold px-3 py-1 rounded-full text-[12px]">90 menit</span>
+</td>
+<td class="px-6 py-4 text-center">
+<label class="toggle-switch">
+<input checked="" type="checkbox"/>
+<span class="slider"></span>
+</label>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex justify-end gap-2 text-on-surface-variant">
+<button class="p-2 hover:bg-surface-container-high rounded-full"><span class="material-symbols-outlined text-[20px]">edit</span></button>
+<button class="p-2 hover:bg-error-container hover:text-error rounded-full"><span class="material-symbols-outlined text-[20px]">delete</span></button>
+</div>
+</td>
+</tr>
+<!-- Row 5 (NONAKTIF) -->
+<tr class="opacity-60 bg-gray-50 bg-opacity-30">
+<td class="px-6 py-4 font-body-sm text-on-surface-variant italic">5</td>
+<td class="px-6 py-4 font-label-bold text-on-surface-variant line-through">Konsultasi Statistik</td>
+<td class="px-6 py-4 font-body-sm text-on-surface-variant opacity-50 text-[13px]">Analisis data dan pemilihan uji statistik</td>
+<td class="px-6 py-4">
+<span class="bg-gray-200 text-gray-500 font-bold px-3 py-1 rounded-full text-[12px]">45 menit</span>
+</td>
+<td class="px-6 py-4 text-center">
+<label class="toggle-switch">
+<input type="checkbox"/>
+<span class="slider"></span>
+</label>
+</td>
+<td class="px-6 py-4 text-right opacity-60">
+<div class="flex justify-end gap-2">
+<button class="p-2"><span class="material-symbols-outlined text-[20px]">edit</span></button>
+<button class="p-2"><span class="material-symbols-outlined text-[20px]">delete</span></button>
+</div>
+</td>
+</tr>
+<!-- Row 6 -->
+<tr class="hover:bg-surface-container-lowest transition-colors">
+<td class="px-6 py-4 font-body-sm text-on-surface-variant">6</td>
+<td class="px-6 py-4 font-label-bold text-on-surface">Review Daftar Pustaka</td>
+<td class="px-6 py-4 font-body-sm text-on-surface-variant text-[13px]">Verifikasi referensi dan format sitasi</td>
+<td class="px-6 py-4">
+<span class="bg-[#FEF3C7] text-[#B45309] font-bold px-3 py-1 rounded-full text-[12px]">20 menit</span>
+</td>
+<td class="px-6 py-4 text-center">
+<label class="toggle-switch">
+<input checked="" type="checkbox"/>
+<span class="slider"></span>
+</label>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex justify-end gap-2 text-on-surface-variant">
+<button class="p-2 hover:bg-surface-container-high rounded-full"><span class="material-symbols-outlined text-[20px]">edit</span></button>
+<button class="p-2 hover:bg-error-container hover:text-error rounded-full"><span class="material-symbols-outlined text-[20px]">delete</span></button>
+</div>
+</td>
+</tr>
+<!-- Row 7 -->
+<tr class="hover:bg-surface-container-lowest transition-colors">
+<td class="px-6 py-4 font-body-sm text-on-surface-variant">7</td>
+<td class="px-6 py-4 font-label-bold text-on-surface">Pengembangan Kerangka Teori</td>
+<td class="px-6 py-4 font-body-sm text-on-surface-variant text-[13px]">Penyusunan landasan teori dan literatur</td>
+<td class="px-6 py-4">
+<span class="bg-[#FEF3C7] text-[#B45309] font-bold px-3 py-1 rounded-full text-[12px]">50 menit</span>
+</td>
+<td class="px-6 py-4 text-center">
+<label class="toggle-switch">
+<input checked="" type="checkbox"/>
+<span class="slider"></span>
+</label>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex justify-end gap-2 text-on-surface-variant">
+<button class="p-2 hover:bg-surface-container-high rounded-full"><span class="material-symbols-outlined text-[20px]">edit</span></button>
+<button class="p-2 hover:bg-error-container hover:text-error rounded-full"><span class="material-symbols-outlined text-[20px]">delete</span></button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Table Footer / Pagination -->
+<div class="bg-white px-6 py-4 border-t border-outline-variant border-opacity-50 flex items-center justify-between">
+<p class="font-body-sm text-on-surface-variant">
+<span class="font-semibold text-on-surface">7</span> gejala terdaftar · <span class="text-secondary font-semibold">6</span> aktif · <span class="text-error opacity-70 font-semibold">1</span> nonaktif
+                    </p>
+<div class="flex items-center gap-2">
+<button class="px-4 py-2 text-on-surface-variant opacity-40 font-label-bold flex items-center cursor-not-allowed" disabled="">
+<span class="material-symbols-outlined text-[18px]">chevron_left</span>
+                            Sebelumnya
+                        </button>
+<button class="w-10 h-10 bg-primary-container text-on-primary-container font-bold rounded-lg flex items-center justify-center">1</button>
+<button class="px-4 py-2 border border-outline-variant text-on-surface font-label-bold rounded-lg hover:bg-surface-container-high transition-all flex items-center">
+                            Berikutnya
+                            <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<script>
+        // Micro-interactions for table rows and buttons
+        document.querySelectorAll('tr').forEach(row => {
+            row.addEventListener('mouseenter', () => {
+                if (!row.classList.contains('bg-[#FFFBEB]')) {
+                    row.style.transform = 'translateX(4px)';
+                    row.style.transition = 'transform 0.2s ease-out';
+                }
+            });
+            row.addEventListener('mouseleave', () => {
+                row.style.transform = 'translateX(0)';
+            });
+        });
+
+        // Simulating button click effects
+        const buttons = document.querySelectorAll('button');
+        buttons.forEach(btn => {
+            btn.addEventListener('mousedown', () => btn.classList.add('scale-95'));
+            btn.addEventListener('mouseup', () => btn.classList.remove('scale-95'));
+            btn.addEventListener('mouseleave', () => btn.classList.remove('scale-95'));
+        });
+    </script>
+</body></html>

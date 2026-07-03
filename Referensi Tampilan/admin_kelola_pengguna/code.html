@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+
+<html class="light" lang="id"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TemuDosen - Admin Kelola Pengguna</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-tint": "#855300",
+                        "surface-dim": "#d0dbed",
+                        "outline-variant": "#d8c3ad",
+                        "primary-fixed-dim": "#ffb95f",
+                        "on-secondary": "#ffffff",
+                        "tertiary": "#a73a00",
+                        "on-background": "#121c2a",
+                        "on-tertiary-fixed-variant": "#7f2b00",
+                        "secondary-fixed-dim": "#63dca6",
+                        "surface-container-low": "#eff4ff",
+                        "primary": "#855300",
+                        "on-primary": "#ffffff",
+                        "on-primary-fixed": "#2a1700",
+                        "inverse-surface": "#27313f",
+                        "error": "#ba1a1a",
+                        "surface": "#f8f9ff",
+                        "secondary-fixed": "#81f9c1",
+                        "on-tertiary": "#ffffff",
+                        "on-surface-variant": "#534434",
+                        "on-primary-fixed-variant": "#653e00",
+                        "inverse-primary": "#ffb95f",
+                        "on-tertiary-fixed": "#370e00",
+                        "on-error-container": "#93000a",
+                        "on-primary-container": "#613b00",
+                        "tertiary-container": "#ff956b",
+                        "inverse-on-surface": "#eaf1ff",
+                        "background": "#f8f9ff",
+                        "outline": "#867461",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-fixed": "#ffddb8",
+                        "on-surface": "#121c2a",
+                        "error-container": "#ffdad6",
+                        "primary-container": "#f59e0b",
+                        "surface-container-highest": "#d9e3f6",
+                        "on-tertiary-container": "#7a2800",
+                        "on-error": "#ffffff",
+                        "tertiary-fixed-dim": "#ffb599",
+                        "on-secondary-fixed": "#002113",
+                        "surface-variant": "#d9e3f6",
+                        "on-secondary-fixed-variant": "#005236",
+                        "tertiary-fixed": "#ffdbce",
+                        "surface-container": "#e6eeff",
+                        "on-secondary-container": "#00714c",
+                        "surface-container-high": "#dee9fc",
+                        "surface-bright": "#f8f9ff",
+                        "secondary-container": "#7ef6be",
+                        "secondary": "#006c49"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "section-gap": "32px",
+                        "gutter": "16px",
+                        "card-padding": "24px",
+                        "container-margin": "24px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "body-sm": ["Inter"],
+                        "label-bold": ["Inter"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "label-bold": ["14px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "700"}],
+                        "body-lg": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .status-badge {
+            @apply px-3 py-1 rounded-full text-xs font-semibold;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-[#FFFBEB] to-[#FEF3C7] min-h-screen font-body-lg text-on-surface">
+<!-- TopNavBar -->
+<header class="bg-surface shadow-sm h-16 sticky top-0 z-50">
+<div class="max-w-7xl mx-auto px-container-margin h-full flex justify-between items-center">
+<div class="flex items-center gap-3">
+<img alt="TemuDosen Logo" class="h-8 w-auto" src="https://lh3.googleusercontent.com/aida/AP1WRLvpAJgCxqRRBfxccSRJ0OS9CujxGXBdRKcr5Enwnef2lBlemjXjex-dEJoXPSIBrXfU6mhFljccIzarwrR-15vGgkvlf4kvgtHfSHwHiaIyGF5N1AEYU4YPsj5OD7d1uFV5MCYoe6pHKPfIa-1cB3BfP-WZ_YxnmvyxclkMbqQqYGOMdQZCVhrCM7jSQbQhb5uO5YizB9ilR-I7VzJUdUIVgxuOFSa3oMqKoeGpJK8cBzIfQ75jBVjE5A"/>
+<span class="font-headline-md text-primary tracking-tight">TemuDosen</span>
+</div>
+<div class="flex items-center gap-6">
+<nav class="hidden md:flex gap-8 items-center">
+<a class="text-primary font-label-bold text-label-bold border-b-2 border-primary h-16 flex items-center" href="#">Kelola Pengguna</a>
+<a class="text-on-surface-variant font-label-bold text-label-bold hover:text-primary transition-colors h-16 flex items-center" href="#">Laporan</a>
+<a class="text-on-surface-variant font-label-bold text-label-bold hover:text-primary transition-colors h-16 flex items-center" href="#">Pengaturan</a>
+</nav>
+<div class="flex items-center gap-4 border-l pl-6 border-outline-variant">
+<span class="font-label-bold text-on-surface-variant">Admin Sistem</span>
+<button class="px-4 py-2 border-2 border-primary text-primary font-label-bold rounded-lg hover:bg-primary-fixed transition-all active:opacity-80">
+                        Keluar
+                    </button>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="max-w-[1100px] mx-auto py-8 px-container-margin">
+<!-- Header & Actions -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+<h1 class="font-headline-md text-on-surface">Kelola Pengguna</h1>
+<div class="flex flex-wrap items-center gap-3">
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="pl-10 pr-4 h-10 w-64 border-[#D1D5DB] rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-body-sm bg-surface-container-lowest" placeholder="Cari nama atau email..." type="text"/>
+</div>
+<select class="h-10 px-4 border-[#D1D5DB] rounded-lg focus:ring-2 focus:ring-primary focus:border-primary text-body-sm bg-surface-container-lowest min-w-[140px]">
+<option>Semua Peran</option>
+<option>Mahasiswa</option>
+<option>Dosen</option>
+<option>Admin</option>
+</select>
+<button class="bg-[#F59E0B] hover:bg-[#D97706] text-[#1F2937] font-bold h-10 px-6 rounded-lg transition-all active:scale-95 flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px]">add</span>
+                    Tambah Pengguna
+                </button>
+</div>
+</div>
+<!-- Stats Row -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-gutter mb-8">
+<!-- Card 1 -->
+<div class="bg-surface-container-lowest shadow-sm rounded-xl p-card-padding flex flex-col gap-1 border border-outline-variant/20">
+<span class="text-body-sm text-on-surface-variant font-medium">Total Pengguna</span>
+<span class="text-headline-md text-on-surface">128</span>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container-lowest shadow-sm rounded-xl p-card-padding flex flex-col gap-1 border border-outline-variant/20">
+<span class="text-body-sm text-on-surface-variant font-medium">Mahasiswa</span>
+<div class="flex items-end justify-between">
+<span class="text-headline-md text-on-surface">104</span>
+<span class="bg-[#DBEAFE] text-[#1D4ED8] px-2 py-0.5 rounded text-[11px] font-bold">AKTIF</span>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-container-lowest shadow-sm rounded-xl p-card-padding flex flex-col gap-1 border border-outline-variant/20">
+<span class="text-body-sm text-on-surface-variant font-medium">Dosen</span>
+<div class="flex items-end justify-between">
+<span class="text-headline-md text-on-surface">22</span>
+<span class="bg-[#FEF3C7] text-[#B45309] px-2 py-0.5 rounded text-[11px] font-bold">VERIFIKASI</span>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="bg-surface-container-lowest shadow-sm rounded-xl p-card-padding flex flex-col gap-1 border border-outline-variant/20">
+<span class="text-body-sm text-on-surface-variant font-medium">Menunggu Persetujuan</span>
+<div class="flex items-end justify-between">
+<span class="text-headline-md text-[#EA580C]">4</span>
+<span class="bg-[#FEF3C7] text-[#EA580C] px-2 py-0.5 rounded text-[11px] font-bold italic">URGENT</span>
+</div>
+</div>
+</div>
+<!-- User Table Card -->
+<div class="bg-surface-container-lowest shadow-md rounded-xl overflow-hidden border border-outline-variant/30">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-[#F9FAFB] border-b border-[#E5E7EB]">
+<th class="px-6 py-4 font-inter text-[13px] font-semibold uppercase text-[#6B7280] tracking-wider">No</th>
+<th class="px-6 py-4 font-inter text-[13px] font-semibold uppercase text-[#6B7280] tracking-wider">Nama</th>
+<th class="px-6 py-4 font-inter text-[13px] font-semibold uppercase text-[#6B7280] tracking-wider">Email</th>
+<th class="px-6 py-4 font-inter text-[13px] font-semibold uppercase text-[#6B7280] tracking-wider">Peran</th>
+<th class="px-6 py-4 font-inter text-[13px] font-semibold uppercase text-[#6B7280] tracking-wider">Status</th>
+<th class="px-6 py-4 font-inter text-[13px] font-semibold uppercase text-[#6B7280] tracking-wider text-center">Aksi</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-[#E5E7EB]">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="px-6 py-4 text-body-sm text-on-surface-variant">1</td>
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="font-bold text-[#1F2937] text-body-lg leading-tight">Budi Santoso</span>
+<span class="text-[#6B7280] text-[12px]">NIM: 20210001</span>
+</div>
+</td>
+<td class="px-6 py-4 text-body-sm text-[#4B5563]">budi@univ.ac.id</td>
+<td class="px-6 py-4">
+<span class="bg-[#DBEAFE] text-[#1D4ED8] px-3 py-1 rounded-full text-xs font-semibold">Mahasiswa</span>
+</td>
+<td class="px-6 py-4">
+<span class="bg-[#D1FAE5] text-[#065F46] px-3 py-1 rounded-full text-xs font-semibold">Aktif</span>
+</td>
+<td class="px-6 py-4 text-center">—</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="px-6 py-4 text-body-sm text-on-surface-variant">2</td>
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="font-bold text-[#1F2937] text-body-lg leading-tight">Dewi Lestari</span>
+<span class="text-[#6B7280] text-[12px]">NIM: 20210047</span>
+</div>
+</td>
+<td class="px-6 py-4 text-body-sm text-[#4B5563]">dewi@univ.ac.id</td>
+<td class="px-6 py-4">
+<span class="bg-[#DBEAFE] text-[#1D4ED8] px-3 py-1 rounded-full text-xs font-semibold">Mahasiswa</span>
+</td>
+<td class="px-6 py-4">
+<span class="bg-[#D1FAE5] text-[#065F46] px-3 py-1 rounded-full text-xs font-semibold">Aktif</span>
+</td>
+<td class="px-6 py-4 text-center">—</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="px-6 py-4 text-body-sm text-on-surface-variant">3</td>
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="font-bold text-[#1F2937] text-body-lg leading-tight">Dr. Siti Rahayu, M.Kom</span>
+<span class="text-[#6B7280] text-[12px]">NIDN: 0412098201</span>
+</div>
+</td>
+<td class="px-6 py-4 text-body-sm text-[#4B5563]">siti@univ.ac.id</td>
+<td class="px-6 py-4">
+<span class="bg-[#FEF3C7] text-[#B45309] px-3 py-1 rounded-full text-xs font-semibold">Dosen</span>
+</td>
+<td class="px-6 py-4">
+<span class="bg-[#D1FAE5] text-[#065F46] px-3 py-1 rounded-full text-xs font-semibold">Aktif</span>
+</td>
+<td class="px-6 py-4 text-center">—</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-container-low transition-colors bg-surface-container-low/30">
+<td class="px-6 py-4 text-body-sm text-on-surface-variant">4</td>
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="font-bold text-[#1F2937] text-body-lg leading-tight">Ahmad Fauzi</span>
+<span class="text-[#6B7280] text-[12px]">NIM: 21030001</span>
+</div>
+</td>
+<td class="px-6 py-4 text-body-sm text-[#4B5563]">ahmad@univ.ac.id</td>
+<td class="px-6 py-4">
+<span class="bg-[#DBEAFE] text-[#1D4ED8] px-3 py-1 rounded-full text-xs font-semibold">Mahasiswa</span>
+</td>
+<td class="px-6 py-4">
+<span class="bg-[#FEF3C7] text-[#EA580C] px-3 py-1 rounded-full text-xs font-semibold">Menunggu</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex justify-center gap-2">
+<button class="h-8 px-4 bg-[#0E9F6E] hover:bg-[#057A55] text-white font-bold rounded-lg text-xs transition-all">Setujui</button>
+<button class="h-8 px-4 border border-[#EF4444] text-[#EF4444] hover:bg-[#FEE2E2] font-semibold rounded-lg text-xs transition-all">Tolak</button>
+</div>
+</td>
+</tr>
+<!-- Row 5 -->
+<tr class="hover:bg-surface-container-low transition-colors bg-surface-container-low/30">
+<td class="px-6 py-4 text-body-sm text-on-surface-variant">5</td>
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="font-bold text-[#1F2937] text-body-lg leading-tight">Riko Pratama</span>
+<span class="text-[#6B7280] text-[12px]">NIM: 21030032</span>
+</div>
+</td>
+<td class="px-6 py-4 text-body-sm text-[#4B5563]">riko@univ.ac.id</td>
+<td class="px-6 py-4">
+<span class="bg-[#DBEAFE] text-[#1D4ED8] px-3 py-1 rounded-full text-xs font-semibold">Mahasiswa</span>
+</td>
+<td class="px-6 py-4">
+<span class="bg-[#FEF3C7] text-[#EA580C] px-3 py-1 rounded-full text-xs font-semibold">Menunggu</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex justify-center gap-2">
+<button class="h-8 px-4 bg-[#0E9F6E] hover:bg-[#057A55] text-white font-bold rounded-lg text-xs transition-all">Setujui</button>
+<button class="h-8 px-4 border border-[#EF4444] text-[#EF4444] hover:bg-[#FEE2E2] font-semibold rounded-lg text-xs transition-all">Tolak</button>
+</div>
+</td>
+</tr>
+<!-- Row 6 -->
+<tr class="hover:bg-surface-container-low transition-colors bg-surface-container-low/30">
+<td class="px-6 py-4 text-body-sm text-on-surface-variant">6</td>
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="font-bold text-[#1F2937] text-body-lg leading-tight">Dr. Hendra Wijaya</span>
+<span class="text-[#6B7280] text-[12px]">NIDN: 0405057602</span>
+</div>
+</td>
+<td class="px-6 py-4 text-body-sm text-[#4B5563]">hendra@univ.ac.id</td>
+<td class="px-6 py-4">
+<span class="bg-[#FEF3C7] text-[#B45309] px-3 py-1 rounded-full text-xs font-semibold">Dosen</span>
+</td>
+<td class="px-6 py-4">
+<span class="bg-[#FEF3C7] text-[#EA580C] px-3 py-1 rounded-full text-xs font-semibold">Menunggu</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex justify-center gap-2">
+<button class="h-8 px-4 bg-[#0E9F6E] hover:bg-[#057A55] text-white font-bold rounded-lg text-xs transition-all">Setujui</button>
+<button class="h-8 px-4 border border-[#EF4444] text-[#EF4444] hover:bg-[#FEE2E2] font-semibold rounded-lg text-xs transition-all">Tolak</button>
+</div>
+</td>
+</tr>
+<!-- Row 7 -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="px-6 py-4 text-body-sm text-on-surface-variant">7</td>
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="font-bold text-[#1F2937] text-body-lg leading-tight">Sari Wulandari</span>
+<span class="text-[#6B7280] text-[12px]">NIM: 20210015</span>
+</div>
+</td>
+<td class="px-6 py-4 text-body-sm text-[#4B5563]">sari@univ.ac.id</td>
+<td class="px-6 py-4">
+<span class="bg-[#DBEAFE] text-[#1D4ED8] px-3 py-1 rounded-full text-xs font-semibold">Mahasiswa</span>
+</td>
+<td class="px-6 py-4">
+<span class="bg-[#FEE2E2] text-[#B91C1C] px-3 py-1 rounded-full text-xs font-semibold">Nonaktif</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex justify-center">
+<button class="h-8 px-4 border border-[#6B7280] text-[#374151] hover:bg-surface-container-high font-semibold rounded-lg text-xs transition-all">Aktifkan</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Table Footer (Pagination) -->
+<div class="bg-surface-container-lowest border-t border-[#E5E7EB] px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+<span class="text-body-sm text-on-surface-variant">Menampilkan 7 dari 128 pengguna</span>
+<div class="flex items-center gap-2">
+<button class="px-3 py-1 border border-[#E5E7EB] text-[#9CA3AF] rounded-md text-sm font-medium cursor-not-allowed" disabled="">Sebelumnya</button>
+<button class="w-8 h-8 flex items-center justify-center bg-[#F59E0B] text-[#1F2937] font-bold rounded-md text-sm">1</button>
+<button class="w-8 h-8 flex items-center justify-center text-[#4B5563] hover:bg-surface-container-high rounded-md text-sm transition-colors">2</button>
+<button class="w-8 h-8 flex items-center justify-center text-[#4B5563] hover:bg-surface-container-high rounded-md text-sm transition-colors">3</button>
+<button class="px-3 py-1 border border-[#E5E7EB] text-[#4B5563] hover:bg-surface-container-high rounded-md text-sm font-medium transition-colors">Berikutnya</button>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer Component -->
+<footer class="w-full px-container-margin py-section-gap flex flex-col md:flex-row justify-between items-center border-t border-outline-variant bg-surface-container-low mt-12">
+<div class="flex flex-col items-center md:items-start gap-2 mb-6 md:mb-0">
+<span class="font-label-bold text-label-bold text-on-surface uppercase tracking-widest">TemuDosen Admin Hub</span>
+<p class="text-secondary font-body-sm text-body-sm">© 2024 TemuDosen. All rights reserved.</p>
+</div>
+<div class="flex gap-8">
+<a class="text-on-surface-variant hover:text-primary transition-colors text-body-sm font-medium" href="#">Bantuan</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors text-body-sm font-medium" href="#">Kebijakan Privasi</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors text-body-sm font-medium" href="#">Syarat &amp; Ketentuan</a>
+</div>
+</footer>
+<script>
+        // Micro-interactions for buttons
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                if (!this.disabled) {
+                    const ripple = document.createElement('span');
+                    ripple.className = 'ripple';
+                    this.appendChild(ripple);
+                    setTimeout(() => ripple.remove(), 600);
+                }
+            });
+        });
+    </script>
+</body></html>
