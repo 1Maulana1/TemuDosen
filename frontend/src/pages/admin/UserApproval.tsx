@@ -35,7 +35,7 @@ function getRoleLabel(role: string): string {
     student: 'Mahasiswa',
     lecturer: 'Dosen',
     admin: 'Admin',
-    kaprodi: 'Kaprodi',
+    ketua_jurusan: 'Ketua Jurusan',
   };
   return map[role] ?? role;
 }

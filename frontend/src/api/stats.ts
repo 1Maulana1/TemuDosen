@@ -36,7 +36,7 @@ export interface DosenWorkload {
   kuota_harian_menit: number;
 }
 
-export interface KaprodiStats {
+export interface KetuaJurusanStats {
   period: ReportPeriod;
   period_label: string;
   total_sesi: number;
@@ -55,7 +55,7 @@ export interface ComplianceRow {
   compliance_rate: number;
 }
 
-export interface KaprodiCompliance {
+export interface KetuaJurusanCompliance {
   period: ReportPeriod;
   period_label: string;
   compliance_rate: number;
@@ -118,20 +118,20 @@ export async function cleanupAdminLogs(): Promise<{ deleted: number }> {
   return r.json();
 }
 
-export async function getKaprodiStats(period: ReportPeriod = 'monthly'): Promise<KaprodiStats> {
-  const r = await apiRequest(`/api/kaprodi/stats/?period=${period}`);
-  if (!r.ok) throw new Error('Gagal memuat statistik kaprodi.');
+export async function getKetuaJurusanStats(period: ReportPeriod = 'monthly'): Promise<KetuaJurusanStats> {
+  const r = await apiRequest(`/api/ketua-jurusan/stats/?period=${period}`);
+  if (!r.ok) throw new Error('Gagal memuat statistik ketua jurusan.');
   return r.json();
 }
 
-export async function getKaprodiCompliance(period: ReportPeriod = 'monthly'): Promise<KaprodiCompliance> {
-  const r = await apiRequest(`/api/kaprodi/compliance/?period=${period}`);
+export async function getKetuaJurusanCompliance(period: ReportPeriod = 'monthly'): Promise<KetuaJurusanCompliance> {
+  const r = await apiRequest(`/api/ketua-jurusan/compliance/?period=${period}`);
   if (!r.ok) throw new Error('Gagal memuat data kepatuhan.');
   return r.json();
 }
 
-export function getKaprodiExportUrl(period: ReportPeriod = 'monthly', format: 'csv' | 'pdf' = 'csv'): string {
-  return `/api/kaprodi/export/?period=${period}&format=${format}`;
+export function getKetuaJurusanExportUrl(period: ReportPeriod = 'monthly', format: 'csv' | 'pdf' = 'csv'): string {
+  return `/api/ketua-jurusan/export/?period=${period}&format=${format}`;
 }
 
 export interface StartSessionConsent {

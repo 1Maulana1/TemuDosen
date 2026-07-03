@@ -1,6 +1,6 @@
 /**
  * PasswordInput — password field with lock icon + show/hide toggle.
- * Shared by LoginMahasiswaPage / LoginDosenPage / LoginKaprodiPage.
+ * Shared by LoginMahasiswaPage / LoginDosenPage / LoginKetuaJurusanPage.
  * (LoginPage.tsx keeps its own inline copy — not refactored per task scope.)
  */
 import { useState } from 'react';

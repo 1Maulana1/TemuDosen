@@ -19,7 +19,7 @@ export interface User {
   id: number;
   email: string;
   full_name: string;
-  role: 'student' | 'lecturer' | 'admin' | 'kaprodi';
+  role: 'student' | 'lecturer' | 'admin' | 'ketua_jurusan';
   nim: string | null;
   nidn: string | null;
   is_approved: boolean;

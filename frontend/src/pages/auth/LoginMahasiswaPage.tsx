@@ -23,7 +23,7 @@ const EXPECTED_ROLE: User['role'] = 'student';
 const ROLE_INFO: Partial<Record<User['role'], { label: string; path: string }>> = {
   student: { label: 'Mahasiswa', path: '/login/mahasiswa' },
   lecturer: { label: 'Dosen', path: '/login/dosen' },
-  kaprodi: { label: 'Kaprodi', path: '/login/kaprodi' },
+  ketua_jurusan: { label: 'Ketua Jurusan', path: '/login/ketua-jurusan' },
 };
 
 export default function LoginMahasiswaPage() {
@@ -174,10 +174,10 @@ export default function LoginMahasiswaPage() {
               Login sebagai Dosen
             </Link>
             <Link
-              to="/login/kaprodi"
+              to="/login/ketua-jurusan"
               className="text-accent-link font-bold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded"
             >
-              Login sebagai Kaprodi
+              Login sebagai Ketua Jurusan
             </Link>
           </div>
         </div>

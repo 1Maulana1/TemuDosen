@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouteLoaderData } from 'react-router';
 import type { User } from '../../api/auth';
 import {
-  getKaprodiStats, getKaprodiCompliance, getKaprodiExportUrl,
-  type KaprodiStats, type KaprodiCompliance, type ReportPeriod, type ComplianceRow,
+  getKetuaJurusanStats, getKetuaJurusanCompliance, getKetuaJurusanExportUrl,
+  type KetuaJurusanStats, type KetuaJurusanCompliance, type ReportPeriod, type ComplianceRow,
 } from '../../api/stats';
 
 const PERIOD_TABS: { value: ReportPeriod; label: string }[] = [
@@ -54,11 +54,11 @@ function ComplianceTable({ rows, nameKey }: { rows: ComplianceRow[]; nameKey: 'n
   );
 }
 
-export default function KaprodiDashboard() {
-  const user = useRouteLoaderData('kaprodi') as User;
+export default function KetuaJurusanDashboard() {
+  const user = useRouteLoaderData('ketua-jurusan') as User;
   const [period, setPeriod] = useState<ReportPeriod>('monthly');
-  const [data, setData] = useState<KaprodiStats | null>(null);
-  const [compliance, setCompliance] = useState<KaprodiCompliance | null>(null);
+  const [data, setData] = useState<KetuaJurusanStats | null>(null);
+  const [compliance, setCompliance] = useState<KetuaJurusanCompliance | null>(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState<'csv' | 'pdf' | null>(null);
   const [complianceTab, setComplianceTab] = useState<'mahasiswa' | 'dosen'>('mahasiswa');
@@ -66,8 +66,8 @@ export default function KaprodiDashboard() {
   const load = useCallback(() => {
     setLoading(true);
     Promise.all([
-      getKaprodiStats(period).catch(() => null),
-      getKaprodiCompliance(period).catch(() => null),
+      getKetuaJurusanStats(period).catch(() => null),
+      getKetuaJurusanCompliance(period).catch(() => null),
     ]).then(([s, c]) => { setData(s); setCompliance(c); }).finally(() => setLoading(false));
   }, [period]);
 
@@ -77,14 +77,14 @@ export default function KaprodiDashboard() {
 
   const handleExport = (format: 'csv' | 'pdf') => {
     setExporting(format);
-    window.open(getKaprodiExportUrl(period, format), '_blank');
+    window.open(getKetuaJurusanExportUrl(period, format), '_blank');
     setTimeout(() => setExporting(null), 2000);
   };
 
   return (
     <div className="bg-gray-50 min-h-screen">
       <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 h-16 max-w-2xl mx-auto flex items-center justify-between px-4">
-        <span className="font-headline font-bold text-lg text-primary">TemuDosen — Kaprodi</span>
+        <span className="font-headline font-bold text-lg text-primary">TemuDosen — Ketua Jurusan</span>
         <span className="text-sm text-neutral-gray">{user?.full_name}</span>
       </header>
 

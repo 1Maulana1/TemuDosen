@@ -1,9 +1,9 @@
 /**
- * LoginKaprodiPage — /login/kaprodi
+ * LoginKetuaJurusanPage — /login/ketua-jurusan
  *
- * Role-specific login page for kaprodi. Field is Email + Password — kaprodi
- * accounts have no nim/nidn at all (see seed_admin.py), so email is the only
- * possible identifier; decided during audit.
+ * Role-specific login page for ketua jurusan. Field is Email + Password — ketua
+ * jurusan accounts have no nim/nidn at all (see seed_admin.py), so email is the
+ * only possible identifier; decided during audit.
  *
  * Design and auth flow copied from LoginPage.tsx (not reinvented). Only the
  * title and cross-role navigation links differ.
@@ -15,17 +15,17 @@ import type { User } from '../../api/auth';
 import PasswordInput from '../../components/PasswordInput';
 import { getRoleRedirect } from './roleRedirect';
 
-// This page only accepts 'kaprodi' accounts. Actual role values confirmed
+// This page only accepts 'ketua_jurusan' accounts. Actual role values confirmed
 // against the User type in api/auth.ts — do not hardcode without checking.
-const EXPECTED_ROLE: User['role'] = 'kaprodi';
+const EXPECTED_ROLE: User['role'] = 'ketua_jurusan';
 
 const ROLE_INFO: Partial<Record<User['role'], { label: string; path: string }>> = {
   student: { label: 'Mahasiswa', path: '/login/mahasiswa' },
   lecturer: { label: 'Dosen', path: '/login/dosen' },
-  kaprodi: { label: 'Kaprodi', path: '/login/kaprodi' },
+  ketua_jurusan: { label: 'Ketua Jurusan', path: '/login/ketua-jurusan' },
 };
 
-export default function LoginKaprodiPage() {
+export default function LoginKetuaJurusanPage() {
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
@@ -68,7 +68,7 @@ export default function LoginKaprodiPage() {
           <h1 className="font-headline font-bold text-2xl text-primary text-center mb-1">
             TemuDosen
           </h1>
-          <p className="text-center text-sm font-bold text-slate-800 mb-8">Login Kaprodi</p>
+          <p className="text-center text-sm font-bold text-slate-800 mb-8">Login Ketua Jurusan</p>
 
           <form onSubmit={handleSubmit} noValidate>
             {/* Email */}
@@ -121,14 +121,14 @@ export default function LoginKaprodiPage() {
               </p>
             )}
 
-            {/* Role mismatch — account exists but isn't a kaprodi account */}
+            {/* Role mismatch — account exists but isn't a ketua jurusan account */}
             {roleMismatch && (
               <div
                 role="alert"
                 aria-live="polite"
                 className="mb-4 rounded-xl bg-warning-bg px-4 py-3 text-sm text-warning-text"
               >
-                <p>Akun ini bukan akun kaprodi. Silakan login di halaman yang sesuai.</p>
+                <p>Akun ini bukan akun ketua jurusan. Silakan login di halaman yang sesuai.</p>
                 <Link
                   to={roleMismatch.path}
                   className="mt-1 inline-block font-bold underline hover:no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded"

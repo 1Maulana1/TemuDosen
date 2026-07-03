@@ -3,7 +3,7 @@ import { createBrowserRouter, redirect } from 'react-router';
 import LoginPage from './pages/auth/LoginPage';
 import LoginMahasiswaPage from './pages/auth/LoginMahasiswaPage';
 import LoginDosenPage from './pages/auth/LoginDosenPage';
-import LoginKaprodiPage from './pages/auth/LoginKaprodiPage';
+import LoginKetuaJurusanPage from './pages/auth/LoginKetuaJurusanPage';
 import RegisterRolePage from './pages/auth/RegisterRolePage';
 import RegisterStudentPage from './pages/auth/RegisterStudentPage';
 import RegisterLecturerPage from './pages/auth/RegisterLecturerPage';
@@ -19,7 +19,7 @@ import LecturerDashboard from './pages/lecturer/LecturerDashboard';
 import LecturerRequests from './pages/lecturer/LecturerRequests';
 import LecturerQueue from './pages/lecturer/LecturerQueue';
 import LecturerSettings from './pages/lecturer/LecturerSettings';
-import KaprodiDashboard from './pages/kaprodi/KaprodiDashboard';
+import KetuaJurusanDashboard from './pages/ketua-jurusan/KetuaJurusanDashboard';
 import { getCurrentUser } from './api/auth';
 import type { User } from './api/auth';
 
@@ -47,7 +47,7 @@ async function rootLoader(): Promise<never> {
     student: '/mahasiswa',
     lecturer: '/dosen',
     admin: '/admin',
-    kaprodi: '/kaprodi',
+    ketua_jurusan: '/ketua-jurusan',
   };
   throw redirect(dest[user.role] ?? '/login');
 }
@@ -57,7 +57,7 @@ export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
   { path: '/login/mahasiswa', element: <LoginMahasiswaPage /> },
   { path: '/login/dosen', element: <LoginDosenPage /> },
-  { path: '/login/kaprodi', element: <LoginKaprodiPage /> },
+  { path: '/login/ketua-jurusan', element: <LoginKetuaJurusanPage /> },
   { path: '/register', element: <RegisterRolePage /> },
   { path: '/register/mahasiswa', element: <RegisterStudentPage /> },
   { path: '/register/dosen', element: <RegisterLecturerPage /> },
@@ -100,13 +100,13 @@ export const router = createBrowserRouter([
     ],
   },
 
-  // Kaprodi
+  // Ketua Jurusan
   {
-    id: 'kaprodi',
-    path: '/kaprodi',
-    loader: requireRole('kaprodi'),
+    id: 'ketua-jurusan',
+    path: '/ketua-jurusan',
+    loader: requireRole('ketua_jurusan'),
     children: [
-      { index: true, element: <KaprodiDashboard /> },
+      { index: true, element: <KetuaJurusanDashboard /> },
     ],
   },
 
