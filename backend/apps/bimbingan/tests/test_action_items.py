@@ -1,0 +1,175 @@
+"""
+Phase 7 — Advisory Continuity (FR-KP04): action items ("saran") attached to a
+session, student follow-up marking, and the kaprodi compliance report.
+
+Covers:
+  GET/POST /api/queue/<session_id>/action-items/  → SessionActionItemsView
+  POST     /api/action-items/<id>/complete/       → CompleteActionItemView
+  GET      /api/kaprodi/compliance/                → KaprodiComplianceView
+"""
+import pytest
+from rest_framework.test import APIClient
+
+from apps.bimbingan.models import ActionItem, Session
+
+
+def client_for(user):
+    c = APIClient()
+    c.force_authenticate(user=user)
+    return c
+
+
+def _approve(lecturer, submission):
+    resp = client_for(lecturer).post(
+        f'/api/submissions/{submission.id}/approve/', {'method': 'offline'}, format='json'
+    )
+    assert resp.status_code == 200, resp.data
+    return Session.objects.get(submission=submission)
+
+
+def action_items_url(session_id):
+    return f'/api/queue/{session_id}/action-items/'
+
+
+def complete_url(pk):
+    return f'/api/action-items/{pk}/complete/'
+
+
+@pytest.mark.django_db
+class TestSessionActionItemsView:
+    def test_lecturer_can_add_an_action_item(self, lecturer_user, pending_submission):
+        session = _approve(lecturer_user, pending_submission)
+
+        resp = client_for(lecturer_user).post(
+            action_items_url(session.id),
+            {'description': 'Perbaiki bab metodologi sesuai catatan'},
+            format='json',
+        )
+        assert resp.status_code == 201
+        assert resp.data['is_completed'] is False
+        assert ActionItem.objects.filter(session=session).count() == 1
+
+    def test_student_cannot_add_an_action_item(
+        self, lecturer_user, advisee_student, pending_submission
+    ):
+        """Only the dosen gives advice — the student side is read + complete only."""
+        session = _approve(lecturer_user, pending_submission)
+
+        resp = client_for(advisee_student).post(
+            action_items_url(session.id), {'description': 'x'}, format='json'
+        )
+        assert resp.status_code == 403
+
+    def test_add_rejects_empty_description(self, lecturer_user, pending_submission):
+        session = _approve(lecturer_user, pending_submission)
+
+        resp = client_for(lecturer_user).post(
+            action_items_url(session.id), {'description': '  '}, format='json'
+        )
+        assert resp.status_code == 400
+
+    def test_both_student_and_lecturer_can_list_items(
+        self, lecturer_user, advisee_student, pending_submission
+    ):
+        session = _approve(lecturer_user, pending_submission)
+        ActionItem.objects.create(session=session, description='Saran 1')
+
+        for user in (lecturer_user, advisee_student):
+            resp = client_for(user).get(action_items_url(session.id))
+            assert resp.status_code == 200
+            assert len(resp.data) == 1
+
+    def test_unrelated_user_forbidden(
+        self, lecturer_user, student_user, pending_submission
+    ):
+        """A student who isn't the advisee on this session can't see its action items."""
+        session = _approve(lecturer_user, pending_submission)
+
+        resp = client_for(student_user).get(action_items_url(session.id))
+        assert resp.status_code == 403
+
+    def test_nonexistent_session_returns_404(self, lecturer_user):
+        resp = client_for(lecturer_user).get(action_items_url(999999))
+        assert resp.status_code == 404
+
+
+@pytest.mark.django_db
+class TestCompleteActionItemView:
+    def test_student_can_mark_own_action_item_complete(
+        self, lecturer_user, advisee_student, pending_submission
+    ):
+        session = _approve(lecturer_user, pending_submission)
+        item = ActionItem.objects.create(session=session, description='Perbaiki bab 2')
+
+        resp = client_for(advisee_student).post(complete_url(item.id))
+        assert resp.status_code == 200
+
+        item.refresh_from_db()
+        assert item.is_completed is True
+        assert item.completed_at is not None
+
+    def test_other_student_cannot_complete_someone_elses_item(
+        self, lecturer_user, student_user, pending_submission
+    ):
+        session = _approve(lecturer_user, pending_submission)
+        item = ActionItem.objects.create(session=session, description='Perbaiki bab 2')
+
+        resp = client_for(student_user).post(complete_url(item.id))
+        assert resp.status_code == 403
+
+    def test_lecturer_cannot_complete_an_action_item(
+        self, lecturer_user, advisee_student, pending_submission
+    ):
+        """Completing is student-only (IsStudent permission) — the dosen who wrote
+        the advice doesn't get to mark it addressed themselves."""
+        session = _approve(lecturer_user, pending_submission)
+        item = ActionItem.objects.create(session=session, description='Perbaiki bab 2')
+
+        resp = client_for(lecturer_user).post(complete_url(item.id))
+        assert resp.status_code == 403
+
+    def test_nonexistent_item_returns_404(self, advisee_student):
+        resp = client_for(advisee_student).post(complete_url(999999))
+        assert resp.status_code == 404
+
+
+@pytest.mark.django_db
+class TestKaprodiComplianceView:
+    url = '/api/kaprodi/compliance/'
+
+    def test_compliance_rate_reflects_completed_vs_total(
+        self, kaprodi_user, lecturer_user, advisee_student, pending_submission
+    ):
+        session = _approve(lecturer_user, pending_submission)
+        item1 = ActionItem.objects.create(session=session, description='Saran 1')
+        ActionItem.objects.create(session=session, description='Saran 2')
+        client_for(advisee_student).post(complete_url(item1.id))
+
+        resp = client_for(kaprodi_user).get(self.url)
+        assert resp.status_code == 200
+        assert resp.data['compliance_rate'] == 50
+
+    def test_per_dosen_and_per_mahasiswa_breakdowns_present(
+        self, kaprodi_user, lecturer_user, pending_submission
+    ):
+        session = _approve(lecturer_user, pending_submission)
+        ActionItem.objects.create(session=session, description='Saran 1')
+
+        resp = client_for(kaprodi_user).get(self.url)
+        assert resp.status_code == 200
+        assert len(resp.data['per_dosen']) == 1
+        assert resp.data['per_dosen'][0]['dosen_name'] == lecturer_user.full_name
+        assert len(resp.data['per_mahasiswa']) == 1
+
+    def test_zero_action_items_reports_zero_percent_not_error(self, kaprodi_user):
+        """No division-by-zero when nothing has been created yet — the realistic
+        current-day state, since no UI exists yet to create action items at all
+        (see 07-VERIFICATION.md)."""
+        resp = client_for(kaprodi_user).get(self.url)
+        assert resp.status_code == 200
+        assert resp.data['compliance_rate'] == 0
+        assert resp.data['per_dosen'] == []
+
+    def test_lecturer_forbidden(self, authenticated_lecturer):
+        resp = authenticated_lecturer.get(self.url)
+        assert resp.status_code == 403
