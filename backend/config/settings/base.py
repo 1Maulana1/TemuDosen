@@ -122,6 +122,7 @@ GOOGLE_CALENDAR_ENABLED = env.bool('GOOGLE_CALENDAR_ENABLED', default=False)
 GOOGLE_CLIENT_ID = env('GOOGLE_CLIENT_ID', default='')
 GOOGLE_CLIENT_SECRET = env('GOOGLE_CLIENT_SECRET', default='')
 GOOGLE_REDIRECT_URI = env('GOOGLE_REDIRECT_URI', default='http://localhost:8000/api/calendar/callback/')
+FRONTEND_URL = env('FRONTEND_URL', default='http://localhost:5173')
 
 # Phase 2: Dosen daily guidance quota (minutes); default 480 min = 8 hours
 DOSEN_DAILY_QUOTA_MINUTES = env.int('DOSEN_DAILY_QUOTA_MINUTES', default=480)

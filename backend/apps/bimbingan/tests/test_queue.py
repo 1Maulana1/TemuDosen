@@ -186,3 +186,55 @@ class TestStartSession:
         session = _approve(lecturer_user, pending_submission)
         resp = client_for(advisee_student).post(self.start_url(session.id))
         assert resp.status_code == 403
+
+    def test_consent_given_at_recorded_when_both_parties_consent(
+        self, lecturer_user, pending_submission
+    ):
+        """FR-M04 — consent_given_at is stamped only when both dosen and
+        mahasiswa consent to recording."""
+        session = _approve(lecturer_user, pending_submission)
+
+        resp = client_for(lecturer_user).post(
+            self.start_url(session.id),
+            {'consent_by_dosen': True, 'consent_by_mahasiswa': True},
+            format='json',
+        )
+        assert resp.status_code == 200
+
+        session.refresh_from_db()
+        assert session.consent_by_dosen is True
+        assert session.consent_by_mahasiswa is True
+        assert session.consent_given_at is not None
+
+    def test_session_proceeds_without_recording_if_either_party_declines(
+        self, lecturer_user, pending_submission
+    ):
+        """FR-M04 — session still starts (ts1 stamped, IN_PROGRESS) even when
+        consent is declined; it just isn't recorded (consent_given_at stays null)."""
+        session = _approve(lecturer_user, pending_submission)
+
+        resp = client_for(lecturer_user).post(
+            self.start_url(session.id),
+            {'consent_by_dosen': True, 'consent_by_mahasiswa': False},
+            format='json',
+        )
+        assert resp.status_code == 200
+
+        session.refresh_from_db()
+        assert session.status == Session.Status.IN_PROGRESS
+        assert session.ts1 is not None
+        assert session.consent_given_at is None
+
+    def test_consent_defaults_to_declined_when_not_sent(
+        self, lecturer_user, pending_submission
+    ):
+        """Omitting consent fields entirely must not be treated as consent."""
+        session = _approve(lecturer_user, pending_submission)
+
+        resp = client_for(lecturer_user).post(self.start_url(session.id))
+        assert resp.status_code == 200
+
+        session.refresh_from_db()
+        assert session.consent_by_dosen is False
+        assert session.consent_by_mahasiswa is False
+        assert session.consent_given_at is None

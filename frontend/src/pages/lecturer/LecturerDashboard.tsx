@@ -152,10 +152,10 @@ export default function LecturerDashboard() {
           <span className="material-symbols-outlined text-xl">format_list_numbered</span>
           <span className="text-[11px]">Antrian</span>
         </Link>
-        <button type="button" className="flex flex-col items-center text-gray-400 min-h-[44px] min-w-[44px]">
+        <Link to="/dosen/pengaturan" className="flex flex-col items-center text-gray-400 hover:text-primary min-h-[44px] min-w-[44px]">
           <span className="material-symbols-outlined text-xl">person</span>
           <span className="text-[11px]">Profil</span>
-        </button>
+        </Link>
       </nav>
 
       {consentTarget && (

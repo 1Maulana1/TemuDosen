@@ -324,3 +324,42 @@ class TestCalendarStatusView:
         OAuth entrypoint must fail closed rather than attempting a live flow."""
         resp = authenticated_lecturer.get('/api/calendar/auth/')
         assert resp.status_code == 503
+
+
+# ── Calendar OAuth callback — redirects to the frontend, never raw JSON ─────────
+
+class TestCalendarCallbackView:
+    """Google redirects the browser here as a top-level navigation, so every
+    outcome must send the browser back to /dosen/pengaturan with a query flag —
+    never a raw JSON/DRF page (that page is unreachable/meaningless to a user)."""
+
+    def test_redirects_to_settings_with_disabled_reason_when_calendar_disabled(
+        self, authenticated_lecturer, settings
+    ):
+        resp = authenticated_lecturer.get('/api/calendar/callback/', follow=False)
+        assert resp.status_code == 302
+        assert resp.url == f'{settings.FRONTEND_URL}/dosen/pengaturan?calendar=error&reason=disabled'
+
+    def test_redirects_with_invalid_state_reason_when_code_missing(
+        self, authenticated_lecturer, settings
+    ):
+        settings.GOOGLE_CALENDAR_ENABLED = True
+        resp = authenticated_lecturer.get('/api/calendar/callback/', follow=False)
+        assert resp.status_code == 302
+        assert resp.url == f'{settings.FRONTEND_URL}/dosen/pengaturan?calendar=error&reason=invalid_state'
+
+    def test_redirects_with_invalid_state_reason_when_state_mismatches_session(
+        self, authenticated_lecturer, settings
+    ):
+        """A code is present, but the state param doesn't match what CalendarAuthView
+        stored in the session — must not proceed into the OAuth token exchange."""
+        settings.GOOGLE_CALENDAR_ENABLED = True
+        session = authenticated_lecturer.session
+        session['oauth_state'] = 'expected-state'
+        session.save()
+
+        resp = authenticated_lecturer.get(
+            '/api/calendar/callback/', {'code': 'abc', 'state': 'wrong-state'}, follow=False
+        )
+        assert resp.status_code == 302
+        assert resp.url == f'{settings.FRONTEND_URL}/dosen/pengaturan?calendar=error&reason=invalid_state'

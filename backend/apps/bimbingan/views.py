@@ -546,19 +546,33 @@ class CalendarAuthView(APIView):
 
 
 class CalendarCallbackView(APIView):
-    """GET /api/calendar/callback/ — terima code dari Google, simpan token."""
+    """GET /api/calendar/callback/ — terima code dari Google, simpan token.
+
+    Google redirects the browser here directly (top-level navigation), so every
+    outcome sends the browser back to the frontend settings page with a query
+    flag rather than rendering a raw JSON/DRF page.
+    """
     permission_classes = [IsLecturer]
+
+    def _redirect_to_frontend(self, connected: bool, reason: str = ''):
+        from django.shortcuts import redirect as django_redirect
+        from urllib.parse import urlencode
+
+        params = {'calendar': 'connected' if connected else 'error'}
+        if reason:
+            params['reason'] = reason
+        return django_redirect(f'{settings.FRONTEND_URL}/dosen/pengaturan?{urlencode(params)}')
 
     def get(self, request):
         if not getattr(settings, 'GOOGLE_CALENDAR_ENABLED', False):
-            return Response({'detail': 'Google Calendar tidak diaktifkan.'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+            return self._redirect_to_frontend(False, 'disabled')
 
         code = request.GET.get('code')
         state = request.GET.get('state')
         stored_state = request.session.get('oauth_state')
 
         if not code or state != stored_state:
-            return Response({'detail': 'Parameter OAuth tidak valid.'}, status=status.HTTP_400_BAD_REQUEST)
+            return self._redirect_to_frontend(False, 'invalid_state')
 
         try:
             from google_auth_oauthlib.flow import Flow
@@ -600,10 +614,10 @@ class CalendarCallbackView(APIView):
             del request.session['oauth_state']
             del request.session['oauth_dosen_id']
 
-            return Response({'message': 'Google Calendar berhasil dihubungkan.'})
+            return self._redirect_to_frontend(True)
         except Exception as e:
             logger.exception('CalendarCallbackView error: %s', e)
-            return Response({'detail': 'Gagal menyimpan token Google.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return self._redirect_to_frontend(False, 'save_failed')
 
 
 class CalendarStatusView(APIView):
