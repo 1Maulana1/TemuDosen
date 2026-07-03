@@ -4,7 +4,7 @@
 
 **Revised plan — June 2026:** Due to a hard deadline of 15 July 2026 and a 4-person team (1 effective person-day/day), scope was originally cut to Phases 1–3 for the submission, with Phases 4–8 deferred as documented future work.
 
-**Update — 2026-07-03:** In practice, team members kept building past the cut scope. A post-merge code audit (see `.planning/STATE.md` → Code-Ahead-of-Process Audit) found Phases 3, 4, and 8 were essentially code-complete, and Phases 5 and 7 were partially implemented, without going through a formal plan/verification loop. Phases 3, 4, and 5 have since been formally verified (retroactive `0N-VERIFICATION.md` reports, new test coverage, and two real bugs fixed along the way — see their sections below). **Phase 6 (STT, AI Summarization & Logbook) is the only phase with no work at all**, confirmed by `06-VERIFICATION.md`, and is now the real blocker to full-scope completion. It also depends on one missing piece of Phase 5 (actual audio capture) that nothing has built yet.
+**Update — 2026-07-03:** In practice, team members kept building past the cut scope. A post-merge code audit (see `.planning/STATE.md` → Code-Ahead-of-Process Audit) found Phases 3–5, 7, and 8 all had real code, without going through a formal plan/verification loop. All of Phases 3–8 have now been formally verified (retroactive `0N-VERIFICATION.md` reports, new test coverage, and several real bugs/gaps found and fixed along the way — see their sections below). **Phase 6 (STT, AI Summarization & Logbook) is the only phase with no work at all**, confirmed by `06-VERIFICATION.md`, and is now the real blocker to full-scope completion. It also depends on one missing piece of Phase 5 (actual audio capture) that nothing has built yet, and Phase 7's advice-tracking half turned out to have no frontend UI at all despite a working, tested backend.
 
 The MVP delivers the full guidance request and queue backbone: a student submits a request with symptoms and a draft PDF, the lecturer approves/rejects with triage-calculated duration, and the student tracks their real-time queue position and can self-cancel. This is a complete, usable flow for the primary actors.
 
@@ -28,8 +28,8 @@ Phases 4, 5, 7, and 8 (Google Calendar sync, session recording, advisory continu
 - [x] **Phase 4: Google Calendar Sync & Graceful Degradation** - Approved/cancelled/rescheduled sessions sync to Google Calendar with local fallback and admin error logs — VERIFIED (2026-07-03, `04-VERIFICATION.md` — 4/4 success criteria, 16 tests; fixed a real bug where the OAuth callback showed raw JSON instead of redirecting back to the app)
 - [~] **Phase 5: Session Execution with Recording & Consent** - Consent prompt, single "Mulai & Rekam" button (TS1 + audio start), "Selesai" (TS2 + audio stop), T-15 notifications, auto-cancel, online/offline mode — PARTIAL, VERIFIED AS FAR AS IT GOES (2026-07-03, `05-VERIFICATION.md` — 4/6 success criteria; consent + TS1 + T-15 notification + 30-min auto-cancel done and now tested; **no TS2, no actual audio recording**)
 - [ ] **Phase 6: STT, AI Summarization & Logbook** - Async STT transcription (faster-whisper), LLM summary generation, lecturer review/edit/approve flow, student-visible transcript + summary; fallback to manual notes — **NOT STARTED** (confirmed 2026-07-03, `06-VERIFICATION.md` — 0/6, zero code found)
-- [~] **Phase 7: Advisory Continuity & Campus Logbook Integration** - Per-session advice items, student follow-up marking, lecturer advice history view, Sekawan/KPTI API sync (or CSV/PDF export fallback) — PARTIAL: `ActionItem` model + compliance reporting done; **no campus API sync, no CSV/PDF fallback export**
-- [x] **Phase 8: Admin Emergency Controls & Kaprodi Reporting** - Emergency Cancel, Admin Dashboard (all error logs + STT/LLM quota), Kaprodi guidance history + workload + advice-compliance reports — CODE-COMPLETE, unverified (2026-07-03 audit: Emergency Cancel, Admin Dashboard, Kaprodi export/compliance all implemented)
+- [~] **Phase 7: Advisory Continuity & Campus Logbook Integration** - Per-session advice items, student follow-up marking, lecturer advice history view, Sekawan/KPTI API sync (or CSV/PDF export fallback) — PARTIAL, VERIFIED (2026-07-03, `07-VERIFICATION.md` — 2/6 success criteria; backend (`ActionItem` CRUD + compliance report) works and is tested, but **has no frontend UI on either side** (lecturer can't add advice, student can't view/complete it); campus API sync (SC3-6) not started
+- [x] **Phase 8: Admin Emergency Controls & Kaprodi Reporting** - Emergency Cancel, Admin Dashboard (all error logs + STT/LLM quota), Kaprodi guidance history + workload + advice-compliance reports — VERIFIED (2026-07-03, `08-VERIFICATION.md` — 3/4 success criteria clean; SC3 "sessions completed" metric is structurally always 0 until Phase 5's Selesai action exists, not a Phase 8 bug)
 
 ---
 
@@ -150,17 +150,17 @@ Phases 4, 5, 7, and 8 (Google Calendar sync, session recording, advisory continu
 **Mode:** mvp
 **Depends on**: Phase 6 (advice items come from approved summaries)
 **Requirements**: ADVICE-01, ADVICE-02, LOGBOOK-01, LOGBOOK-02, LOGBOOK-03, ADMIN-04
-**Status**: PARTIAL (2026-07-03 audit) — advice tracking + compliance reporting done; campus API sync and CSV/PDF fallback missing
+**Status**: PARTIAL, VERIFIED (2026-07-03) — see `phases/07-advisory-continuity-campus-logbook/07-VERIFICATION.md`. 2/6 success criteria have working, tested API logic; **none are fully satisfied**, since the advice-tracking half has zero frontend UI and the campus-sync half was never started.
 **Success Criteria** (what must be TRUE):
 
-  1. Student can mark individual advice items as "addressed" with an optional note/evidence before submitting the next session request — 🟡 PARTIAL: `ActionItem.is_completed` + `CompleteActionItemView` exist, but there's no note/evidence field, just a boolean
-  2. Lecturer can view the complete advice history and follow-up status for each advisee student — 🟢 DONE (`KaprodiComplianceView` reports per-mahasiswa/per-dosen compliance rate)
+  1. Student can mark individual advice items as "addressed" with an optional note/evidence before submitting the next session request — 🟡 PARTIAL: `CompleteActionItemView` correctly flips `is_completed`/`completed_at` (tested, 4 tests), but **no UI exists anywhere** — no page lets a lecturer create an advice item, no page lets a student see or complete one. No note/evidence field either, just a boolean
+  2. Lecturer can view the complete advice history and follow-up status for each advisee student — ❌ NOT SATISFIED: the only aggregate view (`KaprodiComplianceView`) is kaprodi/admin-only; a lecturer can only `GET` action items one session at a time, not an aggregate advisee history, and there's no UI for even that
   3. System attempts to sync approved summaries to the campus logbook API (Sekawan/KPTI) when configured; on success, logbook entry ID is stored — ❌ NOT STARTED (no Sekawan/KPTI code anywhere — and nothing to sync yet without Phase 6's summaries)
-  4. If the campus API is unavailable or unconfigured, system offers a CSV/PDF export of the summary for manual upload — ❌ NOT STARTED for summaries specifically, though `KaprodiExportView` already does CSV+PDF export for guidance-history/workload data (FR-KP03)
+  4. If the campus API is unavailable or unconfigured, system offers a CSV/PDF export of the summary for manual upload — ❌ NOT STARTED for summaries specifically, though `KaprodiExportView` already does CSV+PDF export for guidance-history/workload data (FR-KP03) — a related but distinct feature
   5. If the campus API call fails or times out, summary remains saved internally, is queued for retry, and error appears in Admin Dashboard — ❌ NOT STARTED
   6. Admin can configure campus logbook API credentials and settings — ❌ NOT STARTED
 
-**Plans**: TBD — the advice/compliance half is essentially done; the campus-logbook-sync half hasn't been started and depends on Phase 6 existing first.
+**Plans**: None — implemented directly (partially). Verified 2026-07-03 with `test_action_items.py` (14 tests, previously zero coverage). No bugs found in the backend logic itself — every gap here is "doesn't exist yet," not "implemented wrong." Needs real product/UI work (advice-item creation + student-facing follow-up view) before this phase can close, separately from the campus-sync half which is legitimately blocked on Phase 6.
 
 ### Phase 8: Admin Emergency Controls & Kaprodi Reporting
 
@@ -168,15 +168,15 @@ Phases 4, 5, 7, and 8 (Google Calendar sync, session recording, advisory continu
 **Mode:** mvp
 **Depends on**: Phase 7 (session records, summaries, and advice tracking must all exist for meaningful reporting)
 **Requirements**: ADMIN-02, REPORT-01, REPORT-02, REPORT-03
-**Status**: CODE-COMPLETE, unverified (2026-07-03 audit) — no formal PLAN.md or VERIFICATION.md
+**Status**: VERIFIED (2026-07-03) — see `phases/08-admin-emergency-controls-kaprodi-reporting/08-VERIFICATION.md`. 3/4 success criteria clean; the 4th is mechanically correct but data-starved by gaps in other phases.
 **Success Criteria** (what must be TRUE):
 
-  1. Admin can trigger an Emergency Cancel that clears all of a specific lecturer's remaining queued slots for the current day — 🟢 DONE (`AdminEmergencyCancelView`)
-  2. Kaprodi can view a digitized guidance history (timestamps, durations, symptoms, approved summaries) across all lecturers — 🟡 PARTIAL: history/timestamps/durations/symptoms all present (`KaprodiStatsView`/`KaprodiExportView`); "approved summaries" column will stay empty until Phase 6 exists
-  3. Kaprodi can view each lecturer's workload summary (sessions completed, total time) suitable for accreditation reporting — 🟢 DONE (`KaprodiStatsView`, CSV/PDF export via `KaprodiExportView`)
-  4. Kaprodi can view advice follow-up compliance rates per lecturer/student — 🟢 DONE (`KaprodiComplianceView`)
+  1. Admin can trigger an Emergency Cancel that clears all of a specific lecturer's remaining queued slots for the current day — ✅ VERIFIED (`AdminEmergencyCancelView`; 6 tests incl. validation + permission guards)
+  2. Kaprodi can view a digitized guidance history (timestamps, durations, symptoms, approved summaries) across all lecturers — 🟡 PARTIAL: history/timestamps/durations/symptoms all present and tested (`KaprodiStatsView`/`KaprodiExportView`); "approved summaries" column will stay empty until Phase 6 exists
+  3. Kaprodi can view each lecturer's workload summary (sessions completed, total time) suitable for accreditation reporting — 🟡 PARTIAL: `total_sesi`/`total_durasi_menit` verified correct; **`sesi_selesai` ("sessions completed") is structurally always 0** — no code path anywhere ever sets a `Session` to `DONE`, because Phase 5's "Selesai" action doesn't exist yet. Regression-guarded so this test fails loudly once that gap closes
+  4. Kaprodi can view advice follow-up compliance rates per lecturer/student — ✅ VERIFIED (mechanism): `KaprodiComplianceView` tested with real data (50% rate, per-dosen/per-mahasiswa breakdowns correct); whether it has real data to show in practice depends on Phase 7's UI gap
 
-**Plans**: None — implemented directly. Needs a retroactive `08-VERIFICATION.md`/UAT pass; SC2 will only be fully true once Phase 6 produces summaries to show.
+**Plans**: None — implemented directly. Verified 2026-07-03 with `test_admin.py` (24 tests, previously zero coverage). Also fixed an environment gap: `reportlab` was declared in `requirements.txt` but not actually installed, silently breaking the PDF export path.
 
 ---
 
@@ -193,8 +193,8 @@ Phases 4, 5, 7, and 8 (Google Calendar sync, session recording, advisory continu
 | 4. Google Calendar Sync & Graceful Degradation | n/a (direct) | ✅ Verified (4/4 SC, 16 tests) | 2026-07-03 |
 | 5. Session Execution with Recording & Consent | n/a (direct) | 🟡 Verified as far as it goes (4/6 SC, 22 tests); SC3/SC4 not implemented | 2026-07-03 |
 | 6. STT, AI Summarization & Logbook | 0/TBD | ❌ Not started (confirmed) | - |
-| 7. Advisory Continuity & Campus Logbook Integration | 0/TBD | 🟡 Partial — no campus API sync | - |
-| 8. Admin Emergency Controls & Kaprodi Reporting | 0/TBD | 🟢 Code-complete, unverified | - |
+| 7. Advisory Continuity & Campus Logbook Integration | n/a (direct) | 🟡 Verified (2/6 SC, 14 tests); backend works, zero frontend UI; campus sync not started | 2026-07-03 |
+| 8. Admin Emergency Controls & Kaprodi Reporting | n/a (direct) | ✅ Verified (3/4 SC, 24 tests); 4th data-starved by Phase 5/7 gaps | 2026-07-03 |
 
 **Team assignments:**
 - Person A → Auth & User Management (registration, admin approval, role redirect)
