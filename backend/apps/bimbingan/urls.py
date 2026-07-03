@@ -1,4 +1,4 @@
-"""URL patterns for bimbingan app — Phase 2 + Phase 3 (Admin/Kaprodi)."""
+"""URL patterns for bimbingan app — Phase 2 + Phase 3 (Admin/Ketua Jurusan)."""
 from django.urls import path
 
 from .views import (
@@ -6,7 +6,7 @@ from .views import (
     CancelStudentQueueView, LecturerQueueView, StudentQueueView, StartSessionView,
     LecturerStatsView, AdminStatsView, AdminEmergencyCancelView,
     AdminLogsView, AdminLogsCleanupView,
-    KaprodiStatsView, KaprodiExportView, KaprodiComplianceView,
+    KetuaJurusanStatsView, KetuaJurusanExportView, KetuaJurusanComplianceView,
     SessionActionItemsView, CompleteActionItemView,
 )
 
@@ -37,11 +37,11 @@ admin_urlpatterns = [
     path('logs/cleanup/', AdminLogsCleanupView.as_view(), name='admin-logs-cleanup'),
 ]
 
-# FR-KP01/02/03/04: kaprodi-facing endpoints
-kaprodi_urlpatterns = [
-    path('stats/', KaprodiStatsView.as_view(), name='kaprodi-stats'),
-    path('export/', KaprodiExportView.as_view(), name='kaprodi-export'),
-    path('compliance/', KaprodiComplianceView.as_view(), name='kaprodi-compliance'),
+# FR-KP01/02/03/04: ketua-jurusan-facing endpoints
+ketua_jurusan_urlpatterns = [
+    path('stats/', KetuaJurusanStatsView.as_view(), name='ketua-jurusan-stats'),
+    path('export/', KetuaJurusanExportView.as_view(), name='ketua-jurusan-export'),
+    path('compliance/', KetuaJurusanComplianceView.as_view(), name='ketua-jurusan-compliance'),
 ]
 
 # FR-KP04: mark a saran/action-item as done (student-owned, not session-scoped)

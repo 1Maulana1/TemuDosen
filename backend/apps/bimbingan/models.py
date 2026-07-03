@@ -84,8 +84,8 @@ class DosenCalendarToken(models.Model):
 class ActionItem(models.Model):
     """
     FR-KP04: "saran" (recommendation) a dosen gives during/after a session, and
-    whether the mahasiswa has followed up ("tindak lanjut"). Backs the kaprodi
-    compliance report.
+    whether the mahasiswa has followed up ("tindak lanjut"). Backs the ketua
+    jurusan compliance report.
     """
     session = models.ForeignKey(
         Session,

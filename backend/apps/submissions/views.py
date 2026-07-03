@@ -14,7 +14,7 @@ Views:
     - Read-only in Phase 1 — NO approve/reject actions (D-12)
 
   serve_submission_file:
-    - GET /api/files/<uuid>/ — serves file ONLY to the owning student, their adviser, or admin/kaprodi
+    - GET /api/files/<uuid>/ — serves file ONLY to the owning student, their adviser, or admin/ketua_jurusan
     - Implements D-29 protected serving (RESEARCH Pattern 3)
     - Returns FileResponse inline for in-app preview (D-14)
     - NEVER uses MEDIA_URL (anti-pattern per RESEARCH / D-29)
@@ -167,7 +167,7 @@ def serve_submission_file(request, file_uuid):
     Access allowed if:
       - request.user == submission.student (the owner)
       - request.user == submission.student.adviser (the assigned lecturer)
-      - request.user.role in ('admin', 'kaprodi')
+      - request.user.role in ('admin', 'ketua_jurusan')
 
     Returns FileResponse with Content-Disposition: inline (for in-app preview, D-14).
     Does NOT use MEDIA_URL — files are not publicly accessible (D-29 / T-1-15).
@@ -185,12 +185,12 @@ def serve_submission_file(request, file_uuid):
     submission = submission_file.submission
     student = submission.student
 
-    # Access control: owner OR adviser OR admin/kaprodi (T-1-15, T-1-18)
+    # Access control: owner OR adviser OR admin/ketua_jurusan (T-1-15, T-1-18)
     is_owner = (user == student)
     is_adviser = (student.adviser is not None and user == student.adviser)
-    is_admin_or_kaprodi = user.role in ('admin', 'kaprodi')
+    is_admin_or_ketua_jurusan = user.role in ('admin', 'ketua_jurusan')
 
-    if not (is_owner or is_adviser or is_admin_or_kaprodi):
+    if not (is_owner or is_adviser or is_admin_or_ketua_jurusan):
         raise PermissionDenied
 
     file_path = submission_file.file_path

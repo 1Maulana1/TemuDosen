@@ -91,7 +91,7 @@ class RegisterView(APIView):
     POST /api/auth/register/
     Body must include `role` field: "student" or "lecturer" (D-18).
     Dispatches to the appropriate serializer based on role.
-    Only student and lecturer roles are accepted — admin/kaprodi only via seed_admin (T-1-06).
+    Only student and lecturer roles are accepted — admin/ketua_jurusan only via seed_admin (T-1-06).
     New accounts always start with is_approved=False (D-20).
     AllowAny — unauthenticated users need to register.
     """

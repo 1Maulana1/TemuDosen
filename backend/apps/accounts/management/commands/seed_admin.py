@@ -1,5 +1,5 @@
 """
-Management command to seed Admin and Kaprodi accounts (D-25).
+Management command to seed Admin and Ketua Jurusan accounts (D-25).
 Run on fresh deployment: python manage.py seed_admin
 Running twice is safe: uses get_or_create so it will not raise an error.
 """
@@ -9,7 +9,7 @@ from apps.accounts.models import CustomUser, UserRole
 
 
 class Command(BaseCommand):
-    help = 'Seed admin and kaprodi accounts for initial deployment (D-25).'
+    help = 'Seed admin and ketua jurusan accounts for initial deployment (D-25).'
 
     def handle(self, *args, **options):
         # --- Admin account ---
@@ -32,22 +32,22 @@ class Command(BaseCommand):
         else:
             self.stdout.write('Admin account already exists: admin@temudosen.ac.id')
 
-        # --- Kaprodi account ---
-        kaprodi, created = CustomUser.objects.get_or_create(
-            email='kaprodi@temudosen.ac.id',
+        # --- Ketua Jurusan account ---
+        ketua_jurusan, created = CustomUser.objects.get_or_create(
+            email='ketuajurusan@temudosen.ac.id',
             defaults={
-                'full_name': 'Kaprodi',
-                'role': UserRole.KAPRODI,
+                'full_name': 'Ketua Jurusan',
+                'role': UserRole.KETUA_JURUSAN,
                 'is_approved': True,
                 'is_staff': False,
                 'is_superuser': False,
             }
         )
         if created:
-            kaprodi.set_password('ChangeMe123!')
-            kaprodi.save()
+            ketua_jurusan.set_password('ChangeMe123!')
+            ketua_jurusan.save()
             self.stdout.write(self.style.SUCCESS(
-                'Created kaprodi: kaprodi@temudosen.ac.id / ChangeMe123!'
+                'Created ketua jurusan: ketuajurusan@temudosen.ac.id / ChangeMe123!'
             ))
         else:
-            self.stdout.write('Kaprodi account already exists: kaprodi@temudosen.ac.id')
+            self.stdout.write('Ketua Jurusan account already exists: ketuajurusan@temudosen.ac.id')

@@ -1,11 +1,11 @@
 """
 Phase 7 — Advisory Continuity (FR-KP04): action items ("saran") attached to a
-session, student follow-up marking, and the kaprodi compliance report.
+session, student follow-up marking, and the ketua jurusan compliance report.
 
 Covers:
   GET/POST /api/queue/<session_id>/action-items/  → SessionActionItemsView
   POST     /api/action-items/<id>/complete/       → CompleteActionItemView
-  GET      /api/kaprodi/compliance/                → KaprodiComplianceView
+  GET      /api/ketua-jurusan/compliance/                → KetuaJurusanComplianceView
 """
 import pytest
 from rest_framework.test import APIClient
@@ -134,38 +134,38 @@ class TestCompleteActionItemView:
 
 
 @pytest.mark.django_db
-class TestKaprodiComplianceView:
-    url = '/api/kaprodi/compliance/'
+class TestKetuaJurusanComplianceView:
+    url = '/api/ketua-jurusan/compliance/'
 
     def test_compliance_rate_reflects_completed_vs_total(
-        self, kaprodi_user, lecturer_user, advisee_student, pending_submission
+        self, ketua_jurusan_user, lecturer_user, advisee_student, pending_submission
     ):
         session = _approve(lecturer_user, pending_submission)
         item1 = ActionItem.objects.create(session=session, description='Saran 1')
         ActionItem.objects.create(session=session, description='Saran 2')
         client_for(advisee_student).post(complete_url(item1.id))
 
-        resp = client_for(kaprodi_user).get(self.url)
+        resp = client_for(ketua_jurusan_user).get(self.url)
         assert resp.status_code == 200
         assert resp.data['compliance_rate'] == 50
 
     def test_per_dosen_and_per_mahasiswa_breakdowns_present(
-        self, kaprodi_user, lecturer_user, pending_submission
+        self, ketua_jurusan_user, lecturer_user, pending_submission
     ):
         session = _approve(lecturer_user, pending_submission)
         ActionItem.objects.create(session=session, description='Saran 1')
 
-        resp = client_for(kaprodi_user).get(self.url)
+        resp = client_for(ketua_jurusan_user).get(self.url)
         assert resp.status_code == 200
         assert len(resp.data['per_dosen']) == 1
         assert resp.data['per_dosen'][0]['dosen_name'] == lecturer_user.full_name
         assert len(resp.data['per_mahasiswa']) == 1
 
-    def test_zero_action_items_reports_zero_percent_not_error(self, kaprodi_user):
+    def test_zero_action_items_reports_zero_percent_not_error(self, ketua_jurusan_user):
         """No division-by-zero when nothing has been created yet — the realistic
         current-day state, since no UI exists yet to create action items at all
         (see 07-VERIFICATION.md)."""
-        resp = client_for(kaprodi_user).get(self.url)
+        resp = client_for(ketua_jurusan_user).get(self.url)
         assert resp.status_code == 200
         assert resp.data['compliance_rate'] == 0
         assert resp.data['per_dosen'] == []

@@ -1,13 +1,13 @@
 """
-Phase 8 — Admin Emergency Controls & Kaprodi Reporting (FR-AD02/03, FR-KP01/02/03).
+Phase 8 — Admin Emergency Controls & Ketua Jurusan Reporting (FR-AD02/03, FR-KP01/02/03).
 
 Covers:
   GET  /api/stats/admin/                  → AdminStatsView
   POST /api/admin/emergency-cancel/       → AdminEmergencyCancelView
   GET  /api/admin/logs/                   → AdminLogsView
   POST /api/admin/logs/cleanup/           → AdminLogsCleanupView
-  GET  /api/kaprodi/stats/                → KaprodiStatsView
-  GET  /api/kaprodi/export/               → KaprodiExportView (CSV + PDF)
+  GET  /api/ketua-jurusan/stats/                → KetuaJurusanStatsView
+  GET  /api/ketua-jurusan/export/               → KetuaJurusanExportView (CSV + PDF)
 """
 from datetime import timedelta
 
@@ -169,34 +169,34 @@ class TestAdminLogsCleanupView:
 
 
 @pytest.mark.django_db
-class TestKaprodiStatsView:
-    url = '/api/kaprodi/stats/'
+class TestKetuaJurusanStatsView:
+    url = '/api/ketua-jurusan/stats/'
 
-    def test_kaprodi_can_view_stats(self, kaprodi_user, lecturer_user, pending_submission):
+    def test_ketua_jurusan_can_view_stats(self, ketua_jurusan_user, lecturer_user, pending_submission):
         _approve(lecturer_user, pending_submission)
 
-        resp = client_for(kaprodi_user).get(self.url)
+        resp = client_for(ketua_jurusan_user).get(self.url)
         assert resp.status_code == 200
         assert resp.data['total_sesi'] == 1
         assert len(resp.data['beban_per_dosen']) == 1
         assert resp.data['beban_per_dosen'][0]['dosen_id'] == lecturer_user.id
 
-    def test_admin_can_also_view_kaprodi_stats(self, authenticated_admin):
+    def test_admin_can_also_view_ketua_jurusan_stats(self, authenticated_admin):
         resp = authenticated_admin.get(self.url)
         assert resp.status_code == 200
 
-    def test_defaults_to_monthly_period(self, kaprodi_user):
-        resp = client_for(kaprodi_user).get(self.url)
+    def test_defaults_to_monthly_period(self, ketua_jurusan_user):
+        resp = client_for(ketua_jurusan_user).get(self.url)
         assert resp.status_code == 200
         assert resp.data['period'] == 'monthly'
 
-    def test_invalid_period_falls_back_to_monthly(self, kaprodi_user):
-        resp = client_for(kaprodi_user).get(self.url, {'period': 'yearly'})
+    def test_invalid_period_falls_back_to_monthly(self, ketua_jurusan_user):
+        resp = client_for(ketua_jurusan_user).get(self.url, {'period': 'yearly'})
         assert resp.status_code == 200
         assert resp.data['period'] == 'monthly'
 
     def test_completed_sessions_count_stays_zero_no_completion_flow_exists(
-        self, kaprodi_user, lecturer_user, pending_submission
+        self, ketua_jurusan_user, lecturer_user, pending_submission
     ):
         """Regression guard documenting a real Phase 5 gap: nothing in the codebase
         ever transitions a Session to DONE (no 'Selesai' action exists yet — see
@@ -205,7 +205,7 @@ class TestKaprodiStatsView:
         means the Phase 5 gap was closed — update this test, don't just delete it."""
         _approve(lecturer_user, pending_submission)
 
-        resp = client_for(kaprodi_user).get(self.url)
+        resp = client_for(ketua_jurusan_user).get(self.url)
         assert resp.status_code == 200
         assert resp.data['sesi_selesai'] == 0
 
@@ -215,23 +215,23 @@ class TestKaprodiStatsView:
 
 
 @pytest.mark.django_db
-class TestKaprodiExportView:
-    url = '/api/kaprodi/export/'
+class TestKetuaJurusanExportView:
+    url = '/api/ketua-jurusan/export/'
 
-    def test_csv_export_default_format(self, kaprodi_user, lecturer_user, pending_submission):
+    def test_csv_export_default_format(self, ketua_jurusan_user, lecturer_user, pending_submission):
         _approve(lecturer_user, pending_submission)
 
-        resp = client_for(kaprodi_user).get(self.url)
+        resp = client_for(ketua_jurusan_user).get(self.url)
         assert resp.status_code == 200
         assert resp['Content-Type'].startswith('text/csv')
         body = resp.content.decode('utf-8-sig')
         assert 'NIM' in body
         assert 'Nama Mahasiswa' in body
 
-    def test_pdf_export(self, kaprodi_user, lecturer_user, pending_submission):
+    def test_pdf_export(self, ketua_jurusan_user, lecturer_user, pending_submission):
         _approve(lecturer_user, pending_submission)
 
-        resp = client_for(kaprodi_user).get(self.url, {'format': 'pdf'})
+        resp = client_for(ketua_jurusan_user).get(self.url, {'format': 'pdf'})
         assert resp.status_code == 200
         assert resp['Content-Type'] == 'application/pdf'
         assert resp.content[:4] == b'%PDF'

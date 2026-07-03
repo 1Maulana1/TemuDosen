@@ -13,7 +13,7 @@ class UserRole(models.TextChoices):
     STUDENT = 'student', 'Mahasiswa'
     LECTURER = 'lecturer', 'Dosen'
     ADMIN = 'admin', 'Admin'
-    KAPRODI = 'kaprodi', 'Kaprodi'
+    KETUA_JURUSAN = 'ketua_jurusan', 'Ketua Jurusan'
 
 
 class CustomUser(AbstractBaseUser, PermissionsMixin):
@@ -23,7 +23,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     Fields:
     - email: unique login identifier (USERNAME_FIELD)
     - full_name: required display name
-    - role: one of student / lecturer / admin / kaprodi
+    - role: one of student / lecturer / admin / ketua_jurusan
     - nim: student matriculation number (unique, null for non-students)
     - nidn: lecturer national ID number (unique, null for non-lecturers)
     - is_approved: False after registration until Admin approves (D-20)

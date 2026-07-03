@@ -255,13 +255,13 @@ def authenticated_advisee(api_client, advisee_student):
 
 
 @pytest.fixture
-def kaprodi_user(db):
-    """A kaprodi (program-head) user — read-only monitoring role."""
+def ketua_jurusan_user(db):
+    """A ketua jurusan (department-head) user — read-only monitoring role."""
     return CustomUser.objects.create_user(
-        email='kaprodi@test.com',
+        email='ketuajurusan@test.com',
         password='testpass123',
-        full_name='Kaprodi Test',
-        role=UserRole.KAPRODI,
+        full_name='Ketua Jurusan Test',
+        role=UserRole.KETUA_JURUSAN,
         is_approved=True,
     )
 

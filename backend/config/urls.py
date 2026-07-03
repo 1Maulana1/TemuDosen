@@ -14,10 +14,10 @@ Phase 2:
   /api/calendar/    → apps.bimbingan calendar OAuth views
   /api/stats/       → lecturer/admin summary stats
 
-Phase 3 (Admin/Kaprodi):
-  /api/admin/       → symptom catalog CRUD, emergency cancel, error logs (FR-AD01/02/03)
-  /api/kaprodi/     → workload/compliance stats + logbook export (FR-KP01-04)
-  /api/action-items/→ mark a saran/tindak-lanjut as done (FR-KP04)
+Phase 3 (Admin/Ketua Jurusan):
+  /api/admin/          → symptom catalog CRUD, emergency cancel, error logs (FR-AD01/02/03)
+  /api/ketua-jurusan/  → workload/compliance stats + logbook export (FR-KP01-04)
+  /api/action-items/   → mark a saran/tindak-lanjut as done (FR-KP04)
 """
 from django.contrib import admin
 from django.urls import path, include
@@ -25,7 +25,7 @@ from django.urls import path, include
 from apps.submissions.urls import file_urlpatterns
 from apps.bimbingan.urls import (
     queue_urlpatterns, calendar_urlpatterns, stats_urlpatterns,
-    admin_urlpatterns, kaprodi_urlpatterns, action_item_urlpatterns,
+    admin_urlpatterns, ketua_jurusan_urlpatterns, action_item_urlpatterns,
 )
 from apps.symptoms.urls import router as symptoms_router
 
@@ -52,8 +52,8 @@ urlpatterns = [
     # Phase 3: Admin (FR-AD01/02/03) — same SymptomCategoryViewSet, admin-scoped alias
     path('api/admin/symptoms/', include((symptoms_router.urls, 'admin-symptoms'))),
     path('api/admin/', include((admin_urlpatterns, 'admin-api'))),
-    # Phase 3: Kaprodi (FR-KP01-04)
-    path('api/kaprodi/', include((kaprodi_urlpatterns, 'kaprodi'))),
+    # Phase 3: Ketua Jurusan (FR-KP01-04)
+    path('api/ketua-jurusan/', include((ketua_jurusan_urlpatterns, 'ketua-jurusan'))),
     # Phase 3: Action items (FR-KP04)
     path('api/action-items/', include((action_item_urlpatterns, 'action-items'))),
 ]

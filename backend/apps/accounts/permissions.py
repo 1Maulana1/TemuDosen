@@ -45,12 +45,12 @@ class IsAdmin(permissions.BasePermission):
         )
 
 
-class IsKaprodi(permissions.BasePermission):
-    """Kaprodi role — read-only monitoring access."""
+class IsKetuaJurusan(permissions.BasePermission):
+    """Ketua Jurusan role — read-only monitoring access."""
 
     def has_permission(self, request, view):
         return bool(
             request.user and
             request.user.is_authenticated and
-            request.user.role == 'kaprodi'
+            request.user.role == 'ketua_jurusan'
         )

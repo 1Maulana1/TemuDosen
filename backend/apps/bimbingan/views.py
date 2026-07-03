@@ -15,8 +15,8 @@ Dashboard stats:
   LecturerStatsView      — GET  /api/stats/lecturer/
   AdminStatsView         — GET  /api/stats/admin/
   AdminEmergencyCancelView — POST /api/stats/admin/emergency-cancel/
-  KaprodiStatsView       — GET  /api/stats/kaprodi/
-  KaprodiExportView      — GET  /api/stats/kaprodi/export/
+  KetuaJurusanStatsView       — GET  /api/ketua-jurusan/stats/
+  KetuaJurusanExportView      — GET  /api/ketua-jurusan/export/
 
 Calendar OAuth:
   CalendarAuthView       — GET /api/calendar/auth/
@@ -57,13 +57,13 @@ DOSEN_DAILY_QUOTA_MINUTES = getattr(settings, 'DOSEN_DAILY_QUOTA_MINUTES', 480)
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
-class IsKaprodiOrAdmin(_permissions.BasePermission):
-    """Shared permission for kaprodi-facing endpoints (FR-KP01–04): kaprodi or admin."""
+class IsKetuaJurusanOrAdmin(_permissions.BasePermission):
+    """Shared permission for ketua-jurusan-facing endpoints (FR-KP01–04): ketua jurusan or admin."""
 
     def has_permission(self, request, view):
         return bool(
             request.user and request.user.is_authenticated and
-            request.user.role in ('kaprodi', 'admin')
+            request.user.role in ('ketua_jurusan', 'admin')
         )
 
 
@@ -912,10 +912,10 @@ class AdminLogsCleanupView(APIView):
         return Response({'deleted': deleted})
 
 
-class KaprodiStatsView(APIView):
-    """GET /api/kaprodi/stats/?period=weekly|monthly|semester — statistik kaprodi (FR-KP01/02)."""
+class KetuaJurusanStatsView(APIView):
+    """GET /api/ketua-jurusan/stats/?period=weekly|monthly|semester — statistik ketua jurusan (FR-KP01/02)."""
 
-    permission_classes = [IsKaprodiOrAdmin]
+    permission_classes = [IsKetuaJurusanOrAdmin]
 
     def get(self, request):
         from apps.accounts.models import CustomUser
@@ -967,10 +967,10 @@ class KaprodiStatsView(APIView):
         })
 
 
-class KaprodiExportView(APIView):
-    """GET /api/kaprodi/export/?format=csv|pdf&period=weekly|monthly|semester — FR-KP03."""
+class KetuaJurusanExportView(APIView):
+    """GET /api/ketua-jurusan/export/?format=csv|pdf&period=weekly|monthly|semester — FR-KP03."""
 
-    permission_classes = [IsKaprodiOrAdmin]
+    permission_classes = [IsKetuaJurusanOrAdmin]
 
     def perform_content_negotiation(self, request, force=False):
         """
@@ -1080,13 +1080,13 @@ class KaprodiExportView(APIView):
             )
 
 
-class KaprodiComplianceView(APIView):
+class KetuaJurusanComplianceView(APIView):
     """
-    GET /api/kaprodi/compliance/?period=weekly|monthly|semester — FR-KP04.
+    GET /api/ketua-jurusan/compliance/?period=weekly|monthly|semester — FR-KP04.
     Rekap kepatuhan tindak lanjut saran (ActionItem) per dosen dan per mahasiswa.
     """
 
-    permission_classes = [IsKaprodiOrAdmin]
+    permission_classes = [IsKetuaJurusanOrAdmin]
 
     def get(self, request):
         now = timezone.now()

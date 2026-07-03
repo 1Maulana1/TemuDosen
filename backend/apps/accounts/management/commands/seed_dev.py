@@ -13,7 +13,7 @@ from apps.accounts.models import CustomUser, UserRole
 
 
 class Command(BaseCommand):
-    help = 'Seed dosen/mahasiswa/kaprodi test accounts for local development (manual only).'
+    help = 'Seed dosen/mahasiswa/ketua-jurusan test accounts for local development (manual only).'
 
     def handle(self, *args, **options):
         # --- Dosen accounts ---
@@ -92,21 +92,21 @@ class Command(BaseCommand):
         else:
             self.stdout.write('Mahasiswa account already exists: dewi@students.uii.ac.id')
 
-        # --- Kaprodi account ---
-        # NOTE: different email from kaprodi@temudosen.ac.id (seed_admin.py) — both coexist.
-        kaprodi, created = CustomUser.objects.get_or_create(
-            email='kaprodi@uii.ac.id',
+        # --- Ketua Jurusan account ---
+        # NOTE: different email from ketuajurusan@temudosen.ac.id (seed_admin.py) — both coexist.
+        ketua_jurusan, created = CustomUser.objects.get_or_create(
+            email='ketuajurusan@uii.ac.id',
             defaults={
                 'full_name': 'Prof. Ahmad Fauzi',
-                'role': UserRole.KAPRODI,
+                'role': UserRole.KETUA_JURUSAN,
                 'is_approved': True,
             }
         )
         if created:
-            kaprodi.set_password('kaprodi123')
-            kaprodi.save()
+            ketua_jurusan.set_password('ketuajurusan123')
+            ketua_jurusan.save()
             self.stdout.write(self.style.SUCCESS(
-                'Created kaprodi: kaprodi@uii.ac.id / kaprodi123'
+                'Created ketua jurusan: ketuajurusan@uii.ac.id / ketuajurusan123'
             ))
         else:
-            self.stdout.write('Kaprodi account already exists: kaprodi@uii.ac.id')
+            self.stdout.write('Ketua Jurusan account already exists: ketuajurusan@uii.ac.id')
