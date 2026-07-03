@@ -29,7 +29,7 @@ Phases 4, 5, 7, and 8 (Google Calendar sync, session recording, advisory continu
 - [~] **Phase 5: Session Execution with Recording & Consent** - Consent prompt, single "Mulai & Rekam" button (TS1 + audio start), "Selesai" (TS2 + audio stop), T-15 notifications, auto-cancel, online/offline mode — PARTIAL, VERIFIED AS FAR AS IT GOES (2026-07-03, `05-VERIFICATION.md` — 4/6 success criteria; consent + TS1 + T-15 notification + 30-min auto-cancel done and now tested; **no TS2, no actual audio recording**)
 - [ ] **Phase 6: STT, AI Summarization & Logbook** - Async STT transcription (faster-whisper), LLM summary generation, lecturer review/edit/approve flow, student-visible transcript + summary; fallback to manual notes — **NOT STARTED** (confirmed 2026-07-03, `06-VERIFICATION.md` — 0/6, zero code found)
 - [~] **Phase 7: Advisory Continuity & Campus Logbook Integration** - Per-session advice items, student follow-up marking, lecturer advice history view, Sekawan/KPTI API sync (or CSV/PDF export fallback) — PARTIAL, VERIFIED (2026-07-03, `07-VERIFICATION.md` — 2/6 success criteria; backend (`ActionItem` CRUD + compliance report) works and is tested, but **has no frontend UI on either side** (lecturer can't add advice, student can't view/complete it); campus API sync (SC3-6) not started
-- [x] **Phase 8: Admin Emergency Controls & Kaprodi Reporting** - Emergency Cancel, Admin Dashboard (all error logs + STT/LLM quota), Kaprodi guidance history + workload + advice-compliance reports — VERIFIED (2026-07-03, `08-VERIFICATION.md` — 3/4 success criteria clean; SC3 "sessions completed" metric is structurally always 0 until Phase 5's Selesai action exists, not a Phase 8 bug)
+- [x] **Phase 8: Admin Emergency Controls & Ketua Jurusan Reporting** - Emergency Cancel, Admin Dashboard (all error logs + STT/LLM quota), Ketua Jurusan guidance history + workload + advice-compliance reports — VERIFIED (2026-07-03, `08-VERIFICATION.md` — 3/4 success criteria clean; SC3 "sessions completed" metric is structurally always 0 until Phase 5's Selesai action exists, not a Phase 8 bug)
 
 ---
 
@@ -154,27 +154,27 @@ Phases 4, 5, 7, and 8 (Google Calendar sync, session recording, advisory continu
 **Success Criteria** (what must be TRUE):
 
   1. Student can mark individual advice items as "addressed" with an optional note/evidence before submitting the next session request — 🟡 PARTIAL: `CompleteActionItemView` correctly flips `is_completed`/`completed_at` (tested, 4 tests), but **no UI exists anywhere** — no page lets a lecturer create an advice item, no page lets a student see or complete one. No note/evidence field either, just a boolean
-  2. Lecturer can view the complete advice history and follow-up status for each advisee student — ❌ NOT SATISFIED: the only aggregate view (`KaprodiComplianceView`) is kaprodi/admin-only; a lecturer can only `GET` action items one session at a time, not an aggregate advisee history, and there's no UI for even that
+  2. Lecturer can view the complete advice history and follow-up status for each advisee student — ❌ NOT SATISFIED: the only aggregate view (`KetuaJurusanComplianceView`) is ketua jurusan/admin-only; a lecturer can only `GET` action items one session at a time, not an aggregate advisee history, and there's no UI for even that
   3. System attempts to sync approved summaries to the campus logbook API (Sekawan/KPTI) when configured; on success, logbook entry ID is stored — ❌ NOT STARTED (no Sekawan/KPTI code anywhere — and nothing to sync yet without Phase 6's summaries)
-  4. If the campus API is unavailable or unconfigured, system offers a CSV/PDF export of the summary for manual upload — ❌ NOT STARTED for summaries specifically, though `KaprodiExportView` already does CSV+PDF export for guidance-history/workload data (FR-KP03) — a related but distinct feature
+  4. If the campus API is unavailable or unconfigured, system offers a CSV/PDF export of the summary for manual upload — ❌ NOT STARTED for summaries specifically, though `KetuaJurusanExportView` already does CSV+PDF export for guidance-history/workload data (FR-KP03) — a related but distinct feature
   5. If the campus API call fails or times out, summary remains saved internally, is queued for retry, and error appears in Admin Dashboard — ❌ NOT STARTED
   6. Admin can configure campus logbook API credentials and settings — ❌ NOT STARTED
 
 **Plans**: None — implemented directly (partially). Verified 2026-07-03 with `test_action_items.py` (14 tests, previously zero coverage). No bugs found in the backend logic itself — every gap here is "doesn't exist yet," not "implemented wrong." Needs real product/UI work (advice-item creation + student-facing follow-up view) before this phase can close, separately from the campus-sync half which is legitimately blocked on Phase 6.
 
-### Phase 8: Admin Emergency Controls & Kaprodi Reporting
+### Phase 8: Admin Emergency Controls & Ketua Jurusan Reporting
 
-**Goal**: Admin has a safety valve for disrupting a lecturer's day, and Kaprodi has a complete digital record — including documentation quality and advice compliance — for accreditation
+**Goal**: Admin has a safety valve for disrupting a lecturer's day, and Ketua Jurusan has a complete digital record — including documentation quality and advice compliance — for accreditation
 **Mode:** mvp
 **Depends on**: Phase 7 (session records, summaries, and advice tracking must all exist for meaningful reporting)
 **Requirements**: ADMIN-02, REPORT-01, REPORT-02, REPORT-03
-**Status**: VERIFIED (2026-07-03) — see `phases/08-admin-emergency-controls-kaprodi-reporting/08-VERIFICATION.md`. 3/4 success criteria clean; the 4th is mechanically correct but data-starved by gaps in other phases.
+**Status**: VERIFIED (2026-07-03) — see `phases/08-admin-emergency-controls-ketua-jurusan-reporting/08-VERIFICATION.md`. 3/4 success criteria clean; the 4th is mechanically correct but data-starved by gaps in other phases.
 **Success Criteria** (what must be TRUE):
 
   1. Admin can trigger an Emergency Cancel that clears all of a specific lecturer's remaining queued slots for the current day — ✅ VERIFIED (`AdminEmergencyCancelView`; 6 tests incl. validation + permission guards)
-  2. Kaprodi can view a digitized guidance history (timestamps, durations, symptoms, approved summaries) across all lecturers — 🟡 PARTIAL: history/timestamps/durations/symptoms all present and tested (`KaprodiStatsView`/`KaprodiExportView`); "approved summaries" column will stay empty until Phase 6 exists
-  3. Kaprodi can view each lecturer's workload summary (sessions completed, total time) suitable for accreditation reporting — 🟡 PARTIAL: `total_sesi`/`total_durasi_menit` verified correct; **`sesi_selesai` ("sessions completed") is structurally always 0** — no code path anywhere ever sets a `Session` to `DONE`, because Phase 5's "Selesai" action doesn't exist yet. Regression-guarded so this test fails loudly once that gap closes
-  4. Kaprodi can view advice follow-up compliance rates per lecturer/student — ✅ VERIFIED (mechanism): `KaprodiComplianceView` tested with real data (50% rate, per-dosen/per-mahasiswa breakdowns correct); whether it has real data to show in practice depends on Phase 7's UI gap
+  2. Ketua Jurusan can view a digitized guidance history (timestamps, durations, symptoms, approved summaries) across all lecturers — 🟡 PARTIAL: history/timestamps/durations/symptoms all present and tested (`KetuaJurusanStatsView`/`KetuaJurusanExportView`); "approved summaries" column will stay empty until Phase 6 exists
+  3. Ketua Jurusan can view each lecturer's workload summary (sessions completed, total time) suitable for accreditation reporting — 🟡 PARTIAL: `total_sesi`/`total_durasi_menit` verified correct; **`sesi_selesai` ("sessions completed") is structurally always 0** — no code path anywhere ever sets a `Session` to `DONE`, because Phase 5's "Selesai" action doesn't exist yet. Regression-guarded so this test fails loudly once that gap closes
+  4. Ketua Jurusan can view advice follow-up compliance rates per lecturer/student — ✅ VERIFIED (mechanism): `KetuaJurusanComplianceView` tested with real data (50% rate, per-dosen/per-mahasiswa breakdowns correct); whether it has real data to show in practice depends on Phase 7's UI gap
 
 **Plans**: None — implemented directly. Verified 2026-07-03 with `test_admin.py` (24 tests, previously zero coverage). Also fixed an environment gap: `reportlab` was declared in `requirements.txt` but not actually installed, silently breaking the PDF export path.
 
@@ -194,7 +194,7 @@ Phases 4, 5, 7, and 8 (Google Calendar sync, session recording, advisory continu
 | 5. Session Execution with Recording & Consent | n/a (direct) | 🟡 Verified as far as it goes (4/6 SC, 22 tests); SC3/SC4 not implemented | 2026-07-03 |
 | 6. STT, AI Summarization & Logbook | 0/TBD | ❌ Not started (confirmed) | - |
 | 7. Advisory Continuity & Campus Logbook Integration | n/a (direct) | 🟡 Verified (2/6 SC, 14 tests); backend works, zero frontend UI; campus sync not started | 2026-07-03 |
-| 8. Admin Emergency Controls & Kaprodi Reporting | n/a (direct) | ✅ Verified (3/4 SC, 24 tests); 4th data-starved by Phase 5/7 gaps | 2026-07-03 |
+| 8. Admin Emergency Controls & Ketua Jurusan Reporting | n/a (direct) | ✅ Verified (3/4 SC, 24 tests); 4th data-starved by Phase 5/7 gaps | 2026-07-03 |
 
 **Team assignments:**
 - Person A → Auth & User Management (registration, admin approval, role redirect)
