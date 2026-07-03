@@ -5,11 +5,14 @@ status: draft
 nyquist_compliant: false
 wave_0_complete: false
 created: 2026-07-02
+updated: 2026-07-03
 ---
 
 # Phase 5 — Validation Strategy
 
 > Per-phase validation contract for feedback sampling during execution.
+
+**2026-07-03 update:** See `05-VERIFICATION.md` for the actual retroactive verification of this phase — consent (SESSION-02) landed and is now tested (3 tests in `test_queue.py::TestStartSession`), and `test_scheduler.py` (7 tests) now covers SESSION-01/05. This validation strategy remains accurate and still applicable for the real remaining gap: SESSION-03's audio-capture half and SESSION-04 (Selesai/TS2) — nothing below has changed for that part of the plan.
 
 ---
 
