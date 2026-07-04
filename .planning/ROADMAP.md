@@ -142,7 +142,7 @@ Phases 4, 5, 7, and 8 (Google Calendar sync, session recording, advisory continu
   5. If STT or LLM fails or times out, lecturer sees a manual note editor and the failure is logged to Admin Dashboard — ❌ NOT STARTED
   6. Admin can monitor STT/LLM quota and view failure logs — ❌ NOT STARTED
   7. *(new, v2.3)* Online sessions run via in-app embedded Jitsi video instead of an external meeting link — ❌ NOT STARTED
-  8. *(new, v2.3)* For online sessions, both lecturer and student audio are mixed into a single recording, feeding the same STT pipeline as offline sessions (fallback: lecturer-mic-only recording if mixing proves infeasible) — ❌ NOT STARTED
+  8. *(new, v2.3; revised 2026-07-05 per research finding)* For online sessions, the existing `useMediaRecorder` flow records lecturer-mic-only audio (identical to Phase 5's behavior), feeding the same STT pipeline as offline sessions. Full dual-party audio mixing (D-16) was found not implementable against the locked Jitsi iframe stack — cancelled, tracked as a deferred idea (D-19), not attempted this phase — ❌ NOT STARTED
 
 **Plans**: TBD — this is the real next greenfield phase. Its Phase 5 dependency is satisfied as of 2026-07-04 (audio files exist under `MEDIA_ROOT/recordings/`).
 

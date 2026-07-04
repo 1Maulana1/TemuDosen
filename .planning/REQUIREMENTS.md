@@ -48,7 +48,7 @@
 ### In-App Video Conferencing *(promoted from v2 Requirements, PRD v2.3 — folded into Phase 6)*
 
 - [ ] **VIDEO-01** *(revised from v2 draft; was "Zoom/Meet")*: Online sessions run via in-app embedded video conferencing (Jitsi Meet External API) instead of an external meeting link. `meet.jit.si` is acceptable for MVP/demo; self-hosted/JaaS Jitsi is required before production (known limitation, tracked not blocking).
-- [ ] **VIDEO-02** *(new)*: For online sessions, both parties' audio (lecturer local mic + student remote track) is mixed into a single recording via the Web Audio API, feeding the same `SessionRecording` → STT pipeline used for offline sessions. Highest-risk item in Phase 6 — plan must document a fallback (lecturer-mic-only recording) if the mixing approach proves infeasible before the deadline.
+- [ ] **VIDEO-02** *(new; revised 2026-07-05)*: For online sessions, the existing `useMediaRecorder` flow records lecturer-mic-only audio (identical to offline sessions per Phase 5), feeding the same `SessionRecording` → STT pipeline. Full dual-party audio mixing via the Web Audio API was researched and found **not implementable** against the locked Jitsi iframe stack (cross-origin iframe exposes no remote `MediaStreamTrack`) — cancelled as a conscious decision, tracked as a deferred idea for a future `lib-jitsi-meet`-based rebuild, not attempted in Phase 6.
 
 ### Advisory Continuity
 

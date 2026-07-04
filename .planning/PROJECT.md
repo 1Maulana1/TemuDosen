@@ -42,7 +42,7 @@ Turn ephemeral guidance conversations into a permanent, searchable logbook — r
 - [ ] Approved summary and advice items are stored, linked to the session and the student
 - [ ] Student can view their approved transcript and session summary after each session
 - [ ] If STT or LLM fails/times out, system provides a manual note editor and marks a log entry (graceful degradation)
-- [ ] *(new in v2.3)* Online sessions embed in-app video via Jitsi (VideoProvider abstraction); both parties' audio (local + remote) is mixed into a single recording so the STT pipeline receives complete audio regardless of session mode
+- [ ] *(new in v2.3; revised 2026-07-05)* Online sessions embed in-app video via Jitsi (VideoProvider abstraction); audio is still captured lecturer-mic-only via the existing recording flow (full dual-party mixing was found not implementable against the Jitsi iframe stack and is deferred — see `06-CONTEXT.md` D-16/D-19)
 
 **Advisory Continuity**
 - [ ] Student can mark individual advice items as "addressed" with a note/evidence before or during the next session request
