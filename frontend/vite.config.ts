@@ -7,6 +7,7 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
+    host: true, // bind ke 0.0.0.0 — bisa diakses dari device lain di jaringan yang sama
     proxy: {
       // Proxy /api/* to Django backend — makes requests same-origin from browser's POV.
       // Do NOT rewrite paths — Django is configured to receive the /api/* prefix.
