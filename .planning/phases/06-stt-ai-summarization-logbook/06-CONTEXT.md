@@ -1,7 +1,7 @@
 # Phase 6: STT, AI Summarization & Logbook - Context
 
-**Gathered:** 2026-07-05
-**Status:** Ready for planning — 3 open questions must be confirmed first (see bottom of `<decisions>`)
+**Gathered:** 2026-07-05 (updated 2026-07-05 — closed OQ#1, #2, #3, #4, #6)
+**Status:** Ready for planning — 2 open questions remain (see bottom of `<decisions>`)
 
 <domain>
 ## Phase Boundary
@@ -16,23 +16,29 @@ Every completed session with a recording automatically produces an editable, lec
 ## Implementation Decisions
 
 ### STT Engine (STT-01, STT-02)
-- **D-01:** Self-hosted faster-whisper `large-v3-turbo` — confirmed, matches the already-adopted `PROJECT.md` v2.2 decision ("audio stays on-server; only transcript text sent to LLM API"). Rejected switching to a third-party STT API (would reverse a locked privacy decision for student-counseling audio).
+- **D-01 (revised — closes OQ#3):** Self-hosted faster-whisper, **CPU-only** deployment. `STT_MODEL_SIZE="small"` (env-configurable; upgrade to `"medium"` if accuracy proves insufficient), `compute_type="int8"` (quantized for CPU throughput), `language="id"` (Indonesian, skip language auto-detect). Free — no per-request cost. This supersedes the earlier `large-v3-turbo` default: CPU-only hosting is confirmed, so model size is tuned down to realistically hit the ≤2× duration NFR rather than assuming GPU throughput.
 - **D-02:** `SessionRecording` currently has no stored audio duration — needed for the ≤2× duration NFR and for computing the timeout (D-08). Planner must add a duration field (populate at upload time client-side, or compute server-side via a probe) — this did not exist before Phase 6.
 
 ### LLM Summarization (STT-03)
-- **D-03:** Claude API (`api.anthropic.com`) generates the structured summary. Output is JSON: `advice_points[]` + `improvement_notes[]`. Filler words are left in the raw transcript and cleaned up only at this summarization stage, not during transcription.
-- **D-04:** Model choice and API key provisioning are **open — see Open Questions**.
+- **D-03:** Claude API (`api.anthropic.com`) generates the structured summary. Output is JSON: `advice_points[]` + `improvement_notes[]`. Filler words are left in the raw transcript and cleaned up only at this summarization stage, not during transcription. Uses the **Batch API** (50% cost discount, fits the already-async pipeline) plus **prompt caching** to keep cost down.
+- **D-04 (resolved — closes OQ#1, OQ#2):**
+  - **Default model: `claude-haiku-4-5`.** Rationale: structured summarization from a clean transcript is a relatively light task; Haiku is sufficient quality at a small fraction of Sonnet's cost (~Rp 100–300/session, <Rp 100,000/semester at ~500 sessions).
+  - **Upgrade path: `claude-sonnet-5`** — switch to it only if quality evaluation (see AI-SPEC.md eval strategy) shows Haiku's summaries are insufficient.
+  - Model is **configurable via an env var** (e.g. `LLM_MODEL`) so it can change without a code change.
+  - Confirmed: `claude-sonnet-4-6` (the originally-requested id) is **not a valid current model id** — must not be used.
+  - **`ANTHROPIC_API_KEY` is assumed NOT YET present** in the environment. Add a placeholder in `settings/base.py` and `.env.example`, matching the existing `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` pattern. The real key will be provisioned from `console.anthropic.com` at deploy time.
+  - **New: `STT_LLM_ENABLED` feature flag (default `False`).** If the key is absent or the flag is off, the entire STT→LLM pipeline is skipped and every session falls back to the manual-notes editor (graceful degradation, STT-07) — this is the mechanism that makes "no key yet" a safe default rather than a failure state.
 
 ### Storage (STT-05, STT-06)
 - **D-05:** New standalone model `SessionLogbook` (OneToOne/FK to `Session`) — do **not** add these fields directly to `Session`, which is already overloaded as the queue/scheduling record. Fields: `transcript` (text), `summary_raw` (JSON from LLM), `summary_edited` (lecturer's edited version), `status`, `approved_at`, `approved_by`, `source_mode` (`offline`/`online` — new, needed once online sessions exist via Jitsi).
 
 ### Async Architecture (STT-02, STT-07)
-- **D-06:** Two chained Celery tasks: `transcribe_session` → (on success) triggers `summarize_session`. Status state machine: `pending → transcribing → summarizing → ready_for_review → approved` / `failed`. Non-blocking; frontend polls or refreshes status.
-- **D-07:** **This is new infrastructure for the project.** Every existing background job (`check_h15_notifications`, `check_auto_cancel` in `apps/bimbingan/scheduler.py`) runs on APScheduler with zero broker — no Celery, Redis, or worker process exists anywhere in this codebase or `requirements.txt` today. Adopting Celery means: (1) a message broker (Redis recommended — lighter than RabbitMQ for this scale), (2) a worker process to deploy and keep running alongside Django, (3) new deployment/ops surface that didn't exist before. Confirmed choice — proceed, but the planner must treat broker + worker deployment as first-class scope, not an afterthought.
+- **D-06 (revised):** Two chained Celery tasks: `transcribe_session` → (on success) triggers `summarize_session`. Status state machine: `pending → transcribing → summarizing → ready_for_review → approved` / `failed`. Non-blocking; frontend polls or refreshes status. **Triggered directly from `CompleteSessionView` via `.delay()`** when the "Selesai" upload completes — no separate polling job watches for done-but-unprocessed sessions.
+- **D-07 (resolved — closes OQ#6):** **This is new infrastructure for the project.** Every existing background job (`check_h15_notifications`, `check_auto_cancel` in `apps/bimbingan/scheduler.py`) runs on APScheduler with zero broker — no Celery, Redis, or worker process exists anywhere in this codebase or `requirements.txt` today. **Broker: Redis** (confirmed — lighter than RabbitMQ for this scale) + a Celery worker process deployed alongside Django. Confirmed choice — proceed, treating broker + worker deployment as first-class scope, not an afterthought.
 
 ### Fallback & Timeout (STT-07)
 - **D-08:** Timeout: 2× audio duration, minimum 5 minutes (depends on D-02's duration field existing). On STT/LLM failure or timeout: `SessionLogbook.status = failed`, a `SystemLog` entry is written (matching the existing `H15_NOTIFICATION` / `AUTO_CANCEL` event-type pattern), and the lecturer sees a manual note editor.
-- **D-09:** Retry policy on failure is **open — see Open Questions**.
+- **D-09 (resolved — closes OQ#4):** Retry/timeout uses **Celery's native retry mechanism** (e.g. `autoretry_for` + `retry_backoff`) rather than a custom app-level retry flag — so yes, there is at least one automatic retry before falling back to manual notes, not straight-to-manual on first failure. Exact retry count/backoff timing is Claude's Discretion (moved below) as an implementation detail within Celery's native mechanism.
 
 ### Monitoring & Quota (ADMIN-05)
 - **D-10:** Admin Dashboard shows STT/LLM job counts (success/failed) and a failure-log list, reusing the generic `SystemLog` model (`level`/`event_type`/`message`/`context`) — filter by `event_type` (e.g. `STT_FAILED`, `LLM_FAILED`) rather than adding new dedicated fields. Note: despite the ROADMAP text describing Phase 8's Admin Dashboard as already covering "STT/LLM quota," the actual `AdminDashboard.tsx` and backend have no STT/LLM-specific code today (verified — zero matches) — this is genuinely new work in Phase 6, not a Phase 8 leftover to wire up.
@@ -51,18 +57,16 @@ Every completed session with a recording automatically produces an editable, lec
 
 ### Claude's Discretion
 - Exact JSON schema beyond `advice_points[]` / `improvement_notes[]` (e.g., ordering, per-item metadata).
-- Retry backoff timing/count implementation details once the retry policy (D-09) is confirmed.
+- Exact Celery retry count / backoff timing within the native-retry mechanism confirmed in D-09.
 - Exact Admin Dashboard layout for job counts / failure log filters.
 - Whether `SessionLogbook.status` values match the state machine in D-06 verbatim or need additional transitional states — planner's call within the state machine's intent.
 
 ### Open Questions — Must Confirm Before Planning
-1. **Claude model for summarization (D-04):** which model — `claude-sonnet-5` (higher quality, higher cost) or `claude-haiku-4-5` (cheaper, likely sufficient for structured extraction from a clean transcript)? Note: `claude-sonnet-4-6` (as named in the original ask) is not a current model id.
-2. **`ANTHROPIC_API_KEY` provisioning (D-04):** is a key already available in the deployment environment, or does a placeholder need to be added to `settings/base.py` / `.env.example` (matching the existing `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` pattern) with no key set yet?
-3. **CPU-only vs GPU hosting for faster-whisper (D-01/D-02):** this determines whether `large-v3-turbo` actually meets the ≤2× duration NFR, or whether the planner should evaluate falling back to a smaller model (`medium`/`small`) for CPU-only deployment. What's the actual target deployment hardware?
-4. **Retry policy on STT/LLM failure (D-09):** does the lecturer get one automatic retry of the pipeline before falling back to manual notes, or does any failure go straight to the manual editor?
-5. **Token/cost estimate display (D-11):** per-session cost, aggregate monthly spend, or both? Real-time computed or batched/cached?
-6. **Celery broker choice + where it's deployed (D-07):** Redis is recommended as lighter-weight than RabbitMQ, but this needs a deployment-environment decision (is there hosting infra already picked that this needs to fit into?).
-7. **VideoProvider abstraction reference (D-13):** the phrasing "PRD v2.3 (abstraksi VideoProvider) ... menggantikan Daily.co" implies a pre-existing design — but no such code or document exists in this repo. Is there an external PRD/design doc to share, or should the planner treat this as a fresh design with no prior art?
+
+**Resolved this session (2026-07-05):** ~~OQ#1 (Claude model)~~, ~~OQ#2 (API key provisioning)~~, ~~OQ#3 (CPU/GPU + model size)~~, ~~OQ#4 (retry policy)~~, ~~OQ#6 (Celery broker choice)~~ — see D-01, D-04, D-07, D-09 above.
+
+1. **Token/cost estimate display (D-11):** per-session cost, aggregate monthly spend, or both? Real-time computed or batched/cached?
+2. **VideoProvider abstraction reference (D-13):** the phrasing "PRD v2.3 (abstraksi VideoProvider) ... menggantikan Daily.co" implies a pre-existing design — but no such code or document exists in this repo. Is there an external PRD/design doc to share, or should the planner treat this as a fresh design with no prior art?
 
 </decisions>
 
