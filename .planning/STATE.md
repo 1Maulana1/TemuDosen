@@ -70,6 +70,8 @@ Two team branches (`main`, with Farel's Phase 2 UI/consent work, and a teammate'
 
 ### Todos
 
+- **UI gaps dari uji manual browser (2026-07-04, dilaporkan user):**
+  - ✅ **FIXED (2026-07-04, dd4b932)** — Dosen bottom-nav sekarang konsisten: ekstrak `LecturerBottomNav` component, pakai di LecturerDashboard/LecturerRequests/LecturerQueue. Notifikasi buttons sekarang punya onClick handler yang menampilkan "Fitur notifikasi segera hadir." Mahasiswa nav placeholder (Riwayat Sesi, Profil) sekarang explicit disabled styling (opacity-60, cursor-not-allowed).
 - Requirements traceability table in REQUIREMENTS.md has phase numbers filled in as of 2026-06-21.
 - Phase 1 context document (01-CONTEXT.md) was written against PRD v1.0 — review and update before starting Phase 1 plan.
 
