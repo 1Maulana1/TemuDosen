@@ -41,6 +41,9 @@ Thumbs.db
 *.swp
 *.swo
 
+# Claude Code local config
+.claude/
+
 # Python virtual env
 venv/
 env/
