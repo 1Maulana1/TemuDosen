@@ -11,8 +11,36 @@
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { http, HttpResponse } from 'msw';
+import { MemoryRouter } from 'react-router';
 import { server } from '../../test/setup';
 import SymptomConfig from './SymptomConfig';
+
+// SymptomConfig now reads the admin user via useRouteLoaderData (for AppNav).
+// That hook needs a data router, so mock it here; MemoryRouter still provides
+// the context useNavigate needs.
+vi.mock('react-router', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react-router')>();
+  return {
+    ...actual,
+    useRouteLoaderData: () => ({
+      id: 1,
+      email: 'admin@test.com',
+      full_name: 'Admin TemuDosen',
+      role: 'admin',
+      is_approved: true,
+    }),
+  };
+});
+
+// SymptomConfig uses router hooks (useNavigate/useRouteLoaderData via AppNav),
+// so every render needs a router context.
+function renderConfig() {
+  return render(
+    <MemoryRouter>
+      <SymptomConfig />
+    </MemoryRouter>
+  );
+}
 
 // ── MSW fixture data ───────────────────────────────────────────────────────────
 
@@ -45,7 +73,7 @@ describe('SymptomConfig (S-10)', () => {
   // ── Test 1: 6 rows render ──────────────────────────────────────────────────
 
   it('renders all 6 seeded symptom rows after loading', async () => {
-    render(<SymptomConfig />);
+    renderConfig();
 
     // Wait for data to load
     await waitFor(() => {
@@ -72,7 +100,7 @@ describe('SymptomConfig (S-10)', () => {
       })
     );
 
-    render(<SymptomConfig />);
+    renderConfig();
 
     // Wait for rows to appear
     await waitFor(() => {
@@ -106,7 +134,7 @@ describe('SymptomConfig (S-10)', () => {
   // ── Test 3: delete confirm modal copy ────────────────────────────────────
 
   it('shows the delete confirmation modal with exact copy when trash icon is clicked', async () => {
-    render(<SymptomConfig />);
+    renderConfig();
 
     // Wait for rows to load
     await waitFor(() => {
@@ -132,7 +160,7 @@ describe('SymptomConfig (S-10)', () => {
   // ── Test 4: Tambah Gejala button present ─────────────────────────────────
 
   it('renders the "Tambah Gejala" button', async () => {
-    render(<SymptomConfig />);
+    renderConfig();
 
     // The button is in the DOM immediately (before data loads)
     const addButton = screen.getByRole('button', { name: /Tambah Gejala/i });
@@ -142,7 +170,7 @@ describe('SymptomConfig (S-10)', () => {
   // ── Test 5: page heading and subheading ──────────────────────────────────
 
   it('renders the page heading and subheading', async () => {
-    render(<SymptomConfig />);
+    renderConfig();
 
     expect(screen.getByText('Katalog Gejala Akademik')).toBeInTheDocument();
     expect(screen.getByText('Atur kategori gejala dan bobot durasi bimbingan')).toBeInTheDocument();
@@ -151,7 +179,7 @@ describe('SymptomConfig (S-10)', () => {
   // ── Test 6: Tambah Gejala adds a new editable row ─────────────────────────
 
   it('adds a new editable row when "Tambah Gejala" is clicked', async () => {
-    render(<SymptomConfig />);
+    renderConfig();
 
     await waitFor(() => {
       expect(screen.getByText('Analisis data')).toBeInTheDocument();

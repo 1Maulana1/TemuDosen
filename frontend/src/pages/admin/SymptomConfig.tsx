@@ -21,6 +21,7 @@
  * - 14px+ font throughout
  */
 import { useState, useEffect } from 'react';
+import { useRouteLoaderData, useNavigate } from 'react-router';
 import {
   fetchSymptoms,
   createSymptom,
@@ -28,6 +29,8 @@ import {
   bulkUpdateSymptoms,
 } from '../../api/symptoms';
 import type { SymptomCategory } from '../../api/symptoms';
+import { logout, type User } from '../../api/auth';
+import { AppNavbar, AppBottomNav, NAV_ITEMS } from '../../components/AppNav';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -43,14 +46,6 @@ interface RowState {
   /** Whether this is a brand-new row not yet saved to the server */
   isNew: boolean;
 }
-
-// ── Sidebar constants ──────────────────────────────────────────────────────────
-
-const SIDEBAR_LINKS = [
-  { label: 'Dashboard', icon: 'dashboard', href: '/admin' },
-  { label: 'Katalog Gejala', icon: 'clinical_notes', href: '/admin/katalog-gejala', active: true },
-  { label: 'Pengguna', icon: 'group', href: '/admin/pengguna' },
-];
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -69,6 +64,8 @@ function toRowState(symptom: SymptomCategory): RowState {
 // ── Main Component ─────────────────────────────────────────────────────────────
 
 export default function SymptomConfig() {
+  const currentUser = useRouteLoaderData('admin') as User;
+  const navigate = useNavigate();
   const [rows, setRows] = useState<RowState[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -98,6 +95,11 @@ export default function SymptomConfig() {
   useEffect(() => {
     loadSymptoms();
   }, []);
+
+  async function handleLogout() {
+    await logout();
+    navigate('/login');
+  }
 
   // ── Row editing ──────────────────────────────────────────────────────────────
 
@@ -238,41 +240,13 @@ export default function SymptomConfig() {
   const hasUnsavedChanges = rows.some((r) => r.editing || r.isNew);
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
-      {/* ── Sidebar ── */}
-      <aside className="fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-200 flex flex-col z-40">
-        {/* Logo */}
-        <div className="px-6 py-5 border-b border-gray-100">
-          <h1 className="font-headline font-bold text-xl text-primary">TemuDosen</h1>
-          <p className="text-[11px] text-slate-400 font-label mt-0.5">Panel Admin</p>
-        </div>
-
-        {/* Nav links */}
-        <nav className="flex-1 px-3 py-4" aria-label="Admin navigation">
-          {SIDEBAR_LINKS.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg mb-1 text-sm font-body transition-colors min-h-[44px] focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none ${
-                link.active
-                  ? 'bg-primary/10 text-accent-link font-bold'
-                  : 'text-slate-600 hover:bg-gray-50 hover:text-slate-800'
-              }`}
-              aria-current={link.active ? 'page' : undefined}
-            >
-              <span className="material-symbols-outlined text-xl" aria-hidden="true">
-                {link.icon}
-              </span>
-              {link.label}
-            </a>
-          ))}
-        </nav>
-      </aside>
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <AppNavbar items={NAV_ITEMS.admin} active="gejala" userName={currentUser?.full_name ?? 'Admin'} onLogout={handleLogout} brandSuffix="Admin" />
 
       {/* ── Main content ── */}
-      <main className="ml-64 flex-1 overflow-y-auto px-8 py-6">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 pb-24 md:pb-8">
         {/* Page header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
           <div>
             <h2 className="font-headline font-bold text-xl text-slate-900">
               Katalog Gejala Akademik
@@ -479,6 +453,8 @@ export default function SymptomConfig() {
           </button>
         </div>
       </main>
+
+      <AppBottomNav items={NAV_ITEMS.admin} active="gejala" />
 
       {/* ── Delete Confirmation Modal ── */}
       {deleteTargetId !== null && (

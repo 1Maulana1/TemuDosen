@@ -15,6 +15,7 @@ import AdminLogs from './pages/admin/AdminLogs';
 import StudentDashboard from './pages/student/StudentDashboard';
 import SubmissionForm from './pages/student/SubmissionForm';
 import StudentQueue from './pages/student/StudentQueue';
+import StudentProfile from './pages/student/StudentProfile';
 import LecturerDashboard from './pages/lecturer/LecturerDashboard';
 import LecturerRequests from './pages/lecturer/LecturerRequests';
 import LecturerQueue from './pages/lecturer/LecturerQueue';
@@ -72,6 +73,7 @@ export const router = createBrowserRouter([
       { index: true, element: <StudentDashboard /> },
       { path: 'ajukan', element: <SubmissionForm /> },
       { path: 'queue', element: <StudentQueue /> },
+      { path: 'profil', element: <StudentProfile /> },
     ],
   },
 
@@ -90,6 +92,7 @@ export const router = createBrowserRouter([
 
   // Admin
   {
+    id: 'admin',
     path: '/admin',
     loader: requireRole('admin'),
     children: [

@@ -4,7 +4,9 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Link } from 'react-router';
+import { useRouteLoaderData, useNavigate } from 'react-router';
+import { logout, type User } from '../../api/auth';
+import { AppNavbar, AppBottomNav, NAV_ITEMS } from '../../components/AppNav';
 import { getAdminLogs, cleanupAdminLogs, type AdminLogEntry } from '../../api/stats';
 
 const KNOWN_TYPES = [
@@ -33,6 +35,8 @@ function fmtTime(iso: string) {
 }
 
 export default function AdminLogs() {
+  const user = useRouteLoaderData('admin') as User;
+  const navigate = useNavigate();
   const [logs, setLogs] = useState<AdminLogEntry[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -82,18 +86,17 @@ export default function AdminLogs() {
 
   const totalPages = Math.max(1, Math.ceil(total / limit));
 
-  return (
-    <div className="bg-gray-50 min-h-screen">
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 h-16 max-w-4xl mx-auto flex items-center justify-between px-4">
-        <div className="flex items-center gap-3">
-          <Link to="/admin" aria-label="Kembali ke dashboard" className="p-2 -ml-2 min-h-[44px] min-w-[44px] flex items-center justify-center">
-            <span className="material-symbols-outlined text-gray-700">arrow_back</span>
-          </Link>
-          <span className="font-headline font-bold text-lg text-primary">Log Sistem</span>
-        </div>
-      </header>
+  async function handleLogout() {
+    await logout();
+    navigate('/login');
+  }
 
-      <main className="pt-20 pb-8 px-4 max-w-4xl mx-auto space-y-4">
+  return (
+    <div className="bg-gray-50 min-h-screen flex flex-col">
+      <AppNavbar items={NAV_ITEMS.admin} active="log" userName={user?.full_name ?? 'Admin'} onLogout={handleLogout} brandSuffix="Admin" />
+
+      <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 py-6 pb-24 md:pb-8 space-y-4">
+        <h1 className="font-headline font-bold text-2xl text-on-surface">Log Sistem</h1>
         {cleanupMsg && (
           <div className="bg-success/10 border border-success/20 rounded-xl p-3 text-sm font-bold text-success">{cleanupMsg}</div>
         )}
@@ -178,6 +181,8 @@ export default function AdminLogs() {
           </div>
         )}
       </main>
+
+      <AppBottomNav items={NAV_ITEMS.admin} active="log" />
     </div>
   );
 }

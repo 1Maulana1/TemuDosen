@@ -9,9 +9,11 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useRouteLoaderData } from 'react-router';
 import { getMyQueue, cancelMyQueue, type StudentQueueSession } from '../../api/sessions';
+import { logout, type User } from '../../api/auth';
 import StatusBadge from '../../components/StatusBadge';
+import { AppNavbar, AppBottomNav, NAV_ITEMS } from '../../components/AppNav';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -81,7 +83,7 @@ function QueueInfo({ session, onCancelClick }: QueueInfoProps) {
   const isWaiting = session.status === 'waiting';
 
   return (
-    <div className="flex flex-col items-center gap-6 pt-8">
+    <div className="pt-6 md:pt-8 grid md:grid-cols-2 gap-6 md:gap-10 md:items-center">
       {/* Queue number */}
       <div className="text-center">
         <p className="text-sm text-neutral-gray mb-1">
@@ -89,8 +91,8 @@ function QueueInfo({ session, onCancelClick }: QueueInfoProps) {
             ? `Antrian ke-${session.queue_position ?? '-'} dari ${session.total_in_queue ?? '-'}`
             : 'Nomor Antrian Anda'}
         </p>
-        <div className="w-36 h-36 rounded-full bg-primary/10 border-4 border-primary flex items-center justify-center mx-auto">
-          <span className="font-headline font-bold text-6xl text-primary" aria-label={`Nomor antrian ${session.queue_position}`}>
+        <div className="w-36 h-36 md:w-44 md:h-44 rounded-full bg-primary/10 border-4 border-primary flex items-center justify-center mx-auto">
+          <span className="font-headline font-bold text-6xl md:text-7xl text-primary" aria-label={`Nomor antrian ${session.queue_position}`}>
             {session.queue_position ?? '-'}
           </span>
         </div>
@@ -112,7 +114,8 @@ function QueueInfo({ session, onCancelClick }: QueueInfoProps) {
         )}
       </div>
 
-      {/* Info card */}
+      {/* Info card + cancel */}
+      <div className="space-y-4">
       <div className="w-full bg-white border border-gray-100 rounded-2xl p-5 shadow-sm space-y-4">
         {/* Dosen */}
         <div className="flex items-start gap-3">
@@ -159,6 +162,7 @@ function QueueInfo({ session, onCancelClick }: QueueInfoProps) {
           Batalkan Antrian
         </button>
       )}
+      </div>
     </div>
   );
 }
@@ -167,6 +171,7 @@ function QueueInfo({ session, onCancelClick }: QueueInfoProps) {
 
 export default function StudentQueue() {
   const navigate = useNavigate();
+  const user = useRouteLoaderData('mahasiswa') as User;
   const [data, setData] = useState<Awaited<ReturnType<typeof getMyQueue>> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -195,6 +200,11 @@ export default function StudentQueue() {
     return () => { if (refreshRef.current) clearInterval(refreshRef.current); };
   }, [loadQueue]);
 
+  async function handleLogout() {
+    await logout();
+    navigate('/login');
+  }
+
   const handleCancelConfirm = async () => {
     if (!data?.session) return;
     setCancelling(true);
@@ -210,19 +220,17 @@ export default function StudentQueue() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <nav className="fixed top-0 w-full z-50 bg-white border-b border-gray-200 shadow-sm max-w-md mx-auto left-0 right-0">
-        <div className="flex items-center justify-between px-4 h-16">
-          <span className="font-headline font-bold text-lg text-primary">Status Antrian</span>
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <AppNavbar items={NAV_ITEMS.mahasiswa} active="antrean" userName={user?.full_name ?? 'Mahasiswa'} onLogout={handleLogout} />
+
+      <main className="flex-1 w-full max-w-4xl mx-auto px-4 sm:px-6 py-6 pb-24 md:pb-8">
+        <div className="flex items-center justify-between">
+          <h1 className="font-headline font-bold text-2xl text-on-surface">Status Antrian</h1>
           <button type="button" onClick={loadQueue} aria-label="Refresh"
-            className="p-2 rounded-full hover:bg-gray-50 min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">
+            className="p-2 rounded-full hover:bg-gray-100 min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">
             <span className="material-symbols-outlined text-gray-600">refresh</span>
           </button>
         </div>
-      </nav>
-
-      <main className="pt-16 pb-32 px-4 max-w-md mx-auto">
         {!loading && lastUpdated && (
           <p className="text-center text-[11px] text-gray-400 pt-3" aria-live="polite">
             Diperbarui pukul {formatTime(lastUpdated.toISOString())}
@@ -243,7 +251,7 @@ export default function StudentQueue() {
         )}
 
         {!loading && data && !data.hasActiveQueue && (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="max-w-lg mx-auto mt-6 bg-surface rounded-2xl border border-gray-200 shadow-sm flex flex-col items-center justify-center py-16 px-6 text-center">
             <span className="material-symbols-outlined text-gray-300 text-6xl mb-4" aria-hidden="true">event_available</span>
             <h2 className="font-headline font-bold text-xl text-slate-900 mb-2">Tidak Ada Antrian Aktif</h2>
             <p className="text-sm text-neutral-gray mb-6 max-w-xs">
@@ -262,21 +270,7 @@ export default function StudentQueue() {
         )}
       </main>
 
-      {/* Bottom nav */}
-      <nav className="fixed bottom-0 left-0 w-full max-w-md mx-auto right-0 z-50 flex justify-around items-center px-2 py-3 bg-white border-t border-gray-200 rounded-t-xl">
-        <a href="/mahasiswa" className="flex flex-col items-center text-gray-400 gap-0.5 min-h-[44px] min-w-[44px] px-2 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none rounded">
-          <span className="material-symbols-outlined">home</span>
-          <span className="text-[11px]">Beranda</span>
-        </a>
-        <button type="button" aria-current="page" className="flex flex-col items-center text-primary gap-0.5 min-h-[44px] min-w-[44px]">
-          <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>queue</span>
-          <span className="text-[11px] font-bold">Antrian</span>
-        </button>
-        <a href="/mahasiswa/ajukan" className="flex flex-col items-center text-gray-400 gap-0.5 min-h-[44px] min-w-[44px] px-2 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none rounded">
-          <span className="material-symbols-outlined">add_circle</span>
-          <span className="text-[11px]">Ajukan</span>
-        </a>
-      </nav>
+      <AppBottomNav items={NAV_ITEMS.mahasiswa} active="antrean" />
 
       {/* Confirm cancel dialog */}
       {showConfirm && data?.session && (

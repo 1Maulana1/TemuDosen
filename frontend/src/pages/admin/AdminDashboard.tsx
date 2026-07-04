@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link, useLoaderData } from 'react-router';
-import type { User } from '../../api/auth';
+import { Link, useRouteLoaderData, useNavigate } from 'react-router';
+import { logout, type User } from '../../api/auth';
+import { AppNavbar, AppBottomNav, NAV_ITEMS } from '../../components/AppNav';
 import { getAdminStats, adminEmergencyCancel, type AdminStats } from '../../api/stats';
 
 function fmtTime(iso: string) {
@@ -83,7 +84,8 @@ function EmergencyCancelModal({ dosenName, activeSessions, onConfirm, onClose, l
 }
 
 export default function AdminDashboard() {
-  const user = useLoaderData() as User;
+  const user = useRouteLoaderData('admin') as User;
+  const navigate = useNavigate();
   const [data, setData] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [cancelMsg, setCancelMsg] = useState('');
@@ -96,6 +98,11 @@ export default function AdminDashboard() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  async function handleLogout() {
+    await logout();
+    navigate('/login');
+  }
 
   const selectedDosen = data?.lecturers.find((l) => l.id === selectedDosenId) ?? null;
 
@@ -117,13 +124,10 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen">
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 h-16 max-w-2xl mx-auto flex items-center justify-between px-4">
-        <span className="font-headline font-bold text-lg text-primary">TemuDosen — Admin</span>
-        <span className="text-sm text-neutral-gray">{user?.full_name}</span>
-      </header>
+    <div className="bg-gray-50 min-h-screen flex flex-col">
+      <AppNavbar items={NAV_ITEMS.admin} active="beranda" userName={user?.full_name ?? 'Admin'} onLogout={handleLogout} brandSuffix="Admin" />
 
-      <main className="pt-20 pb-8 px-4 max-w-2xl mx-auto space-y-6">
+      <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 py-6 pb-24 md:pb-8 space-y-6">
         {cancelMsg && (
           <div className="bg-warning/10 border border-warning/30 rounded-xl p-3 text-sm font-bold text-warning">{cancelMsg}</div>
         )}
@@ -244,6 +248,8 @@ export default function AdminDashboard() {
           </Link>
         </section>
       </main>
+
+      <AppBottomNav items={NAV_ITEMS.admin} active="beranda" />
 
       {showCancelModal && selectedDosen && (
         <EmergencyCancelModal

@@ -5,10 +5,10 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useRouteLoaderData } from 'react-router';
+import { useRouteLoaderData, useNavigate } from 'react-router';
 import { getLecturerQueue, type LecturerQueueItem } from '../../api/sessions';
-import LecturerBottomNav from '../../components/LecturerBottomNav';
-import type { User } from '../../api/auth';
+import { AppNavbar, AppBottomNav, NAV_ITEMS } from '../../components/AppNav';
+import { logout, type User } from '../../api/auth';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -93,6 +93,7 @@ function QueueCard({ item }: { item: LecturerQueueItem }) {
 
 export default function LecturerQueue() {
   const user = useRouteLoaderData('dosen') as User;
+  const navigate = useNavigate();
   const [data, setData] = useState<Awaited<ReturnType<typeof getLecturerQueue>> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -117,6 +118,11 @@ export default function LecturerQueue() {
     return () => { if (refreshRef.current) clearInterval(refreshRef.current); };
   }, [loadQueue]);
 
+  async function handleLogout() {
+    await logout();
+    navigate('/login');
+  }
+
   function formatEndTime(iso: string): string {
     try {
       return new Date(iso).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
@@ -124,18 +130,11 @@ export default function LecturerQueue() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <nav className="fixed top-0 w-full z-50 bg-white border-b border-gray-200 shadow-sm max-w-md mx-auto left-0 right-0">
-        <div className="flex items-center px-4 h-16 gap-3">
-          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary text-sm" aria-hidden="true">
-            {(user?.full_name ?? 'D').split(' ').slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('')}
-          </div>
-          <span className="font-headline font-bold text-lg text-primary">Antrian Hari Ini</span>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <AppNavbar items={NAV_ITEMS.dosen} active="antrian" userName={user?.full_name ?? 'Dosen'} onLogout={handleLogout} />
 
-      <main className="pt-16 pb-32 px-4 max-w-md mx-auto">
+      <main className="flex-1 w-full max-w-3xl mx-auto px-4 sm:px-6 py-6 pb-24 md:pb-8">
+        <h1 className="font-headline font-bold text-2xl text-on-surface mb-4">Antrian Hari Ini</h1>
         {loading && (
           <div className="text-center py-16 text-neutral-gray text-sm" aria-live="polite" aria-busy="true">
             <span className="material-symbols-outlined animate-spin text-3xl block mb-2">progress_activity</span>
@@ -187,8 +186,7 @@ export default function LecturerQueue() {
         )}
       </main>
 
-      {/* Bottom nav */}
-      <LecturerBottomNav active="antrian" />
+      <AppBottomNav items={NAV_ITEMS.dosen} active="antrian" />
     </div>
   );
 }

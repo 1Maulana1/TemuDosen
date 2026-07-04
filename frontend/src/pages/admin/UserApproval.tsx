@@ -8,15 +8,11 @@
  * Empty state: "Tidak Ada Akun Menunggu" (Copywriting Contract).
  */
 import { useState, useEffect } from 'react';
+import { useRouteLoaderData, useNavigate } from 'react-router';
 import { fetchPending, approveUser, rejectUser } from '../../api/users';
 import StatusBadge from '../../components/StatusBadge';
-import type { User } from '../../api/auth';
-
-const SIDEBAR_LINKS = [
-  { label: 'Dashboard', icon: 'dashboard', href: '/admin' },
-  { label: 'Katalog Gejala', icon: 'category', href: '/admin/katalog-gejala' },
-  { label: 'Pengguna', icon: 'group', href: '/admin/pengguna', active: true },
-];
+import { AppNavbar, AppBottomNav, NAV_ITEMS } from '../../components/AppNav';
+import { logout, type User } from '../../api/auth';
 
 function formatDate(dateStr: string): string {
   try {
@@ -41,6 +37,8 @@ function getRoleLabel(role: string): string {
 }
 
 export default function UserApproval() {
+  const currentUser = useRouteLoaderData('admin') as User;
+  const navigate = useNavigate();
   const [pendingUsers, setPendingUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
@@ -62,6 +60,11 @@ export default function UserApproval() {
   useEffect(() => {
     loadPending();
   }, []);
+
+  async function handleLogout() {
+    await logout();
+    navigate('/login');
+  }
 
   async function handleApprove(userId: number) {
     setActionLoading(userId);
@@ -88,36 +91,10 @@ export default function UserApproval() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Sidebar */}
-      <aside className="fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-200 flex flex-col">
-        {/* Logo */}
-        <div className="px-6 py-5 border-b border-gray-100">
-          <h1 className="font-headline font-bold text-xl text-primary">TemuDosen</h1>
-          <p className="text-[11px] text-slate-400 font-label mt-0.5">Panel Admin</p>
-        </div>
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <AppNavbar items={NAV_ITEMS.admin} active="pengguna" userName={currentUser?.full_name ?? 'Admin'} onLogout={handleLogout} brandSuffix="Admin" />
 
-        {/* Nav links */}
-        <nav className="flex-1 px-3 py-4">
-          {SIDEBAR_LINKS.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg mb-1 text-sm font-body transition-colors min-h-[44px] focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none ${
-                link.active
-                  ? 'bg-primary/10 text-accent-link border-r-4 border-primary font-bold'
-                  : 'text-slate-600 hover:bg-gray-50 hover:text-slate-800'
-              }`}
-            >
-              <span className="material-symbols-outlined text-xl">{link.icon}</span>
-              {link.label}
-            </a>
-          ))}
-        </nav>
-      </aside>
-
-      {/* Main content */}
-      <main className="ml-64 flex-1 overflow-y-auto px-8 py-6">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 pb-24 md:pb-8">
         {/* Page header */}
         <div className="mb-6">
           <h2 className="font-headline font-bold text-xl text-slate-900">
@@ -243,6 +220,8 @@ export default function UserApproval() {
           )}
         </div>
       </main>
+
+      <AppBottomNav items={NAV_ITEMS.admin} active="pengguna" />
     </div>
   );
 }

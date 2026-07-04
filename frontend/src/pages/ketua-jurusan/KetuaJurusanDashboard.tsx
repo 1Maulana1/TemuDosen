@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useRouteLoaderData } from 'react-router';
-import type { User } from '../../api/auth';
+import { useRouteLoaderData, useNavigate } from 'react-router';
+import { logout, type User } from '../../api/auth';
+import { AppNavbar, NAV_ITEMS } from '../../components/AppNav';
 import {
   getKetuaJurusanStats, getKetuaJurusanCompliance, getKetuaJurusanExportUrl,
   type KetuaJurusanStats, type KetuaJurusanCompliance, type ReportPeriod, type ComplianceRow,
@@ -56,6 +57,7 @@ function ComplianceTable({ rows, nameKey }: { rows: ComplianceRow[]; nameKey: 'n
 
 export default function KetuaJurusanDashboard() {
   const user = useRouteLoaderData('ketua-jurusan') as User;
+  const navigate = useNavigate();
   const [period, setPeriod] = useState<ReportPeriod>('monthly');
   const [data, setData] = useState<KetuaJurusanStats | null>(null);
   const [compliance, setCompliance] = useState<KetuaJurusanCompliance | null>(null);
@@ -73,6 +75,11 @@ export default function KetuaJurusanDashboard() {
 
   useEffect(() => { load(); }, [load]);
 
+  async function handleLogout() {
+    await logout();
+    navigate('/login');
+  }
+
   const maxSessions = data ? Math.max(...data.beban_per_dosen.map((d) => d.total_sesi), 1) : 1;
 
   const handleExport = (format: 'csv' | 'pdf') => {
@@ -82,13 +89,10 @@ export default function KetuaJurusanDashboard() {
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen">
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 h-16 max-w-2xl mx-auto flex items-center justify-between px-4">
-        <span className="font-headline font-bold text-lg text-primary">TemuDosen — Ketua Jurusan</span>
-        <span className="text-sm text-neutral-gray">{user?.full_name}</span>
-      </header>
+    <div className="bg-gray-50 min-h-screen flex flex-col">
+      <AppNavbar items={NAV_ITEMS['ketua-jurusan']} active="beranda" userName={user?.full_name ?? 'Ketua Jurusan'} onLogout={handleLogout} brandSuffix="Ketua Jurusan" />
 
-      <main className="pt-20 pb-8 px-4 max-w-2xl mx-auto space-y-6">
+      <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 py-6 pb-8 space-y-6">
         {/* Header + period filter + export */}
         <section className="pt-2 flex flex-wrap items-center justify-between gap-3">
           <div>

@@ -68,8 +68,9 @@ describe('SubmissionForm (S-07)', () => {
       expect(screen.getByText('Metodologi Penelitian')).toBeInTheDocument();
     });
 
-    const cta = screen.getByRole('button', { name: /Lanjutkan ke Jadwal/i });
-    expect(cta).toBeDisabled();
+    // Two CTAs now (sidebar on desktop + fixed footer on mobile) — both share state.
+    const ctas = screen.getAllByRole('button', { name: /Lanjutkan ke Jadwal/i });
+    ctas.forEach((cta) => expect(cta).toBeDisabled());
   });
 
   it('CTA is disabled when symptom selected but no file', async () => {
@@ -83,8 +84,9 @@ describe('SubmissionForm (S-07)', () => {
     const chip = screen.getByRole('button', { name: 'Metodologi Penelitian' });
     fireEvent.click(chip);
 
-    const cta = screen.getByRole('button', { name: /Lanjutkan ke Jadwal/i });
-    expect(cta).toBeDisabled();
+    // Two CTAs now (sidebar on desktop + fixed footer on mobile) — both share state.
+    const ctas = screen.getAllByRole('button', { name: /Lanjutkan ke Jadwal/i });
+    ctas.forEach((cta) => expect(cta).toBeDisabled());
   });
 
   it('CTA is enabled after selecting symptom chip and attaching a valid PDF', async () => {
@@ -106,8 +108,8 @@ describe('SubmissionForm (S-07)', () => {
       fireEvent.change(fileInput, { target: { files: [fakeFile] } });
     });
 
-    const cta = screen.getByRole('button', { name: /Lanjutkan ke Jadwal/i });
-    expect(cta).not.toBeDisabled();
+    const ctas = screen.getAllByRole('button', { name: /Lanjutkan ke Jadwal/i });
+    ctas.forEach((cta) => expect(cta).not.toBeDisabled());
   });
 
   it('shows "Pilih minimal satu gejala akademik." when submitting with no symptom', async () => {
@@ -169,7 +171,7 @@ describe('SubmissionForm (S-07)', () => {
     renderForm();
 
     await waitFor(() => {
-      expect(screen.getByText('Lanjutkan ke Jadwal')).toBeInTheDocument();
+      expect(screen.getAllByText('Lanjutkan ke Jadwal').length).toBeGreaterThan(0);
     });
   });
 

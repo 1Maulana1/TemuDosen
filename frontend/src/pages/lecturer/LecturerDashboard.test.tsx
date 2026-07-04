@@ -59,16 +59,16 @@ describe('LecturerDashboard (S-08)', () => {
     expect(screen.getByText('notifications')).toBeInTheDocument();
   });
 
-  it('renders bottom nav with Beranda, Permintaan, Antrian, Profil', async () => {
+  it('renders nav with Beranda, Permintaan, Antrian, Profil', async () => {
     renderDashboard();
 
-    // Labels updated to match the current bottom nav (Permintaan/Antrian,
-    // not the old Antrean/Riwayat naming) — items have no aria-label, so
-    // assert on the visible text instead of getByLabelText.
-    expect(screen.getByText('Beranda')).toBeInTheDocument();
-    expect(screen.getByText('Permintaan')).toBeInTheDocument();
-    expect(screen.getByText('Antrian')).toBeInTheDocument();
-    expect(screen.getByText('Profil')).toBeInTheDocument();
+    // Each label appears twice now — once in the desktop top navbar (hidden on
+    // mobile via CSS) and once in the mobile bottom nav (hidden on desktop).
+    // jsdom keeps both in the DOM, so assert at least one of each exists.
+    expect(screen.getAllByText('Beranda').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Permintaan').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Antrian').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Profil').length).toBeGreaterThan(0);
   });
 });
 

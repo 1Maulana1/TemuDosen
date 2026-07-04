@@ -8,13 +8,13 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useRouteLoaderData } from 'react-router';
+import { useRouteLoaderData, useNavigate } from 'react-router';
 import StatusBadge from '../../components/StatusBadge';
 import PDFPreview from '../../components/PDFPreview';
-import LecturerBottomNav from '../../components/LecturerBottomNav';
+import { AppNavbar, AppBottomNav, NAV_ITEMS } from '../../components/AppNav';
 import { fetchLecturerSubmissions, type LecturerSubmissionItem } from '../../api/submissions';
 import { approveSubmission, rejectSubmission } from '../../api/sessions';
-import type { User } from '../../api/auth';
+import { logout, type User } from '../../api/auth';
 
 // ── Status map ────────────────────────────────────────────────────────────────
 
@@ -329,6 +329,7 @@ const FILTER_TABS = [
 
 export default function LecturerRequests() {
   const user = useRouteLoaderData('dosen') as User;
+  const navigate = useNavigate();
   const [submissions, setSubmissions] = useState<LecturerSubmissionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -372,6 +373,11 @@ export default function LecturerRequests() {
     return () => { if (refreshRef.current) clearInterval(refreshRef.current); };
   }, [loadSubmissions]);
 
+  async function handleLogout() {
+    await logout();
+    navigate('/login');
+  }
+
   const handleApproveSuccess = () => {
     setApproveTarget(null);
     loadSubmissions();
@@ -382,23 +388,15 @@ export default function LecturerRequests() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <nav className="fixed top-0 w-full z-50 bg-white border-b border-gray-200 shadow-sm max-w-md mx-auto left-0 right-0">
-        <div className="flex items-center justify-between px-4 h-16">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary text-sm" aria-hidden="true">
-              {getInitials(user?.full_name ?? 'D')}
-            </div>
-            <span className="font-headline font-bold text-lg text-primary">Permintaan Masuk</span>
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <AppNavbar items={NAV_ITEMS.dosen} active="permintaan" userName={user?.full_name ?? 'Dosen'} onLogout={handleLogout} />
 
-      <main className="pt-16 pb-32 px-4 max-w-md mx-auto space-y-4">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 pb-24 md:pb-8 space-y-4">
+        <h1 className="font-headline font-bold text-2xl text-on-surface">Permintaan Masuk</h1>
+
         {/* Search */}
-        <div className="relative pt-4">
-          <span className="absolute left-3 top-1/2 mt-2 -translate-y-1/2 material-symbols-outlined text-neutral-gray text-lg" aria-hidden="true">search</span>
+        <div className="relative">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-gray text-lg" aria-hidden="true">search</span>
           <input type="search" value={search} onChange={(e) => setSearch(e.target.value)}
             placeholder="Cari NIM atau nama..."
             className="w-full pl-10 pr-4 py-3 text-sm rounded-xl border border-gray-200 bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary focus:outline-none placeholder:text-neutral-gray min-h-[44px]"
@@ -443,7 +441,7 @@ export default function LecturerRequests() {
           </div>
         )}
         {!loading && !error && submissions.length > 0 && (
-          <div className="flex flex-col gap-4" role="list">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4" role="list">
             {submissions.map((item) => (
               <div key={item.id} role="listitem">
                 <SubmissionCard item={item} onPreview={(u, f) => { setPreviewUuid(u); setPreviewFilename(f); }}
@@ -455,8 +453,7 @@ export default function LecturerRequests() {
         )}
       </main>
 
-      {/* Bottom nav */}
-      <LecturerBottomNav active="permintaan" />
+      <AppBottomNav items={NAV_ITEMS.dosen} active="permintaan" />
 
       {/* Modals */}
       {approveTarget && (

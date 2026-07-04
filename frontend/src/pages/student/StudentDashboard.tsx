@@ -37,7 +37,7 @@ import { getMyQueue, cancelMyQueue, type StudentQueueSession } from '../../api/s
 import StatusBadge from '../../components/StatusBadge';
 import StatCard from '../../components/StatCard';
 import SessionTable, { type SessionTableRow } from '../../components/SessionTable';
-import DashboardNavbar from '../../components/DashboardNavbar';
+import { AppNavbar, AppBottomNav, NAV_ITEMS } from '../../components/AppNav';
 import PDFPreview from '../../components/PDFPreview';
 import Toast from '../../components/Toast';
 
@@ -205,9 +205,9 @@ export default function StudentDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <DashboardNavbar userName={user.full_name} onLogout={handleLogout} />
+      <AppNavbar items={NAV_ITEMS.mahasiswa} active="beranda" userName={user.full_name} onLogout={handleLogout} />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-8 pb-24 md:pb-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
@@ -251,12 +251,11 @@ export default function StudentDashboard() {
           <StatCard icon="hourglass_top" label="Menunggu Konfirmasi" value={subsLoading ? '—' : menungguKonfirmasi} />
         </div>
 
-        {/* Two-column layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-          {/* Left column */}
-          <div className="lg:col-span-2 space-y-6">
+        {/* Two-column layout — explicit grid placement so the left & right cards
+            align row-by-row on desktop (Antrean↔Dosen, Riwayat↔Progres). */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Antrean Aktif Saya */}
-            <section className="bg-surface rounded-2xl border border-gray-200 shadow-sm p-6">
+            <section className="lg:col-span-2 lg:row-start-1 bg-surface rounded-2xl border border-gray-200 shadow-sm p-6">
               <h2 className="font-headline font-bold text-lg text-on-surface mb-4">Antrean Aktif Saya</h2>
 
               {queueLoading && (
@@ -308,7 +307,7 @@ export default function StudentDashboard() {
             </section>
 
             {/* Riwayat Sesi Bimbingan */}
-            <section className="bg-surface rounded-2xl border border-gray-200 shadow-sm p-6">
+            <section className="lg:col-span-2 lg:row-start-2 bg-surface rounded-2xl border border-gray-200 shadow-sm p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-headline font-bold text-lg text-on-surface">Riwayat Sesi Bimbingan</h2>
                 <span
@@ -335,12 +334,9 @@ export default function StudentDashboard() {
                 <SessionTable rows={historyRows} onView={handleViewRow} fmtDate={fmtDate} />
               )}
             </section>
-          </div>
 
-          {/* Right column (sidebar) */}
-          <div className="space-y-6">
             {/* Dosen Pembimbing Saya */}
-            <section className="bg-surface rounded-2xl border border-gray-200 shadow-sm p-6">
+            <section className="lg:col-start-3 lg:row-start-1 bg-surface rounded-2xl border border-gray-200 shadow-sm p-6">
               <h2 className="font-headline font-bold text-lg text-on-surface mb-4">Dosen Pembimbing Saya</h2>
 
               {user.adviser ? (
@@ -385,7 +381,7 @@ export default function StudentDashboard() {
             </section>
 
             {/* Progres Skripsi (mock/static — lihat TODO di header file) */}
-            <section className="bg-surface rounded-2xl border border-gray-200 shadow-sm p-6">
+            <section className="lg:col-start-3 lg:row-start-2 bg-surface rounded-2xl border border-gray-200 shadow-sm p-6">
               <div className="flex items-center justify-between mb-1">
                 <h2 className="font-headline font-bold text-lg text-on-surface">Progres Skripsi</h2>
                 <span className="text-sm font-bold text-primary">
@@ -428,11 +424,10 @@ export default function StudentDashboard() {
                 ))}
               </ul>
             </section>
-          </div>
         </div>
       </main>
 
-      <footer className="border-t border-gray-200 bg-surface">
+      <footer className="border-t border-gray-200 bg-surface pb-20 md:pb-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-on-surface-variant">
           <span className="font-bold text-slate-600">TemuDosen</span>
           <div className="flex items-center gap-4">
@@ -458,6 +453,8 @@ export default function StudentDashboard() {
       )}
 
       {toast && <Toast message={toast} onClose={() => setToast(null)} />}
+
+      <AppBottomNav items={NAV_ITEMS.mahasiswa} active="beranda" />
     </div>
   );
 }

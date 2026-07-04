@@ -19,7 +19,8 @@
 
 import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate, useRouteLoaderData } from 'react-router';
-import type { User } from '../../api/auth';
+import { logout, type User } from '../../api/auth';
+import { AppNavbar, NAV_ITEMS } from '../../components/AppNav';
 import { fetchSymptoms } from '../../api/symptoms';
 import type { SymptomCategory } from '../../api/symptoms';
 import { createSubmission, fetchMySubmissions } from '../../api/submissions';
@@ -36,6 +37,11 @@ interface FormErrors {
 export default function SubmissionForm() {
   const user = useRouteLoaderData('mahasiswa') as User;
   const navigate = useNavigate();
+
+  async function handleLogout() {
+    await logout();
+    navigate('/login');
+  }
 
   const [symptoms, setSymptoms] = useState<SymptomCategory[]>([]);
   const [selectedSymptomIds, setSelectedSymptomIds] = useState<number[]>([]);
@@ -146,39 +152,12 @@ export default function SubmissionForm() {
   const adviser = user.adviser ?? null;
 
   return (
-    <div className="font-body text-slate-900 bg-gray-50 min-h-screen overflow-x-hidden">
-      {/* Fixed header with step progress */}
-      <header className="fixed top-0 w-full z-50 bg-white shadow-sm border-b border-gray-200 max-w-md mx-auto left-0 right-0">
-        <div className="flex items-center px-4 h-14 w-full">
-          <button
-            type="button"
-            onClick={() => navigate('/mahasiswa')}
-            className="p-2 -ml-2 active:scale-95 transition-transform min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
-            aria-label="Kembali ke dashboard"
-          >
-            <span className="material-symbols-outlined text-gray-700">arrow_back</span>
-          </button>
-          <h1 className="ml-2 font-headline font-bold text-lg text-slate-900">
-            Ajukan Bimbingan Baru
-          </h1>
-        </div>
-        {/* Step progress bar */}
-        <div className="px-4 pb-3">
-          <div className="flex justify-between items-center mb-1.5">
-            <span className="text-[11px] font-normal text-gray-500 uppercase tracking-wider">
-              Langkah 1 dari 2
-            </span>
-            <span className="text-[11px] font-bold text-primary">50%</span>
-          </div>
-          <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
-            <div className="h-full bg-primary rounded-full w-1/2 transition-all duration-300" />
-          </div>
-        </div>
-      </header>
+    <div className="font-body text-slate-900 bg-gray-50 min-h-screen flex flex-col overflow-x-hidden">
+      <AppNavbar items={NAV_ITEMS.mahasiswa} active="ajukan" userName={user?.full_name ?? 'Mahasiswa'} onLogout={handleLogout} />
 
       {/* FR-D01: submission terakhir DITOLAK — blokir pengajuan baru */}
       {!checkingHistory && latestStatus === 'rejected' ? (
-        <main className="pt-32 pb-8 px-4 max-w-md mx-auto">
+        <main className="flex-1 w-full max-w-xl mx-auto px-4 sm:px-6 py-10">
           <div className="flex flex-col items-center text-center gap-3 py-10">
             <div className="w-14 h-14 rounded-full bg-error/10 flex items-center justify-center">
               <span className="material-symbols-outlined text-error text-2xl" aria-hidden="true">block</span>
@@ -196,9 +175,24 @@ export default function SubmissionForm() {
         </main>
       ) : (
       <>
-      {/* Main form */}
-      <main className="pt-32 pb-32 px-4 max-w-md mx-auto">
-        <form id="submissionForm" onSubmit={handleSubmit} className="space-y-6" noValidate>
+      {/* Main form — 2 kolom di desktop (isian + sidebar estimasi) */}
+      <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 py-6 pb-32 lg:pb-10">
+        {/* Page header + step progress */}
+        <div className="mb-6">
+          <h1 className="font-headline font-bold text-2xl text-on-surface">Ajukan Bimbingan Baru</h1>
+          <div className="mt-3 max-w-md">
+            <div className="flex justify-between items-center mb-1.5">
+              <span className="text-[11px] font-normal text-gray-500 uppercase tracking-wider">Langkah 1 dari 2</span>
+              <span className="text-[11px] font-bold text-primary">50%</span>
+            </div>
+            <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
+              <div className="h-full bg-primary rounded-full w-1/2 transition-all duration-300" />
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        <form id="submissionForm" onSubmit={handleSubmit} className="lg:col-span-2 space-y-6 bg-surface rounded-2xl border border-gray-200 shadow-sm p-5 sm:p-6" noValidate>
 
           {/* FR-D01: catatan revisi dosen untuk pengajuan ulang */}
           {latestStatus === 'revision' && revisionNote && (
@@ -317,8 +311,10 @@ export default function SubmissionForm() {
             />
           </section>
 
-          {/* Section 5: Estimasi Durasi (bento card, dark) */}
-          {selectedSymptomIds.length > 0 && (
+        </form>
+
+          {/* Sidebar: estimasi durasi + CTA (desktop). Mobile pakai footer tetap di bawah. */}
+          <aside className="space-y-4 lg:sticky lg:top-32">
             <section
               className="p-4 bg-slate-900 rounded-2xl text-white shadow-lg overflow-hidden relative group"
               aria-label={`Estimasi durasi bimbingan: ${estimatedMinutes} menit`}
@@ -330,54 +326,83 @@ export default function SubmissionForm() {
                   <span className="material-symbols-outlined text-white text-xl">timer</span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h4 className="text-sm font-bold flex items-center">
-                    Estimasi Durasi: ~{estimatedMinutes} menit
-                    <span className="material-symbols-outlined text-[14px] ml-1.5 opacity-60">
-                      info
-                    </span>
-                  </h4>
-                  <p className="text-[11px] text-slate-300 mt-1 leading-relaxed font-normal">
-                    Dihitung berdasarkan gejala akademik yang Anda pilih untuk efektivitas
-                    sesi bimbingan.
-                  </p>
+                  {selectedSymptomIds.length > 0 ? (
+                    <>
+                      <h4 className="text-sm font-bold flex items-center">
+                        Estimasi Durasi: ~{estimatedMinutes} menit
+                        <span className="material-symbols-outlined text-[14px] ml-1.5 opacity-60">info</span>
+                      </h4>
+                      <p className="text-[11px] text-slate-300 mt-1 leading-relaxed font-normal">
+                        Dihitung berdasarkan gejala akademik yang Anda pilih untuk efektivitas sesi bimbingan.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <h4 className="text-sm font-bold">Estimasi Durasi</h4>
+                      <p className="text-[11px] text-slate-300 mt-1 leading-relaxed font-normal">
+                        Pilih gejala akademik untuk menghitung estimasi durasi bimbingan.
+                      </p>
+                    </>
+                  )}
                 </div>
               </div>
             </section>
-          )}
 
-        </form>
+            {/* CTA desktop */}
+            <button
+              type="submit"
+              form="submissionForm"
+              disabled={!canSubmit || isSubmitting}
+              aria-disabled={!canSubmit}
+              className={[
+                'hidden lg:flex w-full py-4 px-6 rounded-xl font-bold text-sm items-center justify-center space-x-2 transition-all active:scale-[0.98]',
+                canSubmit && !isSubmitting
+                  ? 'bg-primary text-on-primary shadow-lg shadow-primary/25 cursor-pointer'
+                  : 'bg-primary text-on-primary opacity-50 cursor-not-allowed',
+              ].join(' ')}
+            >
+              {isSubmitting ? (
+                <><span className="material-symbols-outlined text-sm animate-spin">autorenew</span><span>Memproses...</span></>
+              ) : (
+                <><span>Lanjutkan ke Jadwal</span><span className="material-symbols-outlined text-sm">arrow_forward</span></>
+              )}
+            </button>
+          </aside>
+        </div>
       </main>
 
-      {/* Sticky footer CTA */}
-      <footer className="fixed bottom-0 w-full max-w-md mx-auto left-0 right-0 bg-white border-t border-gray-100 p-4 pb-6 z-50">
-        <button
-          type="submit"
-          form="submissionForm"
-          disabled={!canSubmit || isSubmitting}
-          aria-busy={isSubmitting}
-          aria-disabled={!canSubmit}
-          className={[
-            'w-full py-4 px-6 rounded-xl font-bold text-sm flex items-center justify-center space-x-2',
-            'transition-all active:scale-[0.98]',
-            canSubmit && !isSubmitting
-              ? 'bg-primary text-on-primary shadow-xl shadow-primary/25 cursor-pointer'
-              : 'bg-primary text-on-primary opacity-50 cursor-not-allowed',
-          ].join(' ')}
-        >
-          {isSubmitting ? (
-            <>
-              <span className="material-symbols-outlined text-sm animate-spin">
-                autorenew
-              </span>
-              <span>Memproses...</span>
-            </>
-          ) : (
-            <>
-              <span>Lanjutkan ke Jadwal</span>
-              <span className="material-symbols-outlined text-sm">arrow_forward</span>
-            </>
-          )}
-        </button>
+      {/* Sticky footer CTA — mobile only (desktop pakai tombol di sidebar) */}
+      <footer className="lg:hidden fixed bottom-0 left-0 right-0 w-full bg-white border-t border-gray-100 z-50">
+        <div className="max-w-xl mx-auto p-4 pb-6">
+          <button
+            type="submit"
+            form="submissionForm"
+            disabled={!canSubmit || isSubmitting}
+            aria-busy={isSubmitting}
+            aria-disabled={!canSubmit}
+            className={[
+              'w-full py-4 px-6 rounded-xl font-bold text-sm flex items-center justify-center space-x-2',
+              'transition-all active:scale-[0.98]',
+              canSubmit && !isSubmitting
+                ? 'bg-primary text-on-primary shadow-xl shadow-primary/25 cursor-pointer'
+                : 'bg-primary text-on-primary opacity-50 cursor-not-allowed',
+            ].join(' ')}
+          >
+            {isSubmitting ? (
+              <>
+                <span className="material-symbols-outlined text-sm animate-spin">
+                  autorenew
+                </span>
+                <span>Memproses...</span>
+              </>
+            ) : (
+              <>
+                <span>Lanjutkan ke Jadwal</span>
+                <span className="material-symbols-outlined text-sm">arrow_forward</span>
+              </>
+            )}
+          </button>
+        </div>
       </footer>
       </>
       )}
