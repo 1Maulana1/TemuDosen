@@ -7,6 +7,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouteLoaderData } from 'react-router';
 import { getLecturerQueue, type LecturerQueueItem } from '../../api/sessions';
+import LecturerBottomNav from '../../components/LecturerBottomNav';
 import type { User } from '../../api/auth';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -187,20 +188,7 @@ export default function LecturerQueue() {
       </main>
 
       {/* Bottom nav */}
-      <nav className="fixed bottom-0 left-0 w-full max-w-md mx-auto right-0 z-50 flex justify-around items-center px-2 py-3 bg-white border-t border-gray-200 rounded-t-xl">
-        <a href="/dosen" className="flex flex-col items-center text-gray-400 gap-0.5 min-h-[44px] min-w-[44px] px-2 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none rounded">
-          <span className="material-symbols-outlined">home</span>
-          <span className="text-[11px]">Beranda</span>
-        </a>
-        <a href="/dosen/requests" className="flex flex-col items-center text-gray-400 gap-0.5 min-h-[44px] min-w-[44px] px-2 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none rounded">
-          <span className="material-symbols-outlined">inbox</span>
-          <span className="text-[11px]">Permintaan</span>
-        </a>
-        <button type="button" aria-current="page" className="flex flex-col items-center text-primary gap-0.5 min-h-[44px] min-w-[44px]">
-          <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>format_list_numbered</span>
-          <span className="text-[11px] font-bold">Antrian</span>
-        </button>
-      </nav>
+      <LecturerBottomNav active="antrian" />
     </div>
   );
 }

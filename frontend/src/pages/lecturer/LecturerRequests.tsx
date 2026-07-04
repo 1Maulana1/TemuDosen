@@ -11,6 +11,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouteLoaderData } from 'react-router';
 import StatusBadge from '../../components/StatusBadge';
 import PDFPreview from '../../components/PDFPreview';
+import LecturerBottomNav from '../../components/LecturerBottomNav';
 import { fetchLecturerSubmissions, type LecturerSubmissionItem } from '../../api/submissions';
 import { approveSubmission, rejectSubmission } from '../../api/sessions';
 import type { User } from '../../api/auth';
@@ -455,20 +456,7 @@ export default function LecturerRequests() {
       </main>
 
       {/* Bottom nav */}
-      <nav className="fixed bottom-0 left-0 w-full max-w-md mx-auto right-0 z-50 flex justify-around items-center px-2 py-3 bg-white border-t border-gray-200 rounded-t-xl">
-        <a href="/dosen" className="flex flex-col items-center text-gray-400 gap-0.5 min-h-[44px] min-w-[44px] focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none rounded px-2">
-          <span className="material-symbols-outlined">home</span>
-          <span className="text-[11px]">Beranda</span>
-        </a>
-        <button type="button" aria-current="page" className="flex flex-col items-center text-primary gap-0.5 min-h-[44px] min-w-[44px]">
-          <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>inbox</span>
-          <span className="text-[11px] font-bold">Permintaan</span>
-        </button>
-        <a href="/dosen/queue" className="flex flex-col items-center text-gray-400 gap-0.5 min-h-[44px] min-w-[44px] focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none rounded px-2">
-          <span className="material-symbols-outlined">format_list_numbered</span>
-          <span className="text-[11px]">Antrian</span>
-        </a>
-      </nav>
+      <LecturerBottomNav active="permintaan" />
 
       {/* Modals */}
       {approveTarget && (

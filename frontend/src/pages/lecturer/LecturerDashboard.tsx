@@ -4,6 +4,7 @@ import type { User } from '../../api/auth';
 import { getLecturerQueue, completeSession, type LecturerQueueItem, type LecturerQueueResponse } from '../../api/sessions';
 import { getLecturerStats, startSession, type LecturerStats } from '../../api/stats';
 import ConsentModal from '../../components/ConsentModal';
+import LecturerBottomNav from '../../components/LecturerBottomNav';
 import { useMediaRecorder } from '../../hooks/useMediaRecorder';
 
 function fmt(iso: string) {
@@ -90,7 +91,15 @@ export default function LecturerDashboard() {
           <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary text-sm">{initials(user?.full_name??'D')}</div>
           <span className="font-headline font-bold text-lg text-primary">TemuDosen</span>
         </div>
-        <span className="material-symbols-outlined text-gray-500">notifications</span>
+        <button
+          type="button"
+          title="Fitur notifikasi segera hadir"
+          aria-label="Notifikasi (segera hadir)"
+          onClick={() => setMsg('Notifikasi belum tersedia.')}
+          className="min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none rounded-full"
+        >
+          <span className="material-symbols-outlined text-gray-500">notifications</span>
+        </button>
       </header>
 
       <main className="pt-20 pb-24 px-4 max-w-md mx-auto space-y-5">
@@ -209,24 +218,7 @@ export default function LecturerDashboard() {
         </section>
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-50 flex justify-around bg-white border-t border-gray-200 px-2 py-3 rounded-t-xl max-w-md mx-auto">
-        <button type="button" aria-current="page" className="flex flex-col items-center text-primary min-h-[44px] min-w-[44px]">
-          <span className="material-symbols-outlined text-xl" style={{fontVariationSettings:"'FILL' 1"}}>home</span>
-          <span className="text-[11px] font-bold">Beranda</span>
-        </button>
-        <Link to="/dosen/requests" className="flex flex-col items-center text-gray-400 hover:text-primary min-h-[44px] min-w-[44px]">
-          <span className="material-symbols-outlined text-xl">inbox</span>
-          <span className="text-[11px]">Permintaan</span>
-        </Link>
-        <Link to="/dosen/queue" className="flex flex-col items-center text-gray-400 hover:text-primary min-h-[44px] min-w-[44px]">
-          <span className="material-symbols-outlined text-xl">format_list_numbered</span>
-          <span className="text-[11px]">Antrian</span>
-        </Link>
-        <Link to="/dosen/pengaturan" className="flex flex-col items-center text-gray-400 hover:text-primary min-h-[44px] min-w-[44px]">
-          <span className="material-symbols-outlined text-xl">person</span>
-          <span className="text-[11px]">Profil</span>
-        </Link>
-      </nav>
+      <LecturerBottomNav active="beranda" />
 
       {consentTarget && (
         <ConsentModal
