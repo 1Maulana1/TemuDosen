@@ -2,8 +2,8 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Phases 1-4 and 8 Verified; 5 and 7 partial-verified (real gaps confirmed); 6 not started
-last_updated: "2026-07-03T02:00:00.000Z"
+status: Phases 1-5 and 8 verified clean; 7 partial (backend only); 6 not started
+last_updated: "2026-07-04T13:00:00.000Z"
 progress:
   total_phases: 8
   completed_phases: 5
@@ -22,17 +22,17 @@ See `.planning/PROJECT.md` for core value, constraints, and full requirements.
 
 ## Current Position
 
-Phase: 06 (STT, AI Summarization & Logbook) — the true next greenfield phase, blocked on Phase 5
-**Status**: All 8 phases have now been formally verified at least once. Phases 1, 2, 3, 4, and 8 closed clean. Phases 5 and 7 closed as PARTIAL with real, specific gaps — not documentation gaps. Phase 6 has zero work.
+Phase: 06 (STT, AI Summarization & Logbook) — the true next greenfield phase, now fully unblocked
+**Status**: All 8 phases formally verified at least once. Phases 1, 2, 3, 4, 5, and 8 closed clean (Phase 5 re-verified 6/6 on 2026-07-04, superseding the 4/6 pass). Phase 7 remains PARTIAL. Phase 6 has zero work.
 
 **What's actually blocking full-scope completion, in order:**
 
-1. **Phase 5, SC3/SC4** — no `ts2` field, no "Selesai" action, no actual audio capture (`MediaRecorder`/`getUserMedia`) anywhere. This is the hard blocker: Phase 6 has nothing to transcribe without it.
+1. **Phase 6** — 0/6, greenfield, fully unblocked; `SessionRecording` audio files exist at `MEDIA_ROOT/recordings/<uuid>.webm`.
 2. **Phase 7, SC1/SC2** — the advice-item backend (`ActionItem` CRUD, compliance report) works and is tested, but **has no frontend UI at all** on either side (lecturer can't add advice, student can't view/complete it).
-3. **Phase 6** — 0/6, needs Phase 5 closed first.
-4. **Phase 7, SC3-6** — campus logbook sync (Sekawan/KPTI), legitimately blocked on Phase 6 (nothing to sync without an AI summary).
+3. **Phase 7, SC3-6** — campus logbook sync (Sekawan/KPTI), legitimately blocked on Phase 6 (nothing to sync without an AI summary).
+4. **Phase 5 manual checks** (non-blocking UX confirmations) — real mic across Chrome/Firefox/Safari, 360px "Merekam…" visibility, tab-close mid-recording; per `05-VERIFICATION.md` human_verification.
 
-**Test evidence**: `backend/apps/bimbingan/tests/` — 204 tests, all passing (started this session's verification pass at 153).
+**Test evidence**: backend suite 221 tests, all passing (204 → 221 with `test_session_execution.py`, 17 new); frontend 37 tests, all passing (30 → 37: `useMediaRecorder.test.ts` + 2 active-session tests).
 
 **Caveat**: No formal `0N-*-PLAN.md` exists for Phases 2–8 (all implemented directly, verified retroactively).
 
@@ -49,12 +49,12 @@ Two team branches (`main`, with Farel's Phase 2 UI/consent work, and a teammate'
 | 2. Approval & Queue Placement | ✅ Complete, verified | `02-VERIFICATION.md`, 32 tests |
 | 3. Live Queue Management & Quota | ✅ **Verified** (2026-07-03) | `03-VERIFICATION.md` — 3/3 success criteria, 15 tests, existing coverage was already sufficient |
 | 4. Google Calendar Sync & Graceful Degradation | ✅ **Verified** (2026-07-03) | `04-VERIFICATION.md` — 4/4 success criteria, `test_calendar.py` (16 tests). Fixed a real bug: `CalendarCallbackView` returned raw JSON instead of redirecting to `/dosen/pengaturan` after Google OAuth; also wired the dead "Profil" nav button |
-| 5. Session Execution with Recording & Consent | 🟡 **Partial, verified as far as it goes** (2026-07-03) | `05-VERIFICATION.md` — 4/6 success criteria (consent, T-15, auto-cancel, offline/online+link) done and now tested (`test_scheduler.py` + 3 consent tests, 10 new tests total). Fixed a bug: auto-cancel's audit log was mislabeled `EMERGENCY_CANCEL` instead of `AUTO_CANCEL`. **Confirmed missing**: no `ts2` field, no "Selesai" action anywhere, no actual audio capture (no `MediaRecorder`/`getUserMedia` in frontend) |
+| 5. Session Execution with Recording & Consent | ✅ **Verified 6/6** (re-verified 2026-07-04) | `05-VERIFICATION.md` (2026-07-04 re-verification, supersedes 4/6): `ts2`/`result_notes`/`SessionRecording` (migration 0004), `CompleteSessionView` with consent-gated audio upload, `useMediaRecorder` + "Merekam…" indicator + "Selesai" flow. `test_session_execution.py` (17 tests) + frontend hook/component tests. Manual mic checks in real browsers still open (human_verification) |
 | 6. STT, AI Summarization & Logbook | ❌ **Not started, confirmed** (2026-07-03) | `06-VERIFICATION.md` — 0/6, zero hits for whisper/STT/transcript/LLM in the codebase; no summary field on `Session`. Blocked on Phase 5's missing audio capture regardless |
 | 7. Advisory Continuity & Campus Logbook Integration | 🟡 **Partial, verified** (2026-07-03) | `07-VERIFICATION.md` — 2/6 success criteria have working, tested backend logic (`test_action_items.py`, 14 tests). **No bugs found in the code itself** — the gap is that neither side of the advice-tracking UI exists (lecturer can't create an item, student can't view/complete one), and the campus-sync half (SC3-6) was never started |
 | 8. Admin Emergency Controls & Ketua Jurusan Reporting | ✅ **Verified** (2026-07-03) | `08-VERIFICATION.md` — 3/4 success criteria clean, `test_admin.py` (24 tests). SC3's "sessions completed" metric is structurally always 0 (Phase 5 gap surfacing here, not a Phase 8 bug) — regression-guarded so the test fails loudly once Phase 5 closes. Also fixed an environment gap: `reportlab` was declared in `requirements.txt` but not installed, silently breaking PDF export |
 
-**Bottom line**: Phases 1–4 and 8 are fully verified clean. Phase 5 and Phase 7 each have one well-defined, real gap (not test-coverage gaps — actual missing features). **Phase 6 has zero work**, confirmed. Every phase in the roadmap has now been through a formal verification pass at least once.
+**Bottom line**: Phases 1–5 and 8 are fully verified clean (Phase 5 re-verified 6/6 on 2026-07-04). Phase 7 has one well-defined, real gap (advice-tracking UI missing on both sides). **Phase 6 has zero work**, confirmed. Every phase in the roadmap has now been through a formal verification pass at least once.
 
 ## Performance Metrics
 
@@ -92,9 +92,10 @@ Two team branches (`main`, with Farel's Phase 2 UI/consent work, and a teammate'
 
 ## Session Continuity
 
-**Last updated**: 2026-07-03
-**Next step**: Two independent gaps remain, either can be picked up first: (a) Close Phase 5's SC3/SC4 — add `ts2` to `Session`, a "Selesai" action, and real audio capture (`MediaRecorder`/`getUserMedia` frontend + upload/storage backend); `05-VALIDATION.md` has a Wave 0 test plan for this, and it's the harder blocker since Phase 6 needs it. (b) Build Phase 7's missing UI — a way for a lecturer to add an advice item during/after a session, and a way for a student to see and complete theirs; the backend API is already done and tested, this is pure frontend + maybe a note/evidence field on `ActionItem`. Phase 6 (STT/AI Summarization) is the true next greenfield phase once (a) is done — currently zero work.
-**Stopped at**: All 8 phases formally verified at least once. Phases 1, 2, 3, 4, 8 closed clean. Phase 5 closed PARTIAL (4/6 SC; SC3/SC4 confirmed not implemented). Phase 7 closed PARTIAL (2/6 SC; backend correct and tested, zero frontend UI on either side). Phase 6 confirmed 0/6. Backend suite at 204 tests, all passing (was 153 at the start of this session's verification pass). Bugs/gaps found and fixed along the way: `CalendarCallbackView` returning raw JSON instead of redirecting (Phase 4), auto-cancel mislabeling its audit log as `EMERGENCY_CANCEL` instead of `AUTO_CANCEL` (Phase 5), and `reportlab` missing from the venv despite being in `requirements.txt` (Phase 8).
+**Last updated**: 2026-07-04 (afternoon session)
+**Next step**: Two independent options: (a) Phase 6 (STT/AI Summarization) — unblocked, `SessionRecording` audio files exist at `MEDIA_ROOT/recordings/<uuid>.webm`; greenfield, 0/6. (b) Phase 7's missing UI — lecturer adds advice items during/after a session, student views/completes theirs; backend API done and tested, pure frontend. Still open (non-blocking): manual browser verification of mic capture (Chrome/Firefox/Safari, 360px "Merekam…" visibility) per `05-VERIFICATION.md` human_verification.
+**Stopped at (2026-07-04, afternoon)**: Phase 5 formally re-verified 6/6 (`05-VERIFICATION.md` rewritten as re-verification; `05-VALIDATION.md` closed, nyquist_compliant; ROADMAP Phase 5 → VERIFIED). Same session also ported 3 fixes from teammate snapshots (Nala/Rifqi): daily-quota `scheduled_at__date=today` filter in `ApproveSubmissionView`, PKCE `code_verifier` session persistence in the Calendar OAuth flow, and `CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS` in dev/docker/prod settings; merged Nala's real-credential OAuth addendum into `04-VERIFICATION.md`. Backend 221/221, frontend 37/37.
+**Stopped at (2026-07-04, morning)**: Phase 5 SC3/SC4 closed — implemented `ts2` + `result_notes` on `Session`, `SessionRecording` model (migration 0004), `POST /api/queue/<id>/complete/` (CompleteSessionView: TS2 + DONE + optional notes + consent-gated multipart audio upload with WebM/Ogg/MP4 magic-byte validation and `RECORDING_MAX_UPLOAD_SIZE` cap), `activeSession` in the lecturer queue response, `useMediaRecorder` hook (graceful fallback when mic denied/unsupported), "Sesi Berlangsung" card with "Merekam…" indicator, notes textarea, and "Selesai" button. Updated the Phase 8 regression guard (`test_admin.py`) so `sesi_selesai` now asserts a real completed session is counted. INTERFACES.md Bagian 1 + Person 1 section synced to the as-built contract. Backend 221 tests green, frontend 37 tests green. Known flake (pre-existing): approve's async calendar daemon thread occasionally races pytest teardown producing a spurious one-off ERROR on a random test — a background-task chip was filed to make it deterministic under tests.
 
 **Out-of-sequence note (2026-07-02)**: At user request, `05-CONTEXT.md` was captured for Phase 5 (Session Execution with Recording & Consent) ahead of Phase 3/4 — exploratory only, no plan/execution yet. Roadmap execution order (Phase 3 next) is unchanged; Phase 5 is still deferred post-July-15 per the 2026-06-21 roadmap decision. Scout during discussion found SESSION-01, SESSION-05, SESSION-06 already fully implemented (same commit 55aefb3), and SESSION-03 partially implemented (`ts1` + status transition, no consent/recording yet). See `.planning/phases/05-session-execution-with-recording-consent/05-CONTEXT.md`.
 

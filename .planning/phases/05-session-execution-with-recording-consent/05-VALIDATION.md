@@ -1,11 +1,11 @@
 ---
 phase: 5
 slug: session-execution-with-recording-consent
-status: draft
-nyquist_compliant: false
-wave_0_complete: false
+status: closed
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-07-02
-updated: 2026-07-03
+updated: 2026-07-04
 ---
 
 # Phase 5 — Validation Strategy
@@ -13,6 +13,8 @@ updated: 2026-07-03
 > Per-phase validation contract for feedback sampling during execution.
 
 **2026-07-03 update:** See `05-VERIFICATION.md` for the actual retroactive verification of this phase — consent (SESSION-02) landed and is now tested (3 tests in `test_queue.py::TestStartSession`), and `test_scheduler.py` (7 tests) now covers SESSION-01/05. This validation strategy remains accurate and still applicable for the real remaining gap: SESSION-03's audio-capture half and SESSION-04 (Selesai/TS2) — nothing below has changed for that part of the plan.
+
+**2026-07-04 update — SESSION-03/04 executed.** Wave 0 items delivered as planned: `backend/apps/bimbingan/tests/test_session_execution.py` (17 tests: complete/TS2/notes, consent-gated upload, magic bytes, size cap, activeSession), `webm_audio_file` fixture in `conftest.py` (EBML magic header), and a `MediaRecorder`/`getUserMedia` shim in `frontend/src/test/setup.ts` (+ `useMediaRecorder.test.ts`, 5 tests, and 2 active-session tests in `LecturerDashboard.test.tsx`). The pre-existing `LecturerDashboard.test.tsx` failure had already been fixed upstream (baseline was green). Only the Manual-Only Verifications table below remains open (real mic in Chrome/Firefox/Safari, 360px indicator, tab-close data-loss behavior).
 
 ---
 
@@ -47,10 +49,10 @@ updated: 2026-07-03
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| 05-01-TBD | TBD | 0 | — | — | Test infra for consent/recording/completion exists | unit | `pytest apps/bimbingan/tests/test_session_execution.py --collect-only` | ❌ W0 | ⬜ pending |
-| 05-0X-TBD | TBD | TBD | SESSION-02 | V4/V5 | Consent modal shown before recording; decline still starts session with `consent_given=false` | unit + integration | `npm run test -- --run src/components/ConsentModal.test.tsx` / `pytest apps/bimbingan/tests/test_session_execution.py -k consent` | ❌ W0 | ⬜ pending |
-| 05-0X-TBD | TBD | TBD | SESSION-03 | V4/V5 | "Mulai & Rekam" sets ts1 + starts MediaRecorder; permission-denied/codec-unsupported falls back to no-recording | unit (mocked MediaRecorder) + integration | `npm run test -- --run src/hooks/useMediaRecorder.test.ts` / `pytest apps/bimbingan/tests/test_session_execution.py -k start` | ❌ W0 | ⬜ pending |
-| 05-0X-TBD | TBD | TBD | SESSION-04 | V4/V5/V6 | "Selesai" stops recording, uploads single audio file, sets ts2, optional notes | integration + component | `pytest apps/bimbingan/tests/test_session_execution.py -k complete` / `npm run test -- --run src/pages/lecturer/ActiveSession.test.tsx` | ❌ W0 | ⬜ pending |
+| 05-01-TBD | TBD | 0 | — | — | Test infra for consent/recording/completion exists | unit | `pytest apps/bimbingan/tests/test_session_execution.py --collect-only` | ✅ | ✅ green |
+| 05-0X-TBD | TBD | TBD | SESSION-02 | V4/V5 | Consent modal shown before recording; decline still starts session with `consent_given=false` | unit + integration | `pytest apps/bimbingan/tests/test_session_execution.py -k consent` (+ `test_queue.py::TestStartSession`) | ✅ | ✅ green |
+| 05-0X-TBD | TBD | TBD | SESSION-03 | V4/V5 | "Mulai & Rekam" sets ts1 + starts MediaRecorder; permission-denied/codec-unsupported falls back to no-recording | unit (mocked MediaRecorder) + integration | `npm run test -- --run src/hooks/useMediaRecorder.test.ts` | ✅ | ✅ green |
+| 05-0X-TBD | TBD | TBD | SESSION-04 | V4/V5/V6 | "Selesai" stops recording, uploads single audio file, sets ts2, optional notes | integration + component | `pytest apps/bimbingan/tests/test_session_execution.py -k complete` / active-session tests in `LecturerDashboard.test.tsx` | ✅ | ✅ green |
 | — | — | — | SESSION-01, 05, 06 | — | Already implemented — covered by existing `apps/bimbingan/tests/` (32 passing) | — | (existing suite) | ✅ existing | ✅ done |
 
 *Exact task IDs are TBD until gsd-planner produces PLAN.md — this map's requirement/test-type/command columns are locked from research; task numbering will be filled in during/after planning.*
@@ -61,10 +63,10 @@ updated: 2026-07-03
 
 ## Wave 0 Requirements
 
-- [ ] `backend/apps/bimbingan/tests/test_session_execution.py` — new test file covering consent, start-with-recording-flag, and complete/ts2/upload behaviors (mirrors `test_approval.py`'s `client_for()` + fixture style)
-- [ ] A small valid-WebM byte fixture (analogous to existing `pdf_file` fixture in `conftest.py`) — `webm_audio_file` fixture yielding a `BytesIO` starting with the EBML magic header `\x1a\x45\xdf\xa3`, for `SimpleUploadedFile`-based upload tests
-- [ ] `frontend/src/test/setup.ts` (or a new test-only shim) — minimal `MediaRecorder`/`getUserMedia` mock, since jsdom does not implement `MediaRecorder` at all
-- [ ] Decide and execute on the pre-existing `LecturerDashboard.test.tsx` failure before or alongside Phase 5 changes to that same file
+- [x] `backend/apps/bimbingan/tests/test_session_execution.py` — new test file covering consent, start-with-recording-flag, and complete/ts2/upload behaviors (mirrors `test_approval.py`'s `client_for()` + fixture style) — **done, 17 tests**
+- [x] A small valid-WebM byte fixture (analogous to existing `pdf_file` fixture in `conftest.py`) — `webm_audio_file` fixture yielding a `BytesIO` starting with the EBML magic header `\x1a\x45\xdf\xa3`, for `SimpleUploadedFile`-based upload tests — **done, in `conftest.py`**
+- [x] `frontend/src/test/setup.ts` (or a new test-only shim) — minimal `MediaRecorder`/`getUserMedia` mock, since jsdom does not implement `MediaRecorder` at all — **done, in `setup.ts`**
+- [x] Decide and execute on the pre-existing `LecturerDashboard.test.tsx` failure before or alongside Phase 5 changes to that same file — **resolved upstream; baseline was green before SC3/SC4 work**
 
 ---
 
@@ -80,11 +82,11 @@ updated: 2026-07-03
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 30s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references
+- [x] No watch-mode flags
+- [x] Feedback latency < 30s
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** closed 2026-07-04 — all automated items green (backend 221/221, frontend 37/37); only the Manual-Only Verifications table remains open (real mic Chrome/Firefox/Safari, 360px indicator, tab-close behavior). See `05-VERIFICATION.md` (re-verification, 6/6).

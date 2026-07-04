@@ -11,10 +11,6 @@ import type { User } from '../../api/auth';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function getInitials(name: string): string {
-  return name.split(' ').slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('');
-}
-
 function formatTime(iso: string): string {
   try {
     return new Date(iso).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });

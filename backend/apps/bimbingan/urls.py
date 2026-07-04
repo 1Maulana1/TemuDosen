@@ -3,7 +3,8 @@ from django.urls import path
 
 from .views import (
     CalendarAuthView, CalendarCallbackView, CalendarStatusView,
-    CancelStudentQueueView, LecturerQueueView, StudentQueueView, StartSessionView,
+    CancelStudentQueueView, CompleteSessionView, LecturerQueueView,
+    StudentQueueView, StartSessionView,
     LecturerStatsView, AdminStatsView, AdminEmergencyCancelView,
     AdminLogsView, AdminLogsCleanupView,
     KetuaJurusanStatsView, KetuaJurusanExportView, KetuaJurusanComplianceView,
@@ -14,6 +15,7 @@ queue_urlpatterns = [
     path('my/', StudentQueueView.as_view(), name='queue-my'),
     path('<int:pk>/cancel/', CancelStudentQueueView.as_view(), name='queue-cancel'),
     path('<int:pk>/start/', StartSessionView.as_view(), name='queue-start'),
+    path('<int:pk>/complete/', CompleteSessionView.as_view(), name='queue-complete'),
     path('lecturer/', LecturerQueueView.as_view(), name='queue-lecturer'),
     # FR-KP04: saran / tindak lanjut bimbingan, dilekatkan ke sebuah sesi
     path('<int:session_id>/action-items/', SessionActionItemsView.as_view(), name='queue-action-items'),

@@ -31,3 +31,49 @@ afterEach(() => server.resetHandlers());
 
 // Stop MSW after all tests complete
 afterAll(() => server.close());
+
+// ── MediaRecorder / getUserMedia shim (Phase 5 Wave 0) ─────────────────────────
+// jsdom tidak mengimplementasikan MediaRecorder sama sekali. Shim minimal ini
+// membuat useMediaRecorder bisa diuji; test individual bisa override perilakunya
+// (mis. getUserMedia reject untuk skenario izin ditolak).
+
+export class MockMediaRecorder {
+  static isTypeSupported = (type: string) => type.startsWith('audio/webm');
+
+  stream: unknown;
+  mimeType: string;
+  state: 'inactive' | 'recording' | 'paused' = 'inactive';
+  ondataavailable: ((e: { data: Blob }) => void) | null = null;
+  onstop: (() => void) | null = null;
+
+  constructor(stream: unknown, options?: { mimeType?: string }) {
+    this.stream = stream;
+    this.mimeType = options?.mimeType ?? 'audio/webm';
+  }
+
+  start(_timesliceMs?: number) {
+    this.state = 'recording';
+  }
+
+  stop() {
+    this.state = 'inactive';
+    // Emit satu chunk dummy lalu stop — meniru urutan event MediaRecorder asli
+    this.ondataavailable?.({ data: new Blob([new Uint8Array([0x1a, 0x45, 0xdf, 0xa3])], { type: this.mimeType }) });
+    this.onstop?.();
+  }
+}
+
+export function makeMockStream() {
+  return { getTracks: () => [{ stop: () => {} }] };
+}
+
+// @ts-expect-error — jsdom global has no MediaRecorder type
+globalThis.MediaRecorder = MockMediaRecorder;
+
+Object.defineProperty(globalThis.navigator, 'mediaDevices', {
+  configurable: true,
+  writable: true,
+  value: {
+    getUserMedia: async () => makeMockStream(),
+  },
+});

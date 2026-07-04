@@ -9,9 +9,8 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useRouteLoaderData, useNavigate } from 'react-router';
+import { useNavigate } from 'react-router';
 import { getMyQueue, cancelMyQueue, type StudentQueueSession } from '../../api/sessions';
-import type { User } from '../../api/auth';
 import StatusBadge from '../../components/StatusBadge';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -167,7 +166,6 @@ function QueueInfo({ session, onCancelClick }: QueueInfoProps) {
 // ── Main component ─────────────────────────────────────────────────────────────
 
 export default function StudentQueue() {
-  const user = useRouteLoaderData('mahasiswa') as User;
   const navigate = useNavigate();
   const [data, setData] = useState<Awaited<ReturnType<typeof getMyQueue>> | null>(null);
   const [loading, setLoading] = useState(true);

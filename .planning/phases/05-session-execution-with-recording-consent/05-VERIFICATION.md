@@ -1,23 +1,32 @@
 ---
 phase: 05-session-execution-with-recording-consent
-verified: 2026-07-03T00:00:00Z
-status: partial
-score: 4/6 success criteria verified, 2/6 not implemented
-test_evidence: backend/apps/bimbingan/tests/test_scheduler.py (new, 7 tests), test_queue.py TestStartSession (3 new consent tests); full backend suite 166/166
+verified: 2026-07-04T00:00:00Z
+status: verified
+score: 6/6 success criteria verified
+test_evidence: backend/apps/bimbingan/tests/test_session_execution.py (17 tests), test_scheduler.py (7), test_queue.py TestStartSession (3 consent tests); full backend suite 221/221. Frontend useMediaRecorder.test.ts (5) + LecturerDashboard.test.tsx active-session tests (2); full frontend suite 37/37
 human_verification:
+  - test: "Real microphone recording in Chrome + Firefox + Safari"
+    expected: "Click 'Mulai & Rekam' → browser mic prompt → 'Merekam…' indicator visible; Safari (no WebM) falls back gracefully; permission-denied still starts the session without recording"
+    why_human: "jsdom cannot exercise real getUserMedia/MediaRecorder hardware behavior — the hook is tested against a shim, not a real mic"
+  - test: "Recording indicator visibility at 360px"
+    expected: "'Merekam…' indicator clearly visible during an active recording at 360px viewport width"
+    why_human: "Visual/responsive check per PROJECT.md constraint, not unit-testable"
+  - test: "Data loss on tab close/refresh mid-recording"
+    expected: "Refresh mid-session: no crash, session state stays consistent (recording buffer is lost by design — documented behavior)"
+    why_human: "Requires manual browser interaction to reproduce"
   - test: "H-15 notification and 30-min auto-cancel actually firing on a live schedule"
     expected: "APScheduler jobs (check_h15_notifications every 1 min, check_auto_cancel every 5 min) run against real wall-clock time in a running server, not just direct function calls in a test"
     why_human: "Tests call the job functions directly with a backdated/forwarded scheduled_at rather than waiting on real APScheduler intervals"
 ---
 
-# Phase 05: Session Execution with Recording & Consent — Verification Report
+# Phase 05: Session Execution with Recording & Consent — Verification Report (Re-verification)
 
 **Phase Goal:** Students are alerted as their turn approaches, and lecturers start/end sessions end-to-end with accurate timestamps, audio recording, and an explicit consent gate before any recording begins.
-**Verified:** 2026-07-03
-**Status:** PARTIAL — 4 of 6 success criteria are done and now tested; 2 are not implemented at all
-**Re-verification:** No — initial verification
+**Verified:** 2026-07-04
+**Status:** VERIFIED — 6/6 success criteria implemented and tested (manual browser checks remain open, see `human_verification`)
+**Re-verification:** Yes — supersedes the 2026-07-03 PARTIAL (4/6) report. SC3 (audio capture) and SC4 (Selesai/TS2), the two gaps named there, were implemented 2026-07-04 and are verified here.
 
-> **Provenance note.** SESSION-01 (H-15 notification) and SESSION-05/06 (auto-cancel, offline/online method) were implemented in commit `55aefb3`. Consent (SESSION-02) landed later in Farel's Phase 2 branch merge (`4e077a0`, merged into master this session as `44212ee`) — `ConsentModal.tsx` + the `consent_by_dosen`/`consent_by_mahasiswa`/`consent_given_at` fields on `Session`. None of it had test coverage before this pass; a `05-VALIDATION.md` (draft, 2026-07-02) already correctly flagged SESSION-03/04 as the real gap ahead of this verification — see that file for the forward-looking test plan if/when audio capture gets built.
+> **Provenance note.** SESSION-01 (H-15 notification) and SESSION-05/06 (auto-cancel, offline/online method) were implemented in commit `55aefb3`; consent (SESSION-02) landed via Farel's Phase 2 branch merge (`44212ee`). The 2026-07-03 pass added scheduler/consent test coverage and confirmed SC3/SC4 as genuinely missing. The 2026-07-04 work closed both: `ts2` + `result_notes` on `Session`, `SessionRecording` model (migration `0004_session_result_notes_session_ts2_sessionrecording`), `CompleteSessionView`, and the frontend recording flow (`useMediaRecorder` + active-session card). `05-VALIDATION.md`'s Wave 0 plan was executed as written (webm fixture, jsdom MediaRecorder shim, `test_session_execution.py`).
 
 ---
 
@@ -27,35 +36,35 @@ human_verification:
 
 | # | Truth | Status | Evidence |
 |---|-------|--------|----------|
-| 1 | Student receives an in-app/email notification ~15 minutes before their estimated turn | VERIFIED | `check_h15_notifications()` (`scheduler.py`, runs every 1 min via APScheduler) notifies students whose session is scheduled 14–16 min out and marks `notification_sent`. Tests: `TestH15Notifications` (3 tests: fires inside window, silent outside window, no double-notify) |
-| 2 | Before any recording begins, an explicit consent prompt is displayed to both parties; session proceeds without recording if either party declines | VERIFIED | `ConsentModal.tsx` (frontend) + `StartSessionView` accepts `consent_by_dosen`/`consent_by_mahasiswa`; `consent_given_at` is stamped **only if both are true**, otherwise the session still starts (IN_PROGRESS, `ts1` set) without a recorded-consent timestamp. Tests: `TestStartSession::test_consent_given_at_recorded_when_both_parties_consent`, `test_session_proceeds_without_recording_if_either_party_declines`, `test_consent_defaults_to_declined_when_not_sent` |
-| 3 | Lecturer presses a single "Mulai & Rekam" button that simultaneously logs TS1 and begins audio recording; recording indicator ("Merekam…") is clearly visible | 🟡 PARTIAL | The button (`LecturerDashboard.tsx` → `ConsentModal` → `startSession()`) does log `ts1` (tested: `test_lecturer_can_start_waiting_session`). **No audio is actually captured** — no `MediaRecorder`/`getUserMedia` call exists anywhere in the frontend — and there is no "Merekam…" indicator anywhere in the UI. "Recording" today means a consent flag + a timestamp, not an audio file. |
-| 4 | Lecturer presses "Selesai" to simultaneously stop recording and log TS2; manual result notes are optional | ❌ NOT IMPLEMENTED | No `ts2` field exists on `Session`, no "Selesai" button/action/endpoint exists anywhere in the codebase (frontend or backend). A session that reaches IN_PROGRESS has no way to be marked DONE through the UI at all right now. |
-| 5 | If a called student's "Mulai & Rekam" hasn't occurred within 30 minutes, that student's slot is automatically cancelled | VERIFIED | `check_auto_cancel()` (`scheduler.py`, runs every 5 min) cancels WAITING sessions past a 30-min cutoff with `ts1__isnull=True`, cascades to the submission, deletes the Calendar event, notifies both parties, and recompacts the remaining queue. Tests: `TestAutoCancel` (4 tests: cancels after cutoff, leaves alone before cutoff, does not cancel an already-started session, logs the correct `AUTO_CANCEL` event type) |
-| 6 | Lecturer selects Offline/Online; if Online, must attach an external meeting link | VERIFIED | `ApproveModal` (frontend) + server-side validation in `ApproveSubmissionView`/serializer requiring `meeting_link` when `method='online'`. Tests: `test_online_method_requires_meeting_link`, `test_online_method_with_link_succeeds` |
+| 1 | Student receives an in-app/email notification ~15 minutes before their estimated turn | VERIFIED | `check_h15_notifications()` (`scheduler.py`, every 1 min via APScheduler) notifies students whose session is scheduled 14–16 min out and marks `notification_sent`. Tests: `TestH15Notifications` (3 tests) |
+| 2 | Before any recording begins, an explicit consent prompt is displayed to both parties; session proceeds without recording if either party declines | VERIFIED | `ConsentModal.tsx` + `StartSessionView` accepts `consent_by_dosen`/`consent_by_mahasiswa`; `consent_given_at` stamped **only if both are true**, otherwise the session still starts (IN_PROGRESS, `ts1` set) without recorded consent. Tests: `TestStartSession` (3 tests). Enforcement on the upload side: `CompleteSessionView` **rejects an audio upload when `consent_given_at` is null** (`test_session_execution.py -k consent`) |
+| 3 | Lecturer presses a single "Mulai & Rekam" button that simultaneously logs TS1 and begins audio recording; recording indicator ("Merekam…") is clearly visible | VERIFIED | "Mulai & Rekam" → `ConsentModal` → `startSession()` logs `ts1` (tested), and `LecturerDashboard.tsx` now calls `useMediaRecorder` (`getUserMedia` + `MediaRecorder`) when consent was given — with graceful fallback when the mic is denied or `MediaRecorder` unsupported (session continues, no recording). "Merekam…" indicator renders on the "Sesi Berlangsung" card while recording. Tests: `useMediaRecorder.test.ts` (5: start/stop/blob, permission-denied fallback, unsupported fallback), `LecturerDashboard.test.tsx` active-session tests (2). Real-mic behavior across browsers is the remaining manual check |
+| 4 | Lecturer presses "Selesai" to simultaneously stop recording and log TS2; manual result notes are optional | VERIFIED | `POST /api/queue/<id>/complete/` (`CompleteSessionView`): sets `ts2`, status → DONE, saves optional `result_notes`, and accepts a consent-gated multipart audio upload (WebM/Ogg/MP4 magic-byte validation, `RECORDING_MAX_UPLOAD_SIZE` cap, stored as `SessionRecording` at `MEDIA_ROOT/recordings/<uuid>.webm`). Frontend "Selesai" button stops the recorder, uploads the blob, and posts notes in one action. Tests: `test_session_execution.py` (17: complete/TS2/notes, consent gate, magic bytes, size cap, ownership/role guards, `activeSession` in queue response) |
+| 5 | If a called student's "Mulai & Rekam" hasn't occurred within 30 minutes, that student's slot is automatically cancelled | VERIFIED | `check_auto_cancel()` (`scheduler.py`, every 5 min) cancels WAITING sessions past a 30-min cutoff with `ts1__isnull=True`, cascades to the submission, deletes the Calendar event, notifies both parties, recompacts the queue. Tests: `TestAutoCancel` (4 tests; `AUTO_CANCEL` mislabel bug fixed + regression-guarded in the 07-03 pass) |
+| 6 | Lecturer selects Offline/Online; if Online, must attach an external meeting link | VERIFIED | `ApproveModal` + server-side validation requiring `meeting_link` when `method='online'`. Tests: `test_online_method_requires_meeting_link`, `test_online_method_with_link_succeeds` |
 
-**Score:** 4/6 verified, 2/6 not implemented (SC3 partially — timestamp only, no audio; SC4 entirely missing).
+**Score:** 6/6 success criteria verified by passing automated tests.
 
 ---
 
 ## Test Evidence
 
 ```
-$ .venv/Scripts/python -m pytest apps/bimbingan/tests/test_scheduler.py apps/bimbingan/tests/test_queue.py -q
-22 passed
-
 $ .venv/Scripts/python -m pytest -q
-166 passed
+221 passed
+
+$ npm run test -- --run   (frontend/)
+Test Files  7 passed (7)
+Tests       37 passed (37)
 ```
 
-### Bug found and fixed during this verification pass
+Backend grew 204 → 221 with `test_session_execution.py` (17 new); frontend grew 30 → 37 (`useMediaRecorder.test.ts` 5 + 2 active-session tests). Downstream effect: the Phase 8 regression guard in `test_admin.py` (`sesi_selesai`) now asserts a real completed session is counted — the "always 0" symptom noted in `08-VERIFICATION.md` is closed.
 
-`check_auto_cancel()`'s own audit-trail `SystemLog` entry was tagged `event_type='EMERGENCY_CANCEL'` — the same event type used by the admin-triggered `AdminEmergencyCancelView` (Phase 8). This meant a student simply not showing up would be indistinguishable from an admin emergency-cancelling a lecturer's whole day, in both the Admin Dashboard's error log and anywhere else that groups by `event_type`. The `notify_student`/`notify_lecturer` calls in the same function already correctly used `AUTO_CANCEL` — only the `SystemLog.objects.create()` call was mislabeled. Fixed to `event_type='AUTO_CANCEL'`, with a regression test (`test_logs_event_type_auto_cancel_not_emergency_cancel`) guarding it.
+### Carried from the 2026-07-03 pass
 
-### Tests added in this pass (zero coverage existed before)
-
-- `test_scheduler.py` — new file, 7 tests for `check_h15_notifications` and `check_auto_cancel` (previously untested despite being live APScheduler jobs since Phase 2)
-- `test_queue.py::TestStartSession` — 3 new tests for the consent gate (previously untested despite `ConsentModal.tsx` + the consent fields already being in production code)
+- `test_scheduler.py` (7 tests) — first-ever coverage for the live APScheduler jobs
+- `TestStartSession` consent tests (3) — first-ever coverage for the consent gate
+- Bug fixed: `check_auto_cancel()` audit log mislabeled `EMERGENCY_CANCEL` → `AUTO_CANCEL`, regression-guarded
 
 ---
 
@@ -64,21 +73,21 @@ $ .venv/Scripts/python -m pytest -q
 | Requirement | Description | Status | Evidence |
 |-------------|-------------|--------|----------|
 | SESSION-01 | T-15 notification | SATISFIED | `check_h15_notifications`, tested |
-| SESSION-02 | Consent gate before recording | SATISFIED | `ConsentModal` + `StartSessionView` consent fields, tested |
-| SESSION-03 | "Mulai & Rekam" logs TS1 + starts audio recording | PARTIAL | TS1 logging done+tested; **audio recording not implemented** |
-| SESSION-04 | "Selesai" stops recording + logs TS2 | NOT SATISFIED | No implementation at all |
-| SESSION-05 | 30-min no-show auto-cancel | SATISFIED | `check_auto_cancel`, tested (bug fixed in this pass) |
+| SESSION-02 | Consent gate before recording | SATISFIED | `ConsentModal` + `StartSessionView` consent fields + consent-gated upload in `CompleteSessionView`, tested |
+| SESSION-03 | "Mulai & Rekam" logs TS1 + starts audio recording | SATISFIED | TS1 + `useMediaRecorder` capture with denied/unsupported fallback, tested (real-mic check manual) |
+| SESSION-04 | "Selesai" stops recording + logs TS2 | SATISFIED | `CompleteSessionView` + "Selesai" flow (TS2, optional notes, audio upload → `SessionRecording`), tested |
+| SESSION-05 | 30-min no-show auto-cancel | SATISFIED | `check_auto_cancel`, tested |
 | SESSION-06 | Offline/Online + required meeting link | SATISFIED | `ApproveModal` + serializer validation, tested |
 
 ---
 
 ## Notes / Follow-ups
 
-- **This phase cannot be closed as fully verified** — SESSION-03/04 are a real, well-scoped gap, not a documentation gap. To close it: add a `ts2` field to `Session`, a "Selesai" action (endpoint + button), and actual audio capture (`MediaRecorder`/`getUserMedia` on the frontend, upload + storage on the backend). `05-VALIDATION.md` (2026-07-02, still accurate) already has a Wave 0 test plan for exactly this work, including a webm-fixture pattern and a jsdom `MediaRecorder` mock strategy.
-- **This is the hard blocker for Phase 6.** STT/AI summarization has nothing to transcribe until an audio file exists — closing SESSION-03/04 is a prerequisite for any Phase 6 work, not just a nice-to-have.
-- **H-15/auto-cancel are tested by calling the job functions directly**, not by waiting on real APScheduler intervals — see `human_verification` above for what that leaves unverified (the actual background-scheduling wiring, `start_scheduler()`, is simple enough that this is low risk).
+- **Phase 6 is now unblocked.** Audio files exist at `MEDIA_ROOT/recordings/<uuid>.webm` (`SessionRecording` rows) — the STT/AI pipeline has something to transcribe.
+- **Manual browser checks still open** (see `human_verification`): real mic across Chrome/Firefox/Safari, 360px "Merekam…" visibility, tab-close mid-recording behavior. These are UX confirmations, not implementation gaps — all logic paths they exercise are covered by the mocked tests.
+- **Known pre-existing flake** (not Phase 5): approve's async calendar daemon thread occasionally races pytest teardown, producing a spurious one-off ERROR on a random test. A background-task chip was filed to make it deterministic under tests.
 
 ---
 
-*Verified: 2026-07-03*
-*Verifier: Claude — verification against ROADMAP success criteria; added missing test coverage for consent + scheduler jobs; found and fixed a mislabeled audit-log event type*
+*Verified: 2026-07-04 (re-verification; initial 4/6 pass 2026-07-03)*
+*Verifier: Claude — re-verified all 6 ROADMAP success criteria after SC3/SC4 implementation landed; backend 221/221, frontend 37/37*

@@ -126,3 +126,7 @@ FRONTEND_URL = env('FRONTEND_URL', default='http://localhost:5173')
 
 # Phase 2: Dosen daily guidance quota (minutes); default 480 min = 8 hours
 DOSEN_DAILY_QUOTA_MINUTES = env.int('DOSEN_DAILY_QUOTA_MINUTES', default=480)
+
+# Phase 5 (SESSION-03/04): batas ukuran upload rekaman audio sesi; default 100MB
+# (~2 jam Opus 64kbps masih jauh di bawah ini)
+RECORDING_MAX_UPLOAD_SIZE = env.int('RECORDING_MAX_UPLOAD_SIZE', default=100 * 1024 * 1024)

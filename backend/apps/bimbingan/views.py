@@ -38,7 +38,7 @@ from rest_framework.views import APIView
 from apps.accounts.permissions import IsLecturer, IsStudent
 from apps.submissions.models import Submission
 
-from .models import ActionItem, DosenCalendarToken, Session, SystemLog
+from .models import ActionItem, DosenCalendarToken, Session, SessionRecording, SystemLog
 from .serializers import (
     ApproveSubmissionSerializer,
     LecturerQueueItemSerializer,
@@ -210,6 +210,7 @@ class ApproveSubmissionView(APIView):
             for s in Session.objects.filter(
                 submission__student__adviser=dosen,
                 status=Session.Status.WAITING,
+                scheduled_at__date=today,
             )
         )
         if today_total + estimated_minutes > DOSEN_DAILY_QUOTA_MINUTES:
@@ -488,11 +489,27 @@ class LecturerQueueView(APIView):
         total_minutes = sum(s.estimated_minutes for s in waiting)
         estimated_end_time = timezone.now() + timedelta(minutes=total_minutes)
 
+        # SESSION-04: sesi yang sedang berlangsung, agar dosen bisa menekan "Selesai"
+        # (dan indikator rekaman tetap punya konteks setelah refresh halaman).
+        active = Session.objects.filter(
+            submission__student__adviser=dosen,
+            status=Session.Status.IN_PROGRESS,
+        ).select_related('submission__student').prefetch_related(
+            'submission__symptoms',
+        ).order_by('-ts1').first()
+
+        active_data = None
+        if active:
+            active_data = LecturerQueueItemSerializer(active).data
+            active_data['ts1'] = active.ts1.isoformat() if active.ts1 else None
+            active_data['consent_given'] = bool(active.consent_given_at)
+
         serializer = LecturerQueueItemSerializer(waiting, many=True)
         return Response({
             'totalWaiting': total_waiting,
             'estimatedEndTime': estimated_end_time.isoformat(),
             'queue': serializer.data,
+            'activeSession': active_data,
         })
 
 
@@ -535,6 +552,11 @@ class CalendarAuthView(APIView):
 
             request.session['oauth_state'] = state
             request.session['oauth_dosen_id'] = str(request.user.id)
+            # PKCE: google-auth-oauthlib autogenerates a code_verifier whose hash
+            # is sent to Google; the callback builds a fresh Flow, so the verifier
+            # must survive the redirect via the session or fetch_token() fails
+            # with "invalid_grant: Missing code verifier".
+            request.session['oauth_code_verifier'] = flow.code_verifier
 
             return django_redirect(authorization_url)
         except Exception as e:
@@ -592,6 +614,7 @@ class CalendarCallbackView(APIView):
                 state=state,
             )
             flow.redirect_uri = settings.GOOGLE_REDIRECT_URI
+            flow.code_verifier = request.session.get('oauth_code_verifier')
             flow.fetch_token(code=code)
 
             creds = flow.credentials
@@ -613,6 +636,7 @@ class CalendarCallbackView(APIView):
 
             del request.session['oauth_state']
             del request.session['oauth_dosen_id']
+            request.session.pop('oauth_code_verifier', None)
 
             return self._redirect_to_frontend(True)
         except Exception as e:
@@ -698,6 +722,145 @@ class StartSessionView(APIView):
             'ts1': session.ts1.isoformat(),
             'consent_given_at': session.consent_given_at.isoformat() if session.consent_given_at else None,
         })
+
+
+# ── Selesai ────────────────────────────────────────────────────────────────────
+
+# Magic bytes untuk format audio yang didukung MediaRecorder browser:
+# WebM/Matroska (EBML), Ogg, dan MP4 (Safari — 'ftyp' di offset 4).
+def _is_valid_audio_head(head: bytes) -> bool:
+    if head.startswith(b'\x1a\x45\xdf\xa3'):  # EBML → audio/webm
+        return True
+    if head.startswith(b'OggS'):  # audio/ogg
+        return True
+    if len(head) >= 12 and head[4:8] == b'ftyp':  # MP4 container
+        return True
+    return False
+
+
+_AUDIO_EXTENSIONS = {
+    'audio/webm': 'webm',
+    'video/webm': 'webm',
+    'audio/ogg': 'ogg',
+    'audio/mp4': 'mp4',
+    'video/mp4': 'mp4',
+}
+
+
+class CompleteSessionView(APIView):
+    """
+    POST /api/queue/<id>/complete/ — Dosen menyelesaikan sesi (SESSION-04).
+
+    Set ts2 + status → DONE. Body multipart/form-data (atau JSON tanpa audio):
+      notes  — opsional, catatan hasil manual
+      audio  — opsional, file rekaman dari MediaRecorder; HANYA diterima jika
+               consent kedua pihak tercatat (consent_given_at terisi).
+    """
+    permission_classes = [IsLecturer]
+
+    def post(self, request, pk):
+        try:
+            session = Session.objects.select_related(
+                'submission__student__adviser'
+            ).get(pk=pk)
+        except Session.DoesNotExist:
+            return Response({'detail': 'Sesi tidak ditemukan.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if session.submission.student.adviser != request.user:
+            return Response({'detail': 'Anda tidak memiliki izin.'}, status=status.HTTP_403_FORBIDDEN)
+
+        if session.status != Session.Status.IN_PROGRESS:
+            return Response(
+                {'detail': 'Hanya sesi yang sedang berlangsung yang dapat diselesaikan.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        audio = request.FILES.get('audio')
+        if audio is not None:
+            # Consent gate server-side: tanpa consent kedua pihak, rekaman ditolak
+            # meskipun klien mengirimnya (FR-M04).
+            if not session.consent_given_at:
+                return Response(
+                    {'detail': 'Rekaman ditolak: consent kedua pihak tidak tercatat untuk sesi ini.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            max_size = getattr(settings, 'RECORDING_MAX_UPLOAD_SIZE', 100 * 1024 * 1024)
+            if audio.size > max_size:
+                return Response(
+                    {'detail': f'Ukuran rekaman melebihi batas {max_size // (1024 * 1024)}MB.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            head = audio.read(16)
+            audio.seek(0)
+            if not _is_valid_audio_head(head):
+                return Response(
+                    {'detail': 'Format rekaman tidak dikenali. Hanya WebM/Ogg/MP4 yang didukung.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        notes = (request.data.get('notes') or '').strip()
+
+        session.status = Session.Status.DONE
+        session.ts2 = timezone.now()
+        session.result_notes = notes
+        session.save(update_fields=['status', 'ts2', 'result_notes', 'updated_at'])
+
+        recording = None
+        if audio is not None:
+            recording = self._save_recording(session, audio)
+
+        notify_student(
+            session.submission.student,
+            f'Sesi bimbingan dengan {request.user.full_name} telah selesai. Terima kasih!',
+            session=session,
+            event_type='SESSION_COMPLETED',
+        )
+
+        SystemLog.objects.create(
+            level=SystemLog.Level.INFO,
+            event_type='SESSION_COMPLETED',
+            message=f'Sesi #{session.id} diselesaikan oleh {request.user.email}',
+            context={
+                'session_id': session.id,
+                'has_recording': recording is not None,
+                'has_notes': bool(notes),
+            },
+        )
+
+        return Response({
+            'message': 'Sesi berhasil diselesaikan.',
+            'ts2': session.ts2.isoformat(),
+            'has_recording': recording is not None,
+        })
+
+    def _save_recording(self, session, audio):
+        """Simpan file audio ke MEDIA_ROOT/recordings/<uuid>.<ext> (pola SubmissionFile)."""
+        import os
+        import uuid as _uuid
+
+        content_type = (audio.content_type or '').split(';')[0].strip().lower()
+        ext = _AUDIO_EXTENSIONS.get(content_type, 'webm')
+
+        file_uuid = _uuid.uuid4()
+        recordings_dir = os.path.join(settings.MEDIA_ROOT, 'recordings')
+        os.makedirs(recordings_dir, exist_ok=True)
+        file_path = os.path.join(recordings_dir, f'{file_uuid}.{ext}')
+
+        audio.seek(0)
+        with open(file_path, 'wb+') as destination:
+            for chunk in audio.chunks():
+                destination.write(chunk)
+
+        return SessionRecording.objects.create(
+            session=session,
+            uuid=file_uuid,
+            original_filename=audio.name or f'session_{session.id}.{ext}',
+            file_path=file_path,
+            file_size=audio.size,
+            mime_type=content_type or 'audio/webm',
+        )
 
 
 # ── Dashboard Stats ────────────────────────────────────────────────────────────

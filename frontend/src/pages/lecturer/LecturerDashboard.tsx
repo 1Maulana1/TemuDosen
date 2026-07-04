@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useRouteLoaderData } from 'react-router';
 import type { User } from '../../api/auth';
-import { getLecturerQueue, type LecturerQueueItem } from '../../api/sessions';
+import { getLecturerQueue, completeSession, type LecturerQueueItem, type LecturerQueueResponse } from '../../api/sessions';
 import { getLecturerStats, startSession, type LecturerStats } from '../../api/stats';
 import ConsentModal from '../../components/ConsentModal';
+import { useMediaRecorder } from '../../hooks/useMediaRecorder';
 
 function fmt(iso: string) {
   return new Date(iso).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
@@ -18,11 +19,14 @@ function initials(name: string) {
 
 export default function LecturerDashboard() {
   const user = useRouteLoaderData('dosen') as User;
-  const [queue, setQueue] = useState<{totalWaiting:number;estimatedEndTime:string;queue:LecturerQueueItem[]}|null>(null);
+  const [queue, setQueue] = useState<LecturerQueueResponse|null>(null);
   const [stats, setStats] = useState<LecturerStats|null>(null);
   const [starting, setStarting] = useState<number|null>(null);
   const [msg, setMsg] = useState('');
   const [consentTarget, setConsentTarget] = useState<LecturerQueueItem | null>(null);
+  const [notes, setNotes] = useState('');
+  const [completing, setCompleting] = useState(false);
+  const recorder = useMediaRecorder();
 
   const load = useCallback(async () => {
     const [q, s] = await Promise.all([
@@ -34,7 +38,8 @@ export default function LecturerDashboard() {
 
   useEffect(() => { load(); const t = setInterval(load, 30_000); return () => clearInterval(t); }, [load]);
 
-  // FR-M04: dosen menekan "Mulai" → tampilkan modal consent sebelum sesi benar-benar dimulai
+  // FR-M04: dosen menekan "Mulai" → tampilkan modal consent sebelum sesi benar-benar dimulai.
+  // SESSION-03: jika kedua pihak setuju, "Mulai & Rekam" juga menyalakan mikrofon (TS1 + rekaman).
   const handleStart = async (withRecording: boolean) => {
     if (!consentTarget) return;
     const id = consentTarget.id;
@@ -44,11 +49,36 @@ export default function LecturerDashboard() {
         consent_by_dosen: withRecording,
         consent_by_mahasiswa: withRecording,
       });
-      setMsg('Sesi berhasil dimulai!');
+      if (withRecording) {
+        const ok = await recorder.start();
+        setMsg(ok ? 'Sesi dimulai — rekaman berjalan.' : 'Sesi dimulai TANPA rekaman (mikrofon tidak tersedia/ditolak).');
+      } else {
+        setMsg('Sesi berhasil dimulai!');
+      }
       setConsentTarget(null);
+      setNotes('');
       load();
     } catch (e) { setMsg(e instanceof Error ? e.message : 'Gagal.'); }
-    finally { setStarting(null); setTimeout(() => setMsg(''), 3000); }
+    finally { setStarting(null); setTimeout(() => setMsg(''), 5000); }
+  };
+
+  // SESSION-04: "Selesai" menghentikan rekaman + upload audio + set TS2 dalam satu aksi
+  const handleComplete = async () => {
+    const active = queue?.activeSession;
+    if (!active || completing) return;
+    setCompleting(true);
+    try {
+      const audio = await recorder.stop(); // null jika tidak sedang merekam
+      const result = await completeSession(active.id, {
+        notes: notes.trim() || undefined,
+        // Server menolak audio tanpa consent — jangan kirim jika consent tidak tercatat
+        audio: active.consent_given ? audio : null,
+      });
+      setMsg(result.has_recording ? 'Sesi selesai — rekaman tersimpan.' : 'Sesi selesai.');
+      setNotes('');
+      load();
+    } catch (e) { setMsg(e instanceof Error ? e.message : 'Gagal menyelesaikan sesi.'); }
+    finally { setCompleting(false); setTimeout(() => setMsg(''), 5000); }
   };
 
   const today = new Date().toLocaleDateString('id-ID', { weekday:'long', day:'numeric', month:'long' });
@@ -97,6 +127,46 @@ export default function LecturerDashboard() {
           </div>
         </section>
 
+        {/* SESSION-03/04: sesi yang sedang berlangsung — indikator rekaman + Selesai */}
+        {queue?.activeSession && (
+          <section className="bg-white rounded-xl border-2 border-primary/30 p-4 shadow-sm space-y-3">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-[11px] font-bold uppercase text-primary">Sesi Berlangsung</p>
+                <p className="font-bold text-base text-slate-900 truncate mt-0.5">{queue.activeSession.mahasiswa_name}</p>
+                <p className="text-[11px] text-neutral-gray">
+                  {queue.activeSession.nim}
+                  {queue.activeSession.ts1 ? ` · mulai ${fmt(queue.activeSession.ts1)}` : ''}
+                </p>
+              </div>
+              {recorder.isRecording ? (
+                <span className="flex items-center gap-1.5 bg-error/10 text-error text-[11px] font-bold rounded-full px-3 py-1.5 flex-shrink-0" role="status">
+                  <span className="w-2 h-2 rounded-full bg-error animate-pulse" aria-hidden="true" />
+                  Merekam…
+                </span>
+              ) : (
+                <span className="text-[11px] text-neutral-gray bg-gray-100 rounded-full px-3 py-1.5 flex-shrink-0">
+                  Tanpa rekaman
+                </span>
+              )}
+            </div>
+
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Catatan hasil bimbingan (opsional)…"
+              rows={2}
+              className="w-full text-sm border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+            />
+
+            <button type="button" disabled={completing} onClick={handleComplete}
+              className="w-full py-3 rounded-xl bg-primary text-on-primary text-sm font-bold hover:bg-primary-hover disabled:opacity-60 min-h-[44px] flex items-center justify-center gap-1.5 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">
+              <span className="material-symbols-outlined text-base" aria-hidden="true">stop_circle</span>
+              {completing ? 'Menyimpan…' : 'Selesai'}
+            </button>
+          </section>
+        )}
+
         {/* Antrian mahasiswa */}
         <section className="space-y-3">
           <div className="flex items-center justify-between">
@@ -126,11 +196,11 @@ export default function LecturerDashboard() {
                     </span>
                   </div>
                 </div>
-                {idx === 0 && (
+                {idx === 0 && !queue?.activeSession && (
                   <button type="button" disabled={starting === item.id} onClick={() => setConsentTarget(item)}
                     className="px-3 py-2 bg-success text-white text-xs font-bold rounded-lg hover:bg-green-700 disabled:opacity-60 min-h-[44px] flex items-center gap-1 flex-shrink-0 focus-visible:ring-2 focus-visible:ring-success focus-visible:outline-none">
                     <span className="material-symbols-outlined text-sm">play_arrow</span>
-                    Mulai
+                    Mulai & Rekam
                   </button>
                 )}
               </div>

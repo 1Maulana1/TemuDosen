@@ -20,6 +20,10 @@ CORS_ALLOWED_ORIGINS = [
 ]
 CORS_ALLOW_CREDENTIALS = True
 
+# Django 4+ rejects cross-origin unsafe requests (e.g. approve POST from the
+# Vite dev server) unless the frontend origin is explicitly trusted for CSRF
+CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS
+
 # Session/CSRF cookies can be sent over HTTP in development
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False

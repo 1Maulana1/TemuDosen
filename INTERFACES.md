@@ -63,12 +63,34 @@ scheduled_at        # DateTimeField — slot jadwal estimasi
 notification_sent   # BooleanField — sudah dikirim notif H-15?
 google_event_id     # id event Google Calendar (null jika tidak sync)
 ts1                 # DateTimeField — timestamp "Mulai & Rekam" (Phase 5)
+ts2                 # DateTimeField — timestamp "Selesai" (Phase 5, SESSION-04)
+result_notes        # TextField — catatan hasil manual opsional saat Selesai
+consent_by_dosen     # BooleanField — FR-M04
+consent_by_mahasiswa # BooleanField — FR-M04
+consent_given_at     # DateTimeField null — terisi hanya jika KEDUA pihak setuju
 created_at
 updated_at
 ```
 > Nomor antrian TIDAK disimpan sebagai field — dihitung on-the-fly dari urutan `scheduled_at` sesama Session WAITING milik dosen yang sama (lihat `LecturerQueueItemSerializer.get_position`).
 
-**Status:** ✅ Done (Phase 2–3)
+**Status:** ✅ Done (Phase 2–3; ts2/result_notes/consent ditambah Phase 5)
+
+---
+
+### `SessionRecording` (apps/bimbingan/models.py) — Owner: Person 1 (Phase 5)
+File audio rekaman sesi, dibuat saat dosen menekan "Selesai" dengan consent tercatat.
+```python
+session            # OneToOne FK ke Session, related_name='recording'
+uuid               # UUIDField unique — nama file di disk (pola SubmissionFile)
+original_filename  # CharField
+file_path          # CharField — MEDIA_ROOT/recordings/<uuid>.<ext>, TIDAK via MEDIA_URL
+file_size          # PositiveIntegerField (bytes)
+mime_type          # CharField, mis. 'audio/webm' | 'audio/ogg' | 'audio/mp4'
+uploaded_at        # DateTimeField auto_now_add
+```
+> Server MENOLAK upload audio jika `consent_given_at` null (gerbang FR-M04 ditegakkan di backend, bukan cuma UI). Validasi: magic bytes WebM/Ogg/MP4 + batas `settings.RECORDING_MAX_UPLOAD_SIZE` (default 100MB).
+
+**Status:** ✅ Done (Phase 5 — SESSION-03/04)
 
 ---
 
@@ -118,7 +140,7 @@ _recalculate_queue(dosen)   # padatkan ulang jadwal antrian setelah pembatalan
 | `/api/auth/`, `/api/users/` | login, registrasi, approval user | A |
 | `/api/symptoms/` | CRUD gejala + bobot | B |
 | `/api/submissions/` | submission + `/<id>/approve/` + `/<id>/reject/` | B + C |
-| `/api/queue/` | `my/`, `<id>/cancel/`, `<id>/start/`, `lecturer/` | C/D |
+| `/api/queue/` | `my/`, `<id>/cancel/`, `<id>/start/`, `<id>/complete/`, `lecturer/` | C/D |
 | `/api/calendar/` | OAuth Google | C/D |
 | `/api/stats/` | `lecturer/`, `admin/`, `admin/emergency-cancel/`, `kaprodi/`, `kaprodi/export/` | D |
 
@@ -150,31 +172,29 @@ Person 4 (Saran+Laporan) ── stub: Summary dummy ── → AdviceItem + CSV/
 
 ---
 
-## Person 1 — Rekaman & Consent (Phase 5)
+## Person 1 — Rekaman & Consent (Phase 5) — ✅ SELESAI (2026-07-04, implementasi menyimpang dari draft)
 
-### Tambahan field ke `Session` (dibuat di Hari 0, lalu BEKU)
-```python
-ts2            # DateTimeField null — timestamp "Selesai"
-consent_given  # BooleanField default False — kedua pihak setuju direkam
-consent_at     # DateTimeField null
+> **Kontrak asli yang jadi (BERBEDA dari draft lama — pakai nama-nama ini):**
+> - Field `Session`: `ts2`, `result_notes`, `consent_by_dosen`, `consent_by_mahasiswa`, `consent_given_at` (BUKAN `consent_given`/`consent_at`) — lihat Bagian 1.
+> - Model `SessionRecording`: `uuid`, `original_filename`, `file_path`, `file_size`, `mime_type` (BUKAN `audio_path`/`duration_seconds`) — lihat Bagian 1.
+> - Tidak ada `recording_views.py` — view di `apps/bimbingan/views.py` mengikuti pola endpoint yang sudah ada.
+
+### Endpoint yang jadi
 ```
-
-### `SessionRecording` (apps/bimbingan/models.py) — model baru
-```python
-session         # OneToOne FK ke Session
-audio_path      # CharField — path file di server (pola sama seperti SubmissionFile)
-duration_seconds# PositiveIntegerField
-mime_type       # CharField, mis. 'audio/webm'
-uploaded_at     # DateTimeField auto_now_add
+POST /api/queue/<id>/start/     # StartSessionView — ts1 + consent (sudah ada sejak Phase 2)
+POST /api/queue/<id>/complete/  # CompleteSessionView — ts2 + status='done' + notes opsional
+                                # + upload 'audio' multipart opsional (ditolak tanpa consent)
+GET  /api/queue/lecturer/       # kini juga mengembalikan activeSession (sesi IN_PROGRESS)
 ```
 
-### Endpoint (Owner: Person 1) — file baru `apps/bimbingan/recording_views.py`
+### Frontend
 ```
-POST /api/sessions/<id>/consent/    # catat consent kedua pihak
-POST /api/sessions/<id>/start/      # set ts1 (sudah ada di StartSessionView — pindah/extend)
-POST /api/sessions/<id>/finish/     # set ts2, status='done', terima upload audio → SessionRecording
+src/hooks/useMediaRecorder.ts   # getUserMedia + MediaRecorder, fallback jika izin ditolak
+LecturerDashboard.tsx           # "Mulai & Rekam" → ConsentModal → rekam; kartu "Sesi
+                                # Berlangsung" dengan indikator "Merekam…", catatan, "Selesai"
 ```
-**Output untuk Person 2:** baris `SessionRecording` dengan `audio_path` valid. **Stub bagi Person 2:** sediakan 1 file audio sample tetap.
+
+**Output untuk Person 2:** baris `SessionRecording` dengan `file_path` valid (`MEDIA_ROOT/recordings/<uuid>.webm`). **Stub bagi Person 2:** sediakan 1 file audio sample tetap.
 
 ---
 

@@ -195,19 +195,21 @@ class TestKetuaJurusanStatsView:
         assert resp.status_code == 200
         assert resp.data['period'] == 'monthly'
 
-    def test_completed_sessions_count_stays_zero_no_completion_flow_exists(
+    def test_completed_sessions_counted_via_complete_flow(
         self, ketua_jurusan_user, lecturer_user, pending_submission
     ):
-        """Regression guard documenting a real Phase 5 gap: nothing in the codebase
-        ever transitions a Session to DONE (no 'Selesai' action exists yet — see
-        05-VERIFICATION.md), so this metric is currently always 0 even with real
-        approved sessions. If this test ever fails because sesi_selesai > 0, it
-        means the Phase 5 gap was closed — update this test, don't just delete it."""
-        _approve(lecturer_user, pending_submission)
+        """Phase 5 gap closed (SESSION-04): the 'Selesai' endpoint now transitions a
+        Session to DONE, so the sesi_selesai metric counts real completed sessions.
+        (This test used to be a regression guard asserting the metric was stuck at 0
+        while no completion flow existed — see 05-VERIFICATION.md history.)"""
+        session = _approve(lecturer_user, pending_submission)
+        client = client_for(lecturer_user)
+        assert client.post(f'/api/queue/{session.id}/start/', {}, format='json').status_code == 200
+        assert client.post(f'/api/queue/{session.id}/complete/').status_code == 200
 
         resp = client_for(ketua_jurusan_user).get(self.url)
         assert resp.status_code == 200
-        assert resp.data['sesi_selesai'] == 0
+        assert resp.data['sesi_selesai'] == 1
 
     def test_lecturer_forbidden(self, authenticated_lecturer):
         resp = authenticated_lecturer.get(self.url)

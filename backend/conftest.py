@@ -176,6 +176,17 @@ def pdf_file():
 
 
 @pytest.fixture
+def webm_audio_file():
+    """A BytesIO with valid WebM (EBML) magic bytes for recording-upload tests (Phase 5)."""
+    import io
+    content = b'\x1a\x45\xdf\xa3' + b'\x00' * 1020  # EBML header + padding ≈ 1KB
+    buf = io.BytesIO(content)
+    buf.name = 'session_recording.webm'
+    buf.seek(0)
+    return buf
+
+
+@pytest.fixture
 def submission_factory(db, tmp_path, settings):
     """
     Factory fixture that creates a Submission + SubmissionFile on disk.

@@ -36,8 +36,12 @@ export async function apiRequest(
   const method = (options.method ?? 'GET').toUpperCase();
   const isUnsafe = UNSAFE_METHODS.has(method);
 
+  // FormData bodies must NOT get an explicit Content-Type — the browser sets
+  // multipart/form-data with the correct boundary itself.
+  const isFormData = options.body instanceof FormData;
+
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(options.headers as Record<string, string> ?? {}),
   };
 

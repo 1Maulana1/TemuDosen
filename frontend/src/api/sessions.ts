@@ -36,10 +36,16 @@ export interface LecturerQueueItem {
   meeting_link: string | null;
 }
 
+export interface ActiveSession extends LecturerQueueItem {
+  ts1: string | null;
+  consent_given: boolean;
+}
+
 export interface LecturerQueueResponse {
   totalWaiting: number;
   estimatedEndTime: string;
   queue: LecturerQueueItem[];
+  activeSession: ActiveSession | null;
 }
 
 export interface StudentQueueResponse {
@@ -78,6 +84,39 @@ export async function cancelMyQueue(sessionId: number): Promise<void> {
 export async function getLecturerQueue(): Promise<LecturerQueueResponse> {
   const res = await apiRequest('/api/queue/lecturer/');
   if (!res.ok) throw new Error('Gagal memuat antrian dosen.');
+  return res.json();
+}
+
+// ── Selesai (SESSION-04) ───────────────────────────────────────────────────────
+
+export interface CompleteSessionResult {
+  message: string;
+  ts2: string;
+  has_recording: boolean;
+}
+
+/**
+ * Selesaikan sesi: set TS2 + status DONE. `audio` (Blob hasil MediaRecorder)
+ * hanya dikirim jika consent kedua pihak tercatat — server menolaknya jika tidak.
+ */
+export async function completeSession(
+  sessionId: number,
+  opts: { notes?: string; audio?: Blob | null } = {}
+): Promise<CompleteSessionResult> {
+  const form = new FormData();
+  if (opts.notes) form.append('notes', opts.notes);
+  if (opts.audio && opts.audio.size > 0) {
+    const ext = opts.audio.type.includes('ogg') ? 'ogg' : opts.audio.type.includes('mp4') ? 'mp4' : 'webm';
+    form.append('audio', opts.audio, `session_${sessionId}.${ext}`);
+  }
+  const res = await apiRequest(`/api/queue/${sessionId}/complete/`, {
+    method: 'POST',
+    body: form,
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error((body as { detail?: string }).detail ?? 'Gagal menyelesaikan sesi.');
+  }
   return res.json();
 }
 

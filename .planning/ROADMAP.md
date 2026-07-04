@@ -26,7 +26,7 @@ Phases 4, 5, 7, and 8 (Google Calendar sync, session recording, advisory continu
 ### Built ahead of schedule — originally "Deferred — Post July 15"
 
 - [x] **Phase 4: Google Calendar Sync & Graceful Degradation** - Approved/cancelled/rescheduled sessions sync to Google Calendar with local fallback and admin error logs — VERIFIED (2026-07-03, `04-VERIFICATION.md` — 4/4 success criteria, 16 tests; fixed a real bug where the OAuth callback showed raw JSON instead of redirecting back to the app)
-- [~] **Phase 5: Session Execution with Recording & Consent** - Consent prompt, single "Mulai & Rekam" button (TS1 + audio start), "Selesai" (TS2 + audio stop), T-15 notifications, auto-cancel, online/offline mode — PARTIAL, VERIFIED AS FAR AS IT GOES (2026-07-03, `05-VERIFICATION.md` — 4/6 success criteria; consent + TS1 + T-15 notification + 30-min auto-cancel done and now tested; **no TS2, no actual audio recording**)
+- [x] **Phase 5: Session Execution with Recording & Consent** - Consent prompt, single "Mulai & Rekam" button (TS1 + audio start), "Selesai" (TS2 + audio stop), T-15 notifications, auto-cancel, online/offline mode — VERIFIED 6/6 (2026-07-04, `05-VERIFICATION.md` re-verification; backend 221/221, frontend 37/37). Only manual real-mic browser checks remain open (Chrome/Firefox/Safari, 360px indicator — UX confirmations, not implementation gaps)
 - [ ] **Phase 6: STT, AI Summarization & Logbook** - Async STT transcription (faster-whisper), LLM summary generation, lecturer review/edit/approve flow, student-visible transcript + summary; fallback to manual notes — **NOT STARTED** (confirmed 2026-07-03, `06-VERIFICATION.md` — 0/6, zero code found)
 - [~] **Phase 7: Advisory Continuity & Campus Logbook Integration** - Per-session advice items, student follow-up marking, lecturer advice history view, Sekawan/KPTI API sync (or CSV/PDF export fallback) — PARTIAL, VERIFIED (2026-07-03, `07-VERIFICATION.md` — 2/6 success criteria; backend (`ActionItem` CRUD + compliance report) works and is tested, but **has no frontend UI on either side** (lecturer can't add advice, student can't view/complete it); campus API sync (SC3-6) not started
 - [x] **Phase 8: Admin Emergency Controls & Ketua Jurusan Reporting** - Emergency Cancel, Admin Dashboard (all error logs + STT/LLM quota), Ketua Jurusan guidance history + workload + advice-compliance reports — VERIFIED (2026-07-03, `08-VERIFICATION.md` — 3/4 success criteria clean; SC3 "sessions completed" metric is structurally always 0 until Phase 5's Selesai action exists, not a Phase 8 bug)
@@ -114,17 +114,17 @@ Phases 4, 5, 7, and 8 (Google Calendar sync, session recording, advisory continu
 **Mode:** mvp
 **Depends on**: Phase 3 (queue turn progression drives T-15 notification and auto-cancel)
 **Requirements**: SESSION-01, SESSION-02, SESSION-03, SESSION-04, SESSION-05, SESSION-06
-**Status**: PARTIAL, VERIFIED as far as it goes (2026-07-03) — see `phases/05-session-execution-with-recording-consent/05-VERIFICATION.md`. 4/6 success criteria done and tested; SC3/SC4 are a real, scoped implementation gap, not a documentation gap.
+**Status**: VERIFIED 6/6 (2026-07-04, `05-VERIFICATION.md` re-verification — supersedes the 2026-07-03 4/6 pass). Manual real-mic browser checks (per `05-VALIDATION.md` manual-only table) remain open as human-verification items.
 **Success Criteria** (what must be TRUE):
 
   1. Student receives an in-app/email notification ~15 minutes before their estimated turn — ✅ VERIFIED (`check_h15_notifications`, every 1 min; `TestH15Notifications`, 3 tests)
   2. Before any recording begins, an explicit consent prompt is displayed to both parties; session proceeds without recording if either party declines — ✅ VERIFIED (`ConsentModal.tsx` + `Session.consent_given_at/consent_by_dosen/consent_by_mahasiswa`; 3 tests)
-  3. Lecturer presses a single "Mulai & Rekam" button that simultaneously logs TS1 and begins audio recording; recording indicator ("Merekam…") is clearly visible — 🟡 PARTIAL: `ts1` logging verified (`test_lecturer_can_start_waiting_session`), but **no audio is actually captured** (no `MediaRecorder`/`getUserMedia` anywhere in the frontend) and there is no "Merekam…" indicator
-  4. Lecturer presses "Selesai" to simultaneously stop recording and log TS2; manual result notes are optional — ❌ NOT DONE: no `ts2` field on `Session`, no "Selesai" action/button/endpoint exists anywhere
+  3. Lecturer presses a single "Mulai & Rekam" button that simultaneously logs TS1 and begins audio recording; recording indicator ("Merekam…") is clearly visible — ✅ IMPLEMENTED (2026-07-04): "Mulai & Rekam" → `ConsentModal` → `startSession` (TS1) + `useMediaRecorder.start()`; pulsing "Merekam…" badge on the "Sesi Berlangsung" card; graceful fallback message when mic denied/unsupported. Tested (`useMediaRecorder.test.ts`, 5 tests); real-mic behavior needs manual browser check
+  4. Lecturer presses "Selesai" to simultaneously stop recording and log TS2; manual result notes are optional — ✅ IMPLEMENTED (2026-07-04): `Session.ts2` + `result_notes` (migration 0004), `CompleteSessionView` (`POST /api/queue/<id>/complete/`) sets TS2 + DONE + saves optional notes + accepts consent-gated multipart audio → `SessionRecording` under `MEDIA_ROOT/recordings/`. Server rejects audio without recorded consent, validates WebM/Ogg/MP4 magic bytes and `RECORDING_MAX_UPLOAD_SIZE`. Tested (`test_session_execution.py`, 17 tests)
   5. If a called student's "Mulai & Rekam" hasn't occurred within 30 minutes, that student's slot is automatically cancelled — ✅ VERIFIED (`check_auto_cancel`, every 5 min, 30-min cutoff; `TestAutoCancel`, 4 tests — also fixed a bug where the audit log mislabeled these as `EMERGENCY_CANCEL`)
   6. Lecturer selects Offline/Online; if Online, must attach an external meeting link — ✅ VERIFIED (`ApproveModal` method radio + required `meeting_link` validation)
 
-**Plans**: None — implemented directly (partially). Verified 2026-07-03; added `test_scheduler.py` (7 tests, previously zero coverage on the H-15/auto-cancel jobs) and 3 consent tests. Remaining gap to close: add `ts2` + a "Selesai" action, and real audio capture/storage. This blocks Phase 6 (nothing to transcribe without an audio file). `05-VALIDATION.md` (2026-07-02) already has a forward-looking test plan for exactly this gap.
+**Plans**: None — implemented directly. SC1/2/5/6 verified 2026-07-03 (added `test_scheduler.py` + consent tests). SC3/SC4 closed 2026-07-04 following the `05-VALIDATION.md` Wave 0 plan (webm magic-byte fixture, jsdom `MediaRecorder` shim): backend `test_session_execution.py` (17 tests), frontend `useMediaRecorder.test.ts` + active-session card tests. Phase 6 is now unblocked — completed consented sessions produce a real audio file. The Phase 8 `sesi_selesai` regression guard was flipped to assert completed sessions are counted.
 
 ### Phase 6: STT, AI Summarization & Logbook
 
@@ -132,7 +132,7 @@ Phases 4, 5, 7, and 8 (Google Calendar sync, session recording, advisory continu
 **Mode:** mvp
 **Depends on**: Phase 5 (recording must exist to transcribe)
 **Requirements**: STT-01, STT-02, STT-03, STT-04, STT-05, STT-06, STT-07, ADMIN-05
-**Status**: NOT STARTED — confirmed 2026-07-03, see `phases/06-stt-ai-summarization-logbook/06-VERIFICATION.md`. The only phase with zero code: no whisper/STT, no LLM call, no transcript or summary field on `Session`. Also blocked on Phase 5's missing audio capture.
+**Status**: NOT STARTED — confirmed 2026-07-03, see `phases/06-stt-ai-summarization-logbook/06-VERIFICATION.md`. The only phase with zero code: no whisper/STT, no LLM call, no transcript or summary field on `Session`. **No longer blocked** — Phase 5's audio capture landed 2026-07-04 (`SessionRecording` files under `MEDIA_ROOT/recordings/`).
 **Success Criteria** (what must be TRUE):
 
   1. After a session ends with a recording, the system asynchronously transcribes the audio via self-hosted faster-whisper; transcript is available within ≤2× audio duration for 90% of sessions — ❌ NOT STARTED
@@ -142,7 +142,7 @@ Phases 4, 5, 7, and 8 (Google Calendar sync, session recording, advisory continu
   5. If STT or LLM fails or times out, lecturer sees a manual note editor and the failure is logged to Admin Dashboard — ❌ NOT STARTED
   6. Admin can monitor STT/LLM quota and view failure logs — ❌ NOT STARTED
 
-**Plans**: TBD — this is the real next greenfield phase, and needs Phase 5's audio-capture gap closed first.
+**Plans**: TBD — this is the real next greenfield phase. Its Phase 5 dependency is satisfied as of 2026-07-04 (audio files exist under `MEDIA_ROOT/recordings/`).
 
 ### Phase 7: Advisory Continuity & Campus Logbook Integration
 
@@ -191,10 +191,10 @@ Phases 4, 5, 7, and 8 (Google Calendar sync, session recording, advisory continu
 | 2. Approval & Queue Placement | n/a (direct) | ✅ Implemented & Verified (32 tests) | 2026-06-30 |
 | 3. Live Queue Management & Quota | n/a (direct) | ✅ Verified (3/3 SC, 15 tests) | 2026-07-03 |
 | 4. Google Calendar Sync & Graceful Degradation | n/a (direct) | ✅ Verified (4/4 SC, 16 tests) | 2026-07-03 |
-| 5. Session Execution with Recording & Consent | n/a (direct) | 🟡 Verified as far as it goes (4/6 SC, 22 tests); SC3/SC4 not implemented | 2026-07-03 |
+| 5. Session Execution with Recording & Consent | n/a (direct) | ✅ Verified (6/6 SC; 17+7 new tests; manual mic checks open) | 2026-07-04 |
 | 6. STT, AI Summarization & Logbook | 0/TBD | ❌ Not started (confirmed) | - |
 | 7. Advisory Continuity & Campus Logbook Integration | n/a (direct) | 🟡 Verified (2/6 SC, 14 tests); backend works, zero frontend UI; campus sync not started | 2026-07-03 |
-| 8. Admin Emergency Controls & Ketua Jurusan Reporting | n/a (direct) | ✅ Verified (3/4 SC, 24 tests); 4th data-starved by Phase 5/7 gaps | 2026-07-03 |
+| 8. Admin Emergency Controls & Ketua Jurusan Reporting | n/a (direct) | ✅ Verified (3/4 SC, 24 tests); `sesi_selesai` metric unblocked by Phase 5 close (regression guard now asserts real counts); 4th SC still data-starved by Phase 7 gap | 2026-07-03 |
 
 **Team assignments:**
 - Person A → Auth & User Management (registration, admin approval, role redirect)

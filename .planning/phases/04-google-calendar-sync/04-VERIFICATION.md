@@ -8,9 +8,11 @@ human_verification:
   - test: "Real OAuth connect flow with a live Google account (GOOGLE_CALENDAR_ENABLED=true + real client id/secret)"
     expected: "Dosen clicks 'Hubungkan' on /dosen/pengaturan → Google consent screen → redirected back to /dosen/pengaturan?calendar=connected with a success banner → an approved session appears on the dosen's real Google Calendar with the student as attendee"
     why_human: "Requires a real Google Cloud OAuth client + a live Google account; never exercised with real credentials in this pass (all API calls are mocked at the cal_service boundary in tests, per GOOGLE_CALENDAR_ENABLED=false default)"
+    status: "DONE 2026-07-04 — exercised by a teammate's real-credential pass (see Addendum). Found 2 real bugs invisible to the mocked suite (PKCE code_verifier lost across the OAuth redirect; missing CSRF_TRUSTED_ORIGINS blocking the cross-origin approve POST); both fixes ported into this repo 2026-07-04."
   - test: "Token expiry + refresh in a live session"
     expected: "An expired access_token is silently refreshed via _refresh_and_save() before the next Calendar API call, with no user-visible interruption"
     why_human: "Requires waiting out a real Google token expiry window or manually forging one against a live account"
+    status: "Still open — not exercised in the 2026-07-04 pass (token stayed valid throughout; also _build_credentials never sets creds.expiry, so the .expired property is always False and the proactive refresh path never triggers. See Addendum.)"
 ---
 
 # Phase 04: Google Calendar Sync & Graceful Degradation — Verification Report
@@ -82,6 +84,37 @@ The "Profil" bottom-nav button on `LecturerDashboard.tsx` was a dead `<button>` 
 - **No formal PLAN.md for Phase 4**, same situation as Phase 2 — this verification report is the closing artifact.
 - **Not verified against real Google credentials.** Everything above is proven with `GOOGLE_CALENDAR_ENABLED=false` (test default) and mocked API calls at the `cal_service` boundary. Before a real demo/deploy, someone needs to register a Google Cloud OAuth client, set `GOOGLE_CALENDAR_ENABLED=true` + `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` in `.env`, and manually run the `human_verification` checks above.
 - **Token refresh path** (`_refresh_and_save` in `services/calendar.py`) has no automated test — exercised only implicitly via the mocked path. Low risk since it fails closed like everything else in the service, but worth a dedicated unit test if the team wants full coverage.
+
+---
+
+## Addendum: Real-Credential Human Verification (2026-07-04, ported from teammate's pass)
+
+**Status: DONE.** This closes the first `human_verification` item above. A teammate (Nala) ran the OAuth-connect flow end-to-end with real Google Cloud OAuth client credentials (`GOOGLE_CALENDAR_ENABLED=true`, real `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` in `backend/.env`, consent screen in Google's "Testing" publishing status). Two real bugs were found and fixed in that pass — both invisible to the mocked test suite because they only manifest with a real browser + real Google redirect. Both fixes were ported into this repo on 2026-07-04.
+
+### Bug 1 — PKCE `code_verifier` lost across the OAuth redirect
+
+- **Symptom**: clicking "Hubungkan" → Google login → consent → redirected back to `/dosen/pengaturan?calendar=error&reason=save_failed`.
+- **Root cause**: `google-auth-oauthlib` 1.4.0 defaults `autogenerate_code_verifier=True`. `CalendarAuthView.get()` calls `flow.authorization_url()`, which generates a PKCE `code_verifier` and sends its hash (`code_challenge`) to Google — but only `oauth_state` was persisted to the session, never the verifier. `CalendarCallbackView.get()` then builds a **new** `Flow` instance (with no `code_verifier`) and calls `fetch_token(code=code)`, which Google rejects: `invalid_grant: Missing code verifier.`
+- **Fix** (`backend/apps/bimbingan/views.py`): persist `flow.code_verifier` into `request.session['oauth_code_verifier']` in `CalendarAuthView`; restore it onto the callback's `Flow` instance (`flow.code_verifier = request.session.get('oauth_code_verifier')`) before `fetch_token()` in `CalendarCallbackView`; clean up the session key alongside `oauth_state`/`oauth_dosen_id`.
+
+### Bug 2 — Missing `CSRF_TRUSTED_ORIGINS` blocks the approve POST
+
+- **Symptom**: after connecting Calendar successfully, clicking "Setujui" on a pending submission failed in the browser with "CSRF failed".
+- **Root cause**: Django 4.0+ requires `CSRF_TRUSTED_ORIGINS` to include the frontend's origin for any cross-origin unsafe request, even with a valid session + CSRF cookie. `CORS_ALLOWED_ORIGINS` was set in `dev.py`/`docker.py`/`prod.py`, but `CSRF_TRUSTED_ORIGINS` was never set anywhere. Login was unaffected because DRF's `SessionAuthentication.enforce_csrf()` only runs once a session-authenticated user already exists on the request — an anonymous login POST skips it, but an authenticated approve POST does not. Confirmed rejection: `CSRF Failed: Origin checking failed - http://localhost:5173 does not match any trusted origins.`
+- **Fix**: added `CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS` to `backend/config/settings/dev.py`, `docker.py`, and `prod.py`.
+
+### End-to-end evidence (from the teammate's environment, after both fixes)
+
+- OAuth connect completed via real browser + real Google account (Google's "unverified app" warning + Test-user allowlist both expected for an app in Testing status).
+- `POST /api/submissions/<id>/approve/ → 200 OK` with `google_event_id` persisted, and the event cross-checked directly against the Google Calendar API (`events().get()`) — it genuinely exists on the dosen's calendar with the student as attendee.
+- `check_free_busy()` also exercised directly against the live API with a correct real result.
+- Note: that pass ran against the pre-async (synchronous) calendar-creation code; this repo creates the event on a background thread (NFR-01), which does not change either bug or fix — both live in the OAuth handshake and CSRF layers, before/outside the calendar write itself.
+
+### Still open (not a blocker, noted for later)
+
+- **`_build_credentials()` never sets `creds.expiry`** (`backend/apps/bimbingan/services/calendar.py`), so `Credentials.expired` is always `False` regardless of the real token lifetime stored in `DosenCalendarToken.expires_at`. Likely harmless in practice — `googleapiclient`'s transport also refreshes reactively on a 401 — but the proactive refresh path in `_get_calendar_service()` never actually triggers. Worth a small fix (`Credentials(..., expiry=token_row.expires_at)`) plus a dedicated test. The "token expiry + refresh" `human_verification` item above stays open for the same reason.
+
+*Addendum recorded: 2026-07-04 — fixes ported from Nala's real-credential verification pass into this repo (PKCE session persistence, CSRF_TRUSTED_ORIGINS).*
 
 ---
 

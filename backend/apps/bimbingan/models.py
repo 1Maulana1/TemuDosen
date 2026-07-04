@@ -12,6 +12,8 @@ DosenCalendarToken:
 SystemLog:
   - Immutable audit log for all system events (notifications, errors, auto-cancels).
 """
+import uuid
+
 from django.db import models
 from django.conf import settings
 
@@ -49,6 +51,9 @@ class Session(models.Model):
     notification_sent = models.BooleanField(default=False)
     google_event_id = models.CharField(max_length=255, null=True, blank=True)
     ts1 = models.DateTimeField(null=True, blank=True)  # "Mulai & Rekam" timestamp
+    ts2 = models.DateTimeField(null=True, blank=True)  # "Selesai" timestamp
+    # SESSION-04: catatan hasil manual opsional, diisi dosen saat menekan "Selesai"
+    result_notes = models.TextField(blank=True, default='')
     # FR-M04: consent perekaman sesi — kedua pihak harus setuju sebelum ts1 dianggap "direkam"
     consent_given_at = models.DateTimeField(null=True, blank=True)
     consent_by_dosen = models.BooleanField(default=False)
@@ -61,6 +66,29 @@ class Session(models.Model):
 
     def __str__(self):
         return f'Session #{self.pk} [{self.status}] – {self.submission}'
+
+
+class SessionRecording(models.Model):
+    """
+    SESSION-03/04: file audio hasil rekaman sesi (WebM/Ogg/MP4), diupload dosen
+    saat menekan "Selesai". Disimpan di MEDIA_ROOT/recordings/ dengan nama UUID —
+    tidak pernah diekspos lewat MEDIA_URL (pola yang sama dengan SubmissionFile).
+    Hanya boleh ada jika consent_given_at terisi (kedua pihak setuju direkam).
+    """
+    session = models.OneToOneField(
+        Session,
+        on_delete=models.CASCADE,
+        related_name='recording',
+    )
+    uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    original_filename = models.CharField(max_length=255)
+    file_path = models.CharField(max_length=500)
+    file_size = models.PositiveIntegerField()
+    mime_type = models.CharField(max_length=50, default='audio/webm')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'Recording sesi #{self.session_id} ({self.file_size} bytes)'
 
 
 class DosenCalendarToken(models.Model):
