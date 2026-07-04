@@ -33,7 +33,7 @@ Turn ephemeral guidance conversations into a permanent, searchable logbook — r
 - [ ] Lecturer presses single "Mulai & Rekam" button to simultaneously log session start timestamp (TS1) and begin audio recording
 - [ ] Lecturer presses "Selesai" to simultaneously stop recording and log session end timestamp (TS2); manual notes are optional
 - [ ] System auto-cancels a student's queue slot if no "Mulai & Rekam" occurs within 30 minutes of being called
-- [ ] Lecturer selects Offline/Online for the session; if Online, attaches an external meeting link
+- [ ] Lecturer selects Offline/Online for the session; if Online, the session runs via in-app embedded video conferencing *(revised in v2.3 — see below; was "attaches an external meeting link")*
 
 **STT, AI Summarization & Logbook**
 - [ ] System transcribes recorded session audio to text via self-hosted STT (faster-whisper large-v3-turbo), near-real-time asynchronous
@@ -42,6 +42,7 @@ Turn ephemeral guidance conversations into a permanent, searchable logbook — r
 - [ ] Approved summary and advice items are stored, linked to the session and the student
 - [ ] Student can view their approved transcript and session summary after each session
 - [ ] If STT or LLM fails/times out, system provides a manual note editor and marks a log entry (graceful degradation)
+- [ ] *(new in v2.3)* Online sessions embed in-app video via Jitsi (VideoProvider abstraction); both parties' audio (local + remote) is mixed into a single recording so the STT pipeline receives complete audio regardless of session mode
 
 **Advisory Continuity**
 - [ ] Student can mark individual advice items as "addressed" with a note/evidence before or during the next session request
@@ -66,7 +67,6 @@ Turn ephemeral guidance conversations into a permanent, searchable logbook — r
 ### Out of Scope
 
 - Plagiarism checking (Turnitin/Grammarly) integration
-- Native/in-app video conferencing — MVP only stores an external meeting link/URL field
 - Native mobile apps (Android/iOS) — web-based responsive PWA (min 360px width)
 - Multi-examiner thesis defense scheduling
 - Speaker diarization (separating lecturer vs. student voices) — transcript is merged text
@@ -76,13 +76,13 @@ Turn ephemeral guidance conversations into a permanent, searchable logbook — r
 
 - Google Calendar sync (Phase 4)
 - Session recording with consent and "Mulai & Rekam" button (Phase 5)
-- STT transcription and AI logbook summarization (Phase 6)
+- STT transcription, AI logbook summarization, and in-app Jitsi video for online sessions (Phase 6, video scope expanded in v2.3)
 - Advisory continuity and campus logbook sync (Phase 7)
 - Admin emergency controls and Kaprodi reporting (Phase 8)
 
 ## Context
 
-- **Domain**: Indonesian higher-education academic/thesis advising ("bimbingan akademik/skripsi"). PRD v2.2, June 2026, Kelompok 1.
+- **Domain**: Indonesian higher-education academic/thesis advising ("bimbingan akademik/skripsi"). PRD v2.3, July 2026, Kelompok 1.
 - **Actors**: Student/mahasiswa (PK: NIM), Lecturer/dosen pembimbing (PK: NIDN), Admin (prodi staff), Kaprodi (Head of Study Program — read-only monitoring/reporting).
 - **Current process being replaced**: students write their name on paper at the lecturer's door, wait without a time estimate, and have no official record of what was discussed.
 - **PRD revision trigger**: Lecturer review session (15 June 2026) challenged the v1 proposition — "just scheduling is no better than Google Calendar." Core value shifted to documentation and advisory continuity.
@@ -102,6 +102,7 @@ Turn ephemeral guidance conversations into a permanent, searchable logbook — r
 - **STT stack**: faster-whisper large-v3-turbo self-hosted (audio stays on-server); LLM via API tier (only transcript text leaves server)
 - **Cost**: STT and LLM processing is async-queued; LLM API usage bounded to budget
 - **Data model**: Student ≤1 "Waiting" session at a time; Lecturer daily quota cannot go negative; Session status transitions are one-way; one active Transcript per session; Advice item status only advances
+- **Video** *(new in v2.3)*: Online sessions run through a `VideoProvider` abstraction; Jitsi (Jitsi Meet External API) is the first/only implementation. `meet.jit.si` (public, hosted) is acceptable for MVP/demo only — self-hosted or JaaS Jitsi is required before production use
 
 ## Key Decisions
 
@@ -115,6 +116,8 @@ Turn ephemeral guidance conversations into a permanent, searchable logbook — r
 | Web-based responsive PWA, not native mobile | Faster to ship; 360px-responsive web covers target devices for MVP | Adopted in v1.0 |
 | Admin-configured symptom weights (not ML) for triage | Simple to tune per semester; ML iteration can follow once real duration data exists | Adopted in v1.0 |
 | Google Calendar as scheduling backbone | Lecturers/students already use it; avoids building a custom calendar UI | Adopted in v1.0 |
+| In-app video conferencing via Jitsi (`VideoProvider` abstraction), reversing the v2.2 "external link only" non-goal | Online sessions need embedded video so both parties' audio can be captured in one recording for STT; Jitsi Meet External API needs no new backend infra to embed | Adopted in v2.3 |
+| `meet.jit.si` (public instance) accepted for MVP/demo only | No SLA/security guarantees for production student-counseling sessions on the public instance; self-host or JaaS required before go-live | Adopted in v2.3 — revisit before production |
 
 ## Evolution
 
@@ -134,4 +137,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-21 after PRD v2.2 revision (recording, STT, AI logbook, advisory continuity)*
+*Last updated: 2026-07-05 after PRD v2.3 revision (in-app video conferencing via Jitsi folded into Phase 6 scope, replacing the v2.2 external-meeting-link-only non-goal)*

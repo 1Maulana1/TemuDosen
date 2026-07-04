@@ -1,7 +1,7 @@
 # Requirements: TemuDosen
 
 **Defined:** 2026-06-12
-**Updated:** 2026-06-21 (PRD v2.2 — recording, STT, AI logbook, advisory continuity)
+**Updated:** 2026-07-05 (PRD v2.3 — in-app Jitsi video + dual-party audio capture promoted into Phase 6 scope)
 **Core Value:** Turn ephemeral guidance conversations into a permanent logbook — automated STT → AI summary → one-tap approval, while cutting student wait time from ~120 min to <30 min.
 
 ## v1 Requirements
@@ -33,7 +33,7 @@
 - [ ] **SESSION-03** *(revised)*: Lecturer presses a single "Mulai & Rekam" button that simultaneously records the session start timestamp (TS1) and begins audio recording
 - [ ] **SESSION-04** *(revised)*: Lecturer presses "Selesai" to simultaneously stop recording and record the session end timestamp (TS2); manual result notes are optional (AI summary serves this role)
 - [ ] **SESSION-05**: System auto-cancels a student's queue slot if "Mulai & Rekam" hasn't occurred within 30 minutes of being called
-- [ ] **SESSION-06**: Lecturer selects Offline/Online for the session; if Online, attaches an external meeting link
+- [ ] **SESSION-06** *(superseded by VIDEO-01, Phase 6, PRD v2.3)*: Lecturer selects Offline/Online for the session; if Online, attaches an external meeting link — Phase 5 shipped this as-is; Phase 6 replaces the Online path with embedded Jitsi video (VIDEO-01) without reopening Phase 5
 
 ### STT & AI Summarization
 
@@ -44,6 +44,11 @@
 - [ ] **STT-05**: Approved summary, transcript, and advice items are saved and linked to the session and the student
 - [ ] **STT-06**: Student can view their approved transcript and summary after lecturer approval
 - [ ] **STT-07**: If STT or LLM fails or times out, system provides a manual note editor as fallback and logs the failure to Admin Dashboard (graceful degradation)
+
+### In-App Video Conferencing *(promoted from v2 Requirements, PRD v2.3 — folded into Phase 6)*
+
+- [ ] **VIDEO-01** *(revised from v2 draft; was "Zoom/Meet")*: Online sessions run via in-app embedded video conferencing (Jitsi Meet External API) instead of an external meeting link. `meet.jit.si` is acceptable for MVP/demo; self-hosted/JaaS Jitsi is required before production (known limitation, tracked not blocking).
+- [ ] **VIDEO-02** *(new)*: For online sessions, both parties' audio (lecturer local mic + student remote track) is mixed into a single recording via the Web Audio API, feeding the same `SessionRecording` → STT pipeline used for offline sessions. Highest-risk item in Phase 6 — plan must document a fallback (lecturer-mic-only recording) if the mixing approach proves infeasible before the deadline.
 
 ### Advisory Continuity
 
@@ -76,7 +81,6 @@ Deferred to future release. Tracked but not in current roadmap.
 
 ### Communication
 
-- **VIDEO-01**: In-app/native video conferencing integration (Zoom/Meet) instead of external link field
 - **NOTIF-01**: Dedicated native push-notification gateway (beyond in-app/email T-15 alerts)
 
 ### Academic Workflows
@@ -98,7 +102,6 @@ Deferred to future release. Tracked but not in current roadmap.
 | Feature | Reason |
 |---------|--------|
 | Plagiarism checking (Turnitin/Grammarly) | Separate concern from scheduling/documentation |
-| In-app/native video conferencing | MVP only needs an external meeting link/URL field |
 | Native push-notification gateway | T-15 alerts ship via in-app/email for MVP |
 | Multi-examiner thesis defense scheduling | Different workflow (group vs. 1:1 advisor sessions) |
 | Native mobile apps (Android/iOS) | Responsive PWA (360px+) covers target devices |
@@ -133,6 +136,8 @@ Deferred to future release. Tracked but not in current roadmap.
 | STT-05 | Phase 6 | Pending |
 | STT-06 | Phase 6 | Pending |
 | STT-07 | Phase 6 | Pending |
+| VIDEO-01 | Phase 6 | Pending |
+| VIDEO-02 | Phase 6 | Pending |
 | ADVICE-01 | Phase 7 | Pending |
 | ADVICE-02 | Phase 7 | Pending |
 | LOGBOOK-01 | Phase 7 | Pending |
@@ -148,10 +153,10 @@ Deferred to future release. Tracked but not in current roadmap.
 | REPORT-03 | Phase 8 | Pending |
 
 **Coverage:**
-- v1 requirements: 36 total
-- Mapped to phases: 36
+- v1 requirements: 38 total
+- Mapped to phases: 38
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-06-12*
-*Last updated: 2026-06-21 after PRD v2.2 revision*
+*Last updated: 2026-07-05 after PRD v2.3 revision (VIDEO-01 promoted from v2 to v1/Phase 6; VIDEO-02 added; SESSION-06 marked superseded)*

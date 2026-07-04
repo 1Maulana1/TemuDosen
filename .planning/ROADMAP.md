@@ -128,11 +128,11 @@ Phases 4, 5, 7, and 8 (Google Calendar sync, session recording, advisory continu
 
 ### Phase 6: STT, AI Summarization & Logbook
 
-**Goal**: Every completed session with recording automatically produces an editable, lecturer-approved logbook entry via an async STT → LLM summary pipeline; graceful fallback to manual notes if the pipeline fails
+**Goal**: Every completed session with recording automatically produces an editable, lecturer-approved logbook entry via an async STT → LLM summary pipeline; graceful fallback to manual notes if the pipeline fails. *(Expanded in PRD v2.3)* Online sessions additionally run through in-app embedded video (Jitsi), with both parties' audio mixed into one recording so the STT pipeline works identically for offline and online sessions.
 **Mode:** mvp
 **Depends on**: Phase 5 (recording must exist to transcribe)
-**Requirements**: STT-01, STT-02, STT-03, STT-04, STT-05, STT-06, STT-07, ADMIN-05
-**Status**: NOT STARTED — confirmed 2026-07-03, see `phases/06-stt-ai-summarization-logbook/06-VERIFICATION.md`. The only phase with zero code: no whisper/STT, no LLM call, no transcript or summary field on `Session`. **No longer blocked** — Phase 5's audio capture landed 2026-07-04 (`SessionRecording` files under `MEDIA_ROOT/recordings/`).
+**Requirements**: STT-01, STT-02, STT-03, STT-04, STT-05, STT-06, STT-07, ADMIN-05, VIDEO-01, VIDEO-02
+**Status**: NOT STARTED — confirmed 2026-07-03, see `phases/06-stt-ai-summarization-logbook/06-VERIFICATION.md`. The only phase with zero code: no whisper/STT, no LLM call, no transcript or summary field on `Session`. **No longer blocked** — Phase 5's audio capture landed 2026-07-04 (`SessionRecording` files under `MEDIA_ROOT/recordings/`). Scope expanded 2026-07-05 (PRD v2.3) to fold in Jitsi video + dual-party audio capture for online sessions — see `06-CONTEXT.md`.
 **Success Criteria** (what must be TRUE):
 
   1. After a session ends with a recording, the system asynchronously transcribes the audio via self-hosted faster-whisper; transcript is available within ≤2× audio duration for 90% of sessions — ❌ NOT STARTED
@@ -141,6 +141,8 @@ Phases 4, 5, 7, and 8 (Google Calendar sync, session recording, advisory continu
   4. Transcript and approved summary are stored linked to the session and student; student can view them after approval — ❌ NOT STARTED
   5. If STT or LLM fails or times out, lecturer sees a manual note editor and the failure is logged to Admin Dashboard — ❌ NOT STARTED
   6. Admin can monitor STT/LLM quota and view failure logs — ❌ NOT STARTED
+  7. *(new, v2.3)* Online sessions run via in-app embedded Jitsi video instead of an external meeting link — ❌ NOT STARTED
+  8. *(new, v2.3)* For online sessions, both lecturer and student audio are mixed into a single recording, feeding the same STT pipeline as offline sessions (fallback: lecturer-mic-only recording if mixing proves infeasible) — ❌ NOT STARTED
 
 **Plans**: TBD — this is the real next greenfield phase. Its Phase 5 dependency is satisfied as of 2026-07-04 (audio files exist under `MEDIA_ROOT/recordings/`).
 

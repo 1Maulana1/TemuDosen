@@ -1,0 +1,124 @@
+# Phase 6: STT, AI Summarization & Logbook - Context
+
+**Gathered:** 2026-07-05
+**Status:** Ready for planning — 3 open questions must be confirmed first (see bottom of `<decisions>`)
+
+<domain>
+## Phase Boundary
+
+Every completed session with a recording automatically produces an editable, lecturer-approved logbook entry via an async STT → LLM summary pipeline, with graceful fallback to manual notes if the pipeline fails or times out. Admin can monitor STT/LLM job health and quota.
+
+**Expanded in PRD v2.3 (this discussion):** Online sessions now run through in-app embedded video (Jitsi) instead of an external meeting link, and both parties' audio is mixed into a single recording so the STT pipeline sees complete audio regardless of session mode. This reverses a v2.2 non-goal — see `PROJECT.md` Key Decisions and the note in `<specifics>` below for the amendment record.
+
+</domain>
+
+<decisions>
+## Implementation Decisions
+
+### STT Engine (STT-01, STT-02)
+- **D-01:** Self-hosted faster-whisper `large-v3-turbo` — confirmed, matches the already-adopted `PROJECT.md` v2.2 decision ("audio stays on-server; only transcript text sent to LLM API"). Rejected switching to a third-party STT API (would reverse a locked privacy decision for student-counseling audio).
+- **D-02:** `SessionRecording` currently has no stored audio duration — needed for the ≤2× duration NFR and for computing the timeout (D-08). Planner must add a duration field (populate at upload time client-side, or compute server-side via a probe) — this did not exist before Phase 6.
+
+### LLM Summarization (STT-03)
+- **D-03:** Claude API (`api.anthropic.com`) generates the structured summary. Output is JSON: `advice_points[]` + `improvement_notes[]`. Filler words are left in the raw transcript and cleaned up only at this summarization stage, not during transcription.
+- **D-04:** Model choice and API key provisioning are **open — see Open Questions**.
+
+### Storage (STT-05, STT-06)
+- **D-05:** New standalone model `SessionLogbook` (OneToOne/FK to `Session`) — do **not** add these fields directly to `Session`, which is already overloaded as the queue/scheduling record. Fields: `transcript` (text), `summary_raw` (JSON from LLM), `summary_edited` (lecturer's edited version), `status`, `approved_at`, `approved_by`, `source_mode` (`offline`/`online` — new, needed once online sessions exist via Jitsi).
+
+### Async Architecture (STT-02, STT-07)
+- **D-06:** Two chained Celery tasks: `transcribe_session` → (on success) triggers `summarize_session`. Status state machine: `pending → transcribing → summarizing → ready_for_review → approved` / `failed`. Non-blocking; frontend polls or refreshes status.
+- **D-07:** **This is new infrastructure for the project.** Every existing background job (`check_h15_notifications`, `check_auto_cancel` in `apps/bimbingan/scheduler.py`) runs on APScheduler with zero broker — no Celery, Redis, or worker process exists anywhere in this codebase or `requirements.txt` today. Adopting Celery means: (1) a message broker (Redis recommended — lighter than RabbitMQ for this scale), (2) a worker process to deploy and keep running alongside Django, (3) new deployment/ops surface that didn't exist before. Confirmed choice — proceed, but the planner must treat broker + worker deployment as first-class scope, not an afterthought.
+
+### Fallback & Timeout (STT-07)
+- **D-08:** Timeout: 2× audio duration, minimum 5 minutes (depends on D-02's duration field existing). On STT/LLM failure or timeout: `SessionLogbook.status = failed`, a `SystemLog` entry is written (matching the existing `H15_NOTIFICATION` / `AUTO_CANCEL` event-type pattern), and the lecturer sees a manual note editor.
+- **D-09:** Retry policy on failure is **open — see Open Questions**.
+
+### Monitoring & Quota (ADMIN-05)
+- **D-10:** Admin Dashboard shows STT/LLM job counts (success/failed) and a failure-log list, reusing the generic `SystemLog` model (`level`/`event_type`/`message`/`context`) — filter by `event_type` (e.g. `STT_FAILED`, `LLM_FAILED`) rather than adding new dedicated fields. Note: despite the ROADMAP text describing Phase 8's Admin Dashboard as already covering "STT/LLM quota," the actual `AdminDashboard.tsx` and backend have no STT/LLM-specific code today (verified — zero matches) — this is genuinely new work in Phase 6, not a Phase 8 leftover to wire up.
+- **D-11:** Since Claude API is a paid service, show a token/cost usage estimate. Exact calculation method (per-session vs aggregate, real-time vs batched) is **open — see Open Questions**.
+
+### In-App Video — Jitsi (VIDEO-01, new in v2.3)
+- **D-12:** Online sessions embed video via the **Jitsi Meet External API** (`external_api.js` + `JitsiMeetExternalAPI`), using **`meet.jit.si`** (public instance) for MVP/demo. **Known limitation, not a blocker:** `meet.jit.si` has no SLA/security guarantee — self-hosted or JaaS Jitsi is required before production use. Recorded explicitly in `PROJECT.md` v2.3 Key Decisions.
+- **D-13:** Introduce a `VideoProvider` abstraction with Jitsi as the (only) implementation. No prior `VideoProvider`/`Daily.co` code exists anywhere in this repo (verified by search) — this is a fresh introduction, not a replacement of existing code, despite the "PRD v2.3" framing referencing a pre-existing abstraction. If a newer external PRD document defines this abstraction differently, it hasn't been ingested into this repo yet — flagged in Open Questions.
+- **D-14:** The STT pipeline (`transcribe_session` → `summarize_session`) must stay **agnostic to video provider**. It only ever consumes whatever ends up in `SessionRecording` — Jitsi-embedding logic and audio-mixing logic must not leak into the transcription/summarization tasks. This is a hard architectural boundary, not a preference.
+
+### Dual-Party Audio Capture for Online Sessions (VIDEO-02, new in v2.3) — ⚠ HIGHEST RISK ITEM
+- **D-15:** Today, online sessions (per Phase 5 D-09) capture only the lecturer's local mic via `MediaRecorder` — the student's voice is never in the recording. This was acceptable when "online" just meant an external meeting link; it is a real gap now that Phase 6 needs a complete transcript for online sessions too.
+- **D-16:** Planned approach: mix the lecturer's local mic track and the student's remote Jitsi audio track into a single stream via the Web Audio API (`AudioContext` + `MediaStreamAudioSourceNode`s merged into one destination), then record that merged stream exactly as today's `MediaRecorder` flow does — producing the same `SessionRecording` shape Phase 6's pipeline already expects.
+- **D-17:** Explicit fallback if the mixing approach proves too complex to land in time: **record the lecturer's mic only** (today's existing online behavior) — an incomplete-but-functional transcript beats no session-completion path at all. The plan **must** surface this as an explicit risk/fallback decision point, not silently attempt-and-hope.
+- **D-18:** Offline sessions are unaffected — single mic, single room, unchanged from Phase 5.
+
+### Claude's Discretion
+- Exact JSON schema beyond `advice_points[]` / `improvement_notes[]` (e.g., ordering, per-item metadata).
+- Retry backoff timing/count implementation details once the retry policy (D-09) is confirmed.
+- Exact Admin Dashboard layout for job counts / failure log filters.
+- Whether `SessionLogbook.status` values match the state machine in D-06 verbatim or need additional transitional states — planner's call within the state machine's intent.
+
+### Open Questions — Must Confirm Before Planning
+1. **Claude model for summarization (D-04):** which model — `claude-sonnet-5` (higher quality, higher cost) or `claude-haiku-4-5` (cheaper, likely sufficient for structured extraction from a clean transcript)? Note: `claude-sonnet-4-6` (as named in the original ask) is not a current model id.
+2. **`ANTHROPIC_API_KEY` provisioning (D-04):** is a key already available in the deployment environment, or does a placeholder need to be added to `settings/base.py` / `.env.example` (matching the existing `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` pattern) with no key set yet?
+3. **CPU-only vs GPU hosting for faster-whisper (D-01/D-02):** this determines whether `large-v3-turbo` actually meets the ≤2× duration NFR, or whether the planner should evaluate falling back to a smaller model (`medium`/`small`) for CPU-only deployment. What's the actual target deployment hardware?
+4. **Retry policy on STT/LLM failure (D-09):** does the lecturer get one automatic retry of the pipeline before falling back to manual notes, or does any failure go straight to the manual editor?
+5. **Token/cost estimate display (D-11):** per-session cost, aggregate monthly spend, or both? Real-time computed or batched/cached?
+6. **Celery broker choice + where it's deployed (D-07):** Redis is recommended as lighter-weight than RabbitMQ, but this needs a deployment-environment decision (is there hosting infra already picked that this needs to fit into?).
+7. **VideoProvider abstraction reference (D-13):** the phrasing "PRD v2.3 (abstraksi VideoProvider) ... menggantikan Daily.co" implies a pre-existing design — but no such code or document exists in this repo. Is there an external PRD/design doc to share, or should the planner treat this as a fresh design with no prior art?
+
+</decisions>
+
+<canonical_refs>
+## Canonical References
+
+**Downstream agents MUST read these before planning or implementing.**
+
+### Project & Requirements
+- `.planning/PROJECT.md` — v2.3 (amended in this discussion): Key Decisions table now includes the Jitsi/VideoProvider decision and the `meet.jit.si`-not-for-prod caveat; Constraints section has a new **Video** line; STT/LLM hybrid privacy decision (self-host STT, cloud LLM) is the reason Option B (third-party STT API) was rejected
+- `.planning/REQUIREMENTS.md` — STT-01 through STT-07, ADMIN-05 (original Phase 6 scope); **VIDEO-01** (promoted from v2 Requirements, revised to reference Jitsi instead of "Zoom/Meet") and **VIDEO-02** (new) — both added to Phase 6 in this discussion; SESSION-06 annotated as superseded-not-reopened
+- `.planning/ROADMAP.md` — Phase 6 section: goal, requirements list, and success criteria all updated in this discussion to include the video/dual-audio scope (success criteria 7–8)
+- `.planning/phases/05-session-execution-with-recording-consent/05-CONTEXT.md` — D-09/D-10 (local-mic-only `MediaRecorder` capture, WebM/Opus, single-file upload on "Selesai") is the existing behavior Phase 6 extends for online sessions (D-15 through D-17)
+
+### Existing Code — Session & Recording
+- `backend/apps/bimbingan/models.py` — `Session` model (do not add Phase 6 fields here — see D-05); `SessionRecording` model (`uuid`, `original_filename`, `file_path`, `file_size`, `mime_type`, `uploaded_at` — no duration field yet, see D-02); `SystemLog` model (`level`, `event_type`, `message`, `context` — reuse for D-10, do not create a new logging model)
+- `backend/apps/bimbingan/scheduler.py` — existing APScheduler jobs (`check_h15_notifications`, `check_auto_cancel`) — the only prior async-job pattern in this codebase; Celery (D-06/D-07) is new infrastructure, not an extension of this file
+- `backend/apps/bimbingan/services/calendar.py`, `services/notification.py` — existing external-API service pattern (Google Calendar OAuth + Fernet-encrypted token storage) — a reference for how external API credentials/services are structured in this codebase, though the LLM/STT integration will follow its own pattern per D-03/D-12
+- `backend/requirements.txt` — confirms no Celery, Redis, or any LLM/STT SDK is installed yet; all of Phase 6's dependencies are new additions
+
+</canonical_refs>
+
+<code_context>
+## Existing Code Insights
+
+### Reusable Assets
+- `SystemLog` model — reuse for all STT/LLM/Jitsi failure logging (D-10), matching the existing event-type-based audit pattern rather than inventing new log tables
+- File upload pattern from `SessionRecording` (Phase 5) / `SubmissionFile` (Phase 1) — UUID-based filenames, not directly exposed via `MEDIA_URL` — the transcript/summary storage in `SessionLogbook` should follow the same "never a guessable direct URL" discipline for the encrypted-at-rest constraint in `PROJECT.md`
+
+### Established Patterns
+- Backend: DRF `APIView` classes per action, `IsLecturer`/`IsAdmin` permission classes, ownership checked via `request.user` against `student.adviser`
+- All existing background/scheduled work runs in-process via APScheduler (`apps.py::ready()` starts it) — Celery introduces the first genuinely separate worker process in this project
+
+### Integration Points
+- Phase 6's STT pipeline consumes whatever `SessionRecording` contains — it must not care whether that recording came from an offline single-mic capture (Phase 5, unchanged) or an online mixed-track capture (new, D-15–D-17)
+- `AdminDashboard.tsx` (Phase 8, already shipped) shows generic error logs today; Phase 6 adds STT/LLM-specific job counts and failure filtering to it, not a new dashboard page
+
+</code_context>
+
+<specifics>
+## Specific Ideas
+
+- "Session sudah dobel sebagai queue" — the user was explicit that `Session` must not become a dumping ground for logbook fields; a dedicated `SessionLogbook` model is a hard requirement, not just a suggestion.
+- The Jitsi/dual-audio scope was added mid-discussion as a deliberate PRD v2.3 amendment, not scope creep slipped in accidentally — the user explicitly walked through the charter-amendment discipline (amend `PROJECT.md` first, then expand `REQUIREMENTS.md`/`ROADMAP.md`, then plan) before agreeing to fold it into Phase 6 rather than spinning up a separate phase.
+
+</specifics>
+
+<deferred>
+## Deferred Ideas
+
+- **Production-grade Jitsi hosting** (self-hosted or JaaS, replacing public `meet.jit.si`) — explicitly deferred past MVP/demo; tracked in `PROJECT.md` v2.3 Key Decisions so it isn't forgotten before go-live.
+- Speaker diarization, AI quality scoring of guidance sessions — already out of scope per `PROJECT.md`/`REQUIREMENTS.md`, unaffected by this discussion.
+
+</deferred>
+
+---
+
+*Phase: 6-STT, AI Summarization & Logbook*
+*Context gathered: 2026-07-05*
