@@ -129,7 +129,7 @@ Phases 4, 5, 7, and 8 (Google Calendar sync, session recording, advisory continu
 ### Phase 6: STT, AI Summarization & Logbook
 
 **Goal**: Every completed session with recording automatically produces an editable, lecturer-approved logbook entry via an async STT → LLM summary pipeline; graceful fallback to manual notes if the pipeline fails. *(Expanded in PRD v2.3)* Online sessions additionally run through in-app embedded video (Jitsi), with both parties' audio mixed into one recording so the STT pipeline works identically for offline and online sessions.
-**Mode:** mvp
+**Mode:** standard (opted out of the project-wide `mvp` default for this phase only, 2026-07-05 — Phase 6 is new async infrastructure (Celery/Redis, sequential STT→LLM pipeline) that cannot be meaningfully vertical-sliced by user story; planning follows the horizontal wave breakdown locked in `06-CONTEXT.md`/`06-RESEARCH.md`: Wave 0 infra → Wave 1-4 core logbook → Wave 5 Jitsi embed → Wave 6 integration test)
 **Depends on**: Phase 5 (recording must exist to transcribe)
 **Requirements**: STT-01, STT-02, STT-03, STT-04, STT-05, STT-06, STT-07, ADMIN-05, VIDEO-01, VIDEO-02
 **Status**: NOT STARTED — confirmed 2026-07-03, see `phases/06-stt-ai-summarization-logbook/06-VERIFICATION.md`. The only phase with zero code: no whisper/STT, no LLM call, no transcript or summary field on `Session`. **No longer blocked** — Phase 5's audio capture landed 2026-07-04 (`SessionRecording` files under `MEDIA_ROOT/recordings/`). Scope expanded 2026-07-05 (PRD v2.3) to fold in Jitsi video + dual-party audio capture for online sessions — see `06-CONTEXT.md`.
