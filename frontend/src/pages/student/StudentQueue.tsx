@@ -9,9 +9,11 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useRouteLoaderData } from 'react-router';
 import { getMyQueue, cancelMyQueue, type StudentQueueSession } from '../../api/sessions';
 import StatusBadge from '../../components/StatusBadge';
+import VideoProvider from '../../components/video/VideoProvider';
+import type { User } from '../../api/auth';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -75,10 +77,12 @@ function ConfirmDialog({ dosenName, onConfirm, onCancel, loading }: ConfirmDialo
 interface QueueInfoProps {
   session: StudentQueueSession;
   onCancelClick: () => void;
+  displayName: string;
 }
 
-function QueueInfo({ session, onCancelClick }: QueueInfoProps) {
+function QueueInfo({ session, onCancelClick, displayName }: QueueInfoProps) {
   const isWaiting = session.status === 'waiting';
+  const isOnlineCallLive = session.status === 'in_progress' && session.method === 'online';
 
   return (
     <div className="flex flex-col items-center gap-6 pt-8">
@@ -133,7 +137,7 @@ function QueueInfo({ session, onCancelClick }: QueueInfoProps) {
             <p className="font-bold text-sm text-slate-900">
               {session.method === 'online' ? 'Online' : 'Offline (Tatap Muka)'}
             </p>
-            {session.method === 'online' && session.meeting_link && (
+            {!isOnlineCallLive && session.method === 'online' && session.meeting_link && (
               <a href={session.meeting_link} target="_blank" rel="noopener noreferrer"
                 className="mt-2 inline-flex items-center gap-2 px-4 py-2.5 bg-success text-white text-sm font-bold rounded-xl hover:bg-green-700 min-h-[44px] focus-visible:ring-2 focus-visible:ring-success focus-visible:outline-none">
                 <span className="material-symbols-outlined text-base" aria-hidden="true">videocam</span>
@@ -142,6 +146,17 @@ function QueueInfo({ session, onCancelClick }: QueueInfoProps) {
             )}
           </div>
         </div>
+
+        {/* VIDEO-01/S-16: sesi online yang sedang berlangsung — embed panggilan
+            video langsung, tanpa kontrol consent/notes/Selesai (dosen-only) */}
+        {isOnlineCallLive && (
+          <div className="w-full">
+            <VideoProvider
+              roomName={`temudosen-session-${session.id}`}
+              displayName={displayName}
+            />
+          </div>
+        )}
 
         {/* Notification status */}
         {session.notification_sent && (
@@ -167,6 +182,7 @@ function QueueInfo({ session, onCancelClick }: QueueInfoProps) {
 
 export default function StudentQueue() {
   const navigate = useNavigate();
+  const user = useRouteLoaderData('mahasiswa') as User;
   const [data, setData] = useState<Awaited<ReturnType<typeof getMyQueue>> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -258,7 +274,11 @@ export default function StudentQueue() {
         )}
 
         {!loading && data?.hasActiveQueue && data.session && (
-          <QueueInfo session={data.session} onCancelClick={() => setShowConfirm(true)} />
+          <QueueInfo
+            session={data.session}
+            onCancelClick={() => setShowConfirm(true)}
+            displayName={user?.full_name ?? 'Mahasiswa'}
+          />
         )}
       </main>
 

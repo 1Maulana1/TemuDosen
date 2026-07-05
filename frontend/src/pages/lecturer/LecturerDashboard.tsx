@@ -5,6 +5,7 @@ import { getLecturerQueue, completeSession, type LecturerQueueItem, type Lecture
 import { getLecturerStats, startSession, type LecturerStats } from '../../api/stats';
 import ConsentModal from '../../components/ConsentModal';
 import { useMediaRecorder } from '../../hooks/useMediaRecorder';
+import VideoProvider from '../../components/video/VideoProvider';
 
 function fmt(iso: string) {
   return new Date(iso).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
@@ -150,6 +151,13 @@ export default function LecturerDashboard() {
                 </span>
               )}
             </div>
+
+            {queue.activeSession.method === 'online' && (
+              <VideoProvider
+                roomName={`temudosen-session-${queue.activeSession.id}`}
+                displayName={user?.full_name ?? 'Dosen'}
+              />
+            )}
 
             <textarea
               value={notes}

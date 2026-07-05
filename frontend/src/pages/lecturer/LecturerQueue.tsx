@@ -8,6 +8,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouteLoaderData } from 'react-router';
 import { getLecturerQueue, type LecturerQueueItem } from '../../api/sessions';
 import type { User } from '../../api/auth';
+import VideoProvider from '../../components/video/VideoProvider';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -33,7 +34,8 @@ const STATUS_COLOR: Record<string, string> = {
 
 // ── Queue Card ────────────────────────────────────────────────────────────────
 
-function QueueCard({ item }: { item: LecturerQueueItem }) {
+function QueueCard({ item, displayName }: { item: LecturerQueueItem; displayName: string }) {
+  const isOnlineCallLive = item.status === 'in_progress' && item.method === 'online';
   return (
     <div className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm flex items-start gap-4">
       {/* Position badge */}
@@ -76,12 +78,20 @@ function QueueCard({ item }: { item: LecturerQueueItem }) {
           </div>
         </div>
 
-        {/* Meeting link */}
-        {item.method === 'online' && item.meeting_link && (
+        {/* Meeting link — superseded by the embedded call once the session is
+            actually in progress (VIDEO-01); stays as an informational link
+            while still waiting, since there's no live call to join yet */}
+        {!isOnlineCallLive && item.method === 'online' && item.meeting_link && (
           <a href={item.meeting_link} target="_blank" rel="noopener noreferrer"
             className="mt-2 text-[11px] text-primary underline block truncate focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none rounded">
             {item.meeting_link}
           </a>
+        )}
+
+        {isOnlineCallLive && (
+          <div className="mt-2">
+            <VideoProvider roomName={`temudosen-session-${item.id}`} displayName={displayName} />
+          </div>
         )}
       </div>
     </div>
@@ -177,7 +187,7 @@ export default function LecturerQueue() {
               <div className="flex flex-col gap-3" role="list" aria-label={`${data.queue.length} mahasiswa dalam antrian`}>
                 {data.queue.map((item) => (
                   <div key={item.id} role="listitem">
-                    <QueueCard item={item} />
+                    <QueueCard item={item} displayName={user?.full_name ?? 'Dosen'} />
                   </div>
                 ))}
               </div>
