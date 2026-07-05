@@ -2,14 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
+current_phase: 06
+current_phase_name: stt-ai-summarization-logbook
 status: Phases 1-5 and 8 verified clean; 7 partial (backend only); 6 not started
-last_updated: "2026-07-04T13:00:00.000Z"
+last_updated: "2026-07-05T08:48:17.673Z"
 progress:
   total_phases: 8
-  completed_phases: 5
-  total_plans: 5
+  completed_phases: 1
+  total_plans: 14
   completed_plans: 5
-  percent: 63
+  percent: 13
 ---
 
 # State: TemuDosen
@@ -22,7 +24,7 @@ See `.planning/PROJECT.md` for core value, constraints, and full requirements.
 
 ## Current Position
 
-Phase: 06 (STT, AI Summarization & Logbook) — the true next greenfield phase, now fully unblocked
+Phase: 06 (stt-ai-summarization-logbook) — EXECUTING
 **Status**: All 8 phases formally verified at least once. Phases 1, 2, 3, 4, 5, and 8 closed clean (Phase 5 re-verified 6/6 on 2026-07-04, superseding the 4/6 pass). Phase 7 remains PARTIAL. Phase 6 has zero work.
 
 **What's actually blocking full-scope completion, in order:**
@@ -73,6 +75,7 @@ Two team branches (`main`, with Farel's Phase 2 UI/consent work, and a teammate'
 - Requirements traceability table in REQUIREMENTS.md has phase numbers filled in as of 2026-06-21.
 - Phase 1 context document (01-CONTEXT.md) was written against PRD v1.0 — review and update before starting Phase 1 plan.
 - `06-UI-SPEC.md` line ~180 has a stray label mismatch: names the S-13 transcript-expansion gate button "Setujui & Kunci" (which is actually the S-14 modal's confirm button, per line 184 and the Copywriting Contract table). The gated button is really "Setujui & Simpan ke Logbook" (S-13 sticky footer) — confirmed by the Copywriting Contract table and the actual `06-06-PLAN.md` Task 3/4 implementation, both of which use the correct label. UI-SPEC.md's line 180 itself was never corrected. Found 2026-07-05 during `06-VALIDATION.md` reconciliation. Low-priority copy-doc cleanup — not blocking Phase 6 execution.
+- `backend/requirements.txt` deliberately pins `celery==5.6.3` with `redis==8.0.1`: celery 5.6.3 has a documented Redis result-backend pubsub reconnect regression (celery/celery#10294) affecting redis-py < 5.3.0. Phase 6 doesn't hit this path (Redis is broker-only, no CELERY_RESULT_BACKEND, `ignore_result=True` everywhere — see 06-01-PLAN.md Task 2/06-05-PLAN.md), but do not let redis drop below 5.3.0 while celery stays on 5.6.3. See the inline comment at the pin in requirements.txt. Confirmed 2026-07-05 during the 06-01 package-legitimacy checkpoint. Separate, unrelated observation from the same review: Redis's own broker-side reconnect (kombu transport, a different code path than the result-backend pubsub #10294 describes) is still worth exercising under connection-drop conditions as general resilience in Wave 6 (06-09) — not because of #10294, just good practice.
 
 ### Decisions
 
