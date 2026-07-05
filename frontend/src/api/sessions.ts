@@ -192,6 +192,10 @@ export interface LogbookDetail {
   summary_raw: SessionSummaryContent;
   summary_edited: SessionSummaryContent | null;
   approved_at: string | null;
+  // Token/biaya LLM (D-11) — hanya dikirim di endpoint dosen; absen untuk mahasiswa.
+  llm_input_tokens?: number | null;
+  llm_output_tokens?: number | null;
+  llm_cost_estimate_idr?: string | null;
 }
 
 export async function getLecturerSessionHistory(): Promise<SessionHistoryItem[]> {

@@ -80,6 +80,31 @@ describe('StudentSessionDetail', () => {
     expect(audio?.getAttribute('src')).toBe('/api/queue/7/recording/');
   });
 
+  it('renders a structured AI summary as advice/improvement cards', async () => {
+    server.use(
+      http.get('/api/logbook/student/7/', () =>
+        HttpResponse.json({
+          session_id: 7, mahasiswa_name: 'Budi Santoso', nim: '20230001', dosen_name: 'Dr. Rina Sari',
+          scheduled_at: '2026-07-04T09:00:00Z', ts1: null, ts2: '2026-07-04T10:00:00Z',
+          has_recording: false, status: 'approved', is_manual: false,
+          transcript: 'transkrip panjang…',
+          summary_raw: {},
+          summary_edited: {
+            advice_points: [{ topic: 'Metodologi', detail: 'Perjelas populasi dan sampel.' }],
+            improvement_notes: [{ area: 'Bab 2', action: 'Tambah 5 referensi terbaru.' }],
+          },
+          approved_at: '2026-07-04T10:05:00Z',
+        })
+      )
+    );
+    renderDetail();
+    await waitFor(() => expect(screen.getByText('Saran Dosen')).toBeInTheDocument());
+    expect(screen.getByText('Metodologi')).toBeInTheDocument();
+    expect(screen.getByText('Perjelas populasi dan sampel.')).toBeInTheDocument();
+    expect(screen.getByText('Area Perbaikan')).toBeInTheDocument();
+    expect(screen.getByText('Tambah 5 referensi terbaru.')).toBeInTheDocument();
+  });
+
   it('shows a waiting state when summary is not yet approved', async () => {
     // Endpoint mahasiswa menolak logbook yang belum disetujui dengan 403.
     server.use(

@@ -7,24 +7,16 @@
  */
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useParams, useRouteLoaderData } from 'react-router';
-import { getStudentLogbookDetail, getSessionRecordingUrl, type LogbookDetail, type SessionSummaryContent } from '../../api/sessions';
+import { getStudentLogbookDetail, getSessionRecordingUrl, type LogbookDetail } from '../../api/sessions';
 import { logout, type User } from '../../api/auth';
 import { AppNavbar, AppBottomNav, NAV_ITEMS } from '../../components/AppNav';
+import SummaryContent from '../../components/SummaryContent';
 
 function fmtDateTime(iso: string | null): string {
   if (!iso) return '-';
   try {
     return new Date(iso).toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   } catch { return '-'; }
-}
-
-function summaryToText(c: SessionSummaryContent | null | undefined): string {
-  if (!c) return '';
-  if (c.manual_notes) return c.manual_notes;
-  const lines: string[] = [];
-  for (const a of c.advice_points ?? []) lines.push(`• ${a.topic}: ${a.detail}`);
-  for (const n of c.improvement_notes ?? []) lines.push(`→ ${n.area}: ${n.action}`);
-  return lines.join('\n');
 }
 
 export default function StudentSessionDetail() {
@@ -125,7 +117,7 @@ export default function StudentSessionDetail() {
                   <span className="material-symbols-outlined text-sm" aria-hidden="true">check_circle</span>
                   Disetujui dosen {fmtDateTime(data.approved_at)}
                 </div>
-                <p className="text-sm text-slate-700 whitespace-pre-wrap">{summaryToText(data.summary_edited)}</p>
+                <SummaryContent content={data.summary_edited ?? data.summary_raw} />
               </div>
             </section>
           </>

@@ -58,6 +58,9 @@ class LogbookDetailSerializer(serializers.ModelSerializer):
             'session_id', 'mahasiswa_name', 'nim', 'dosen_name', 'scheduled_at', 'ts1',
             'ts2', 'has_recording', 'status', 'is_manual', 'transcript',
             'summary_raw', 'summary_edited', 'approved_at',
+            # D-11: token/biaya LLM — hanya di serializer dosen; serializer
+            # mahasiswa (turunan di bawah) mengecualikannya.
+            'llm_input_tokens', 'llm_output_tokens', 'llm_cost_estimate_idr',
         ]
 
     def get_dosen_name(self, obj):
@@ -66,6 +69,16 @@ class LogbookDetailSerializer(serializers.ModelSerializer):
 
     def get_has_recording(self, obj):
         return hasattr(obj.session, 'recording')
+
+
+class StudentLogbookDetailSerializer(LogbookDetailSerializer):
+    """Varian mahasiswa: tanpa token/biaya LLM (D-11 — biaya untuk pengelola saja)."""
+
+    class Meta(LogbookDetailSerializer.Meta):
+        fields = [
+            f for f in LogbookDetailSerializer.Meta.fields
+            if f not in ('llm_input_tokens', 'llm_output_tokens', 'llm_cost_estimate_idr')
+        ]
 
 
 class ApproveLogbookSerializer(serializers.Serializer):

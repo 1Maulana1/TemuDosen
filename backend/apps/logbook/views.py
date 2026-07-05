@@ -19,6 +19,7 @@ from .serializers import (
     LogbookDetailSerializer,
     LogbookListSerializer,
     ManualNotesSerializer,
+    StudentLogbookDetailSerializer,
 )
 
 
@@ -173,4 +174,4 @@ class StudentLogbookView(APIView):
         if logbook.status != SessionLogbook.Status.APPROVED:
             return Response({'detail': 'Ringkasan belum tersedia.'},
                             status=status.HTTP_403_FORBIDDEN)
-        return Response(LogbookDetailSerializer(logbook).data)
+        return Response(StudentLogbookDetailSerializer(logbook).data)

@@ -16,6 +16,13 @@ import {
 } from '../../api/sessions';
 import { logout, type User } from '../../api/auth';
 import { AppNavbar, AppBottomNav, NAV_ITEMS } from '../../components/AppNav';
+import SummaryContent from '../../components/SummaryContent';
+
+function fmtIDR(v: string | null | undefined): string | null {
+  const n = v == null ? NaN : Number(v);
+  if (!isFinite(n)) return null;
+  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n);
+}
 
 function fmtDateTime(iso: string | null): string {
   if (!iso) return '-';
@@ -141,6 +148,25 @@ export default function LecturerSessionDetail() {
               </div>
             </section>
 
+            {/* Transkrip (hasil STT) — hanya muncul bila pipeline menghasilkannya */}
+            {data.transcript && (
+              <section>
+                <h2 className="font-headline font-bold text-lg text-slate-900 mb-3">Transkrip</h2>
+                <details className="bg-surface rounded-2xl border border-gray-200 shadow-sm">
+                  <summary className="cursor-pointer select-none p-5 text-sm font-bold text-slate-700 flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none rounded-2xl">
+                    <span className="material-symbols-outlined text-base text-primary" aria-hidden="true">description</span>
+                    Lihat transkrip otomatis
+                    <span className="ml-auto text-[11px] font-normal text-on-surface-variant">hasil transkripsi AI — bisa tidak akurat</span>
+                  </summary>
+                  <div className="px-5 pb-5">
+                    <p className="text-sm text-slate-600 whitespace-pre-wrap max-h-72 overflow-y-auto border-t border-gray-100 pt-3">
+                      {data.transcript}
+                    </p>
+                  </div>
+                </details>
+              </section>
+            )}
+
             {/* Ringkasan */}
             <section>
               <div className="flex items-center justify-between mb-3">
@@ -154,7 +180,7 @@ export default function LecturerSessionDetail() {
               </div>
               <div className="bg-surface rounded-2xl border border-gray-200 shadow-sm p-5 space-y-3">
                 {isApproved ? (
-                  <p className="text-sm text-slate-700 whitespace-pre-wrap">{summaryDraft || '—'}</p>
+                  <SummaryContent content={data.summary_edited ?? data.summary_raw} />
                 ) : (
                   <>
                     <p className="text-[11px] text-on-surface-variant">
@@ -175,6 +201,16 @@ export default function LecturerSessionDetail() {
                       {saving ? 'Menyetujui…' : 'Setujui & Kirim ke Mahasiswa'}
                     </button>
                   </>
+                )}
+
+                {/* D-11: token & estimasi biaya LLM — hanya terisi bila ringkasan dibuat AI */}
+                {data.llm_input_tokens != null && data.llm_output_tokens != null && (
+                  <p className="flex items-center gap-1.5 text-[11px] text-on-surface-variant border-t border-gray-100 pt-3">
+                    <span className="material-symbols-outlined text-sm" aria-hidden="true">smart_toy</span>
+                    Diringkas AI · {data.llm_input_tokens.toLocaleString('id-ID')} token masuk,{' '}
+                    {data.llm_output_tokens.toLocaleString('id-ID')} token keluar
+                    {fmtIDR(data.llm_cost_estimate_idr) && <> · estimasi biaya {fmtIDR(data.llm_cost_estimate_idr)}</>}
+                  </p>
                 )}
               </div>
             </section>

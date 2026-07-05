@@ -195,6 +195,9 @@ class TestSessionLogbookView:
         resp = client_for(advisee_student).get(f'/api/logbook/student/{session.id}/')
         assert resp.status_code == 200
         assert resp.data['summary_edited'] == {'manual_notes': 'Lanjutkan.'}
+        # D-11: token/biaya LLM tidak pernah dikirim ke mahasiswa.
+        assert 'llm_input_tokens' not in resp.data
+        assert 'llm_cost_estimate_idr' not in resp.data
 
     def test_manual_notes_empty_rejected(self, lecturer_user, pending_submission):
         session = _done_session(lecturer_user, pending_submission)
