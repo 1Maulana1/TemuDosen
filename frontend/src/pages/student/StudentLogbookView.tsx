@@ -4,7 +4,7 @@
  */
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router';
-import { getStudentLogbook, type LogbookDetail } from '../../api/logbook';
+import { getStudentLogbook, isManualNotesSummary, type LogbookDetail } from '../../api/logbook';
 
 function fmtDate(iso: string | null): string {
   if (!iso) return '-';
@@ -75,37 +75,46 @@ export default function StudentLogbookView() {
           </div>
         </section>
 
-        <section className="bg-surface rounded-2xl border border-gray-200 shadow-sm p-6">
-          <h2 className="font-headline font-bold text-lg text-on-surface mb-3">Saran Dosen</h2>
-          {summary.advice_points.length === 0 ? (
-            <p className="text-sm text-neutral-gray italic">Tidak ada saran dosen yang tercatat dalam sesi ini.</p>
-          ) : (
-            <div className="space-y-3">
-              {summary.advice_points.map((item, idx) => (
-                <div key={idx} className="bg-white border border-gray-100 rounded-xl p-4">
-                  <p className="font-bold text-sm text-on-surface">{item.topic}</p>
-                  <p className="text-sm text-on-surface-variant mt-1">{item.detail}</p>
+        {isManualNotesSummary(summary) ? (
+          <section className="bg-surface rounded-2xl border border-gray-200 shadow-sm p-6">
+            <h2 className="font-headline font-bold text-lg text-on-surface mb-3">Catatan Manual Dosen</h2>
+            <p className="text-sm leading-[1.6] text-on-surface-variant whitespace-pre-wrap">{summary.manual_notes}</p>
+          </section>
+        ) : (
+          <>
+            <section className="bg-surface rounded-2xl border border-gray-200 shadow-sm p-6">
+              <h2 className="font-headline font-bold text-lg text-on-surface mb-3">Saran Dosen</h2>
+              {summary.advice_points.length === 0 ? (
+                <p className="text-sm text-neutral-gray italic">Tidak ada saran dosen yang tercatat dalam sesi ini.</p>
+              ) : (
+                <div className="space-y-3">
+                  {summary.advice_points.map((item, idx) => (
+                    <div key={idx} className="bg-white border border-gray-100 rounded-xl p-4">
+                      <p className="font-bold text-sm text-on-surface">{item.topic}</p>
+                      <p className="text-sm text-on-surface-variant mt-1">{item.detail}</p>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
-        </section>
+              )}
+            </section>
 
-        <section className="bg-surface rounded-2xl border border-gray-200 shadow-sm p-6">
-          <h2 className="font-headline font-bold text-lg text-on-surface mb-3">Catatan Perbaikan untuk Mahasiswa</h2>
-          {summary.improvement_notes.length === 0 ? (
-            <p className="text-sm text-neutral-gray italic">Tidak ada saran dosen yang tercatat dalam sesi ini.</p>
-          ) : (
-            <div className="space-y-3">
-              {summary.improvement_notes.map((item, idx) => (
-                <div key={idx} className="bg-white border border-gray-100 rounded-xl p-4">
-                  <p className="font-bold text-sm text-on-surface">{item.area}</p>
-                  <p className="text-sm text-on-surface-variant mt-1">{item.action}</p>
+            <section className="bg-surface rounded-2xl border border-gray-200 shadow-sm p-6">
+              <h2 className="font-headline font-bold text-lg text-on-surface mb-3">Catatan Perbaikan untuk Mahasiswa</h2>
+              {summary.improvement_notes.length === 0 ? (
+                <p className="text-sm text-neutral-gray italic">Tidak ada saran dosen yang tercatat dalam sesi ini.</p>
+              ) : (
+                <div className="space-y-3">
+                  {summary.improvement_notes.map((item, idx) => (
+                    <div key={idx} className="bg-white border border-gray-100 rounded-xl p-4">
+                      <p className="font-bold text-sm text-on-surface">{item.area}</p>
+                      <p className="text-sm text-on-surface-variant mt-1">{item.action}</p>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
-        </section>
+              )}
+            </section>
+          </>
+        )}
       </main>
     </div>
   );

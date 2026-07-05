@@ -134,4 +134,18 @@ describe('LecturerLogbookReview (S-13)', () => {
       expect(screen.getByText('MANUAL_NOTES_SCREEN')).toBeInTheDocument();
     });
   });
+
+  it('manual_notes_summary_renders_without_crashing: renders manual notes text instead of throwing', async () => {
+    vi.mocked(logbookApi.getLogbookDetail).mockResolvedValue({
+      ...BASE_LOGBOOK,
+      status: 'approved',
+      is_manual: true,
+      summary_edited: { manual_notes: 'Catatan manual dosen contoh.' },
+    });
+    renderScreen();
+
+    expect(await screen.findByText('Catatan manual dosen contoh.')).toBeInTheDocument();
+    expect(screen.getByText('Catatan Manual Dosen')).toBeInTheDocument();
+    expect(screen.queryByText('Saran Dosen')).not.toBeInTheDocument();
+  });
 });

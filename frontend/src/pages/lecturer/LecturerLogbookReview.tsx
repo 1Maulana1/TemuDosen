@@ -6,8 +6,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import {
-  getLogbookDetail, approveLogbook, rejectLogbook,
-  type AdvicePoint, type ImprovementNote, type LogbookDetail, type LogbookSummary,
+  getLogbookDetail, approveLogbook, rejectLogbook, isManualNotesSummary,
+  type AdvicePoint, type ImprovementNote, type LogbookDetail, type LogbookSummary, type ManualNotesSummary,
 } from '../../api/logbook';
 import LogbookStatusBadge from '../../components/LogbookStatusBadge';
 import ApproveLogbookModal from '../../components/ApproveLogbookModal';
@@ -46,7 +46,7 @@ export default function LecturerLogbookReview() {
   const [error, setError] = useState('');
   const [expanded, setExpanded] = useState(false);
   const [hasExpandedOnce, setHasExpandedOnce] = useState(false);
-  const [summary, setSummary] = useState<LogbookSummary | null>(null);
+  const [summary, setSummary] = useState<LogbookSummary | ManualNotesSummary | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [approving, setApproving] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -68,7 +68,7 @@ export default function LecturerLogbookReview() {
   };
 
   const ungroundedCount = useMemo(() => {
-    if (!summary) return 0;
+    if (!summary || isManualNotesSummary(summary)) return 0;
     return (
       summary.advice_points.filter((i) => i.grounded === false).length +
       summary.improvement_notes.filter((i) => i.grounded === false).length
@@ -76,16 +76,16 @@ export default function LecturerLogbookReview() {
   }, [summary]);
 
   const sortedAdvice = useMemo(
-    () => (summary ? sortUngroundedFirst<AdvicePoint>(summary.advice_points) : []),
+    () => (summary && !isManualNotesSummary(summary) ? sortUngroundedFirst<AdvicePoint>(summary.advice_points) : []),
     [summary],
   );
   const sortedImprovement = useMemo(
-    () => (summary ? sortUngroundedFirst<ImprovementNote>(summary.improvement_notes) : []),
+    () => (summary && !isManualNotesSummary(summary) ? sortUngroundedFirst<ImprovementNote>(summary.improvement_notes) : []),
     [summary],
   );
 
   const handleApprove = async () => {
-    if (!sessionId || !summary || approving) return;
+    if (!sessionId || !summary || isManualNotesSummary(summary) || approving) return;
     setApproving(true);
     try {
       await approveLogbook(Number(sessionId), summary);
@@ -158,39 +158,48 @@ export default function LecturerLogbookReview() {
           </div>
         </section>
 
-        <section className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
-          <h2 className="font-headline font-bold text-lg text-slate-900 mb-3">Saran Dosen</h2>
-          {sortedAdvice.length === 0 ? (
-            <p className="text-sm text-neutral-gray italic">Tidak ada saran dosen yang tercatat dalam sesi ini.</p>
-          ) : (
-            <div className="space-y-3">
-              {sortedAdvice.map((item, idx) => (
-                <div key={idx} data-testid={`advice-item-${idx}`} className="bg-white border border-gray-100 rounded-xl p-4">
-                  <p className="font-bold text-sm text-slate-900">{item.topic}</p>
-                  <p className="text-sm text-slate-700 mt-1">{item.detail}</p>
-                  {item.grounded === false && <GroundednessChip />}
+        {isManualNotesSummary(summary) ? (
+          <section className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+            <h2 className="font-headline font-bold text-lg text-slate-900 mb-3">Catatan Manual Dosen</h2>
+            <p className="text-sm font-normal leading-[1.6] text-slate-700 whitespace-pre-wrap">{summary.manual_notes}</p>
+          </section>
+        ) : (
+          <>
+            <section className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+              <h2 className="font-headline font-bold text-lg text-slate-900 mb-3">Saran Dosen</h2>
+              {sortedAdvice.length === 0 ? (
+                <p className="text-sm text-neutral-gray italic">Tidak ada saran dosen yang tercatat dalam sesi ini.</p>
+              ) : (
+                <div className="space-y-3">
+                  {sortedAdvice.map((item, idx) => (
+                    <div key={idx} data-testid={`advice-item-${idx}`} className="bg-white border border-gray-100 rounded-xl p-4">
+                      <p className="font-bold text-sm text-slate-900">{item.topic}</p>
+                      <p className="text-sm text-slate-700 mt-1">{item.detail}</p>
+                      {item.grounded === false && <GroundednessChip />}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
-        </section>
+              )}
+            </section>
 
-        <section className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
-          <h2 className="font-headline font-bold text-lg text-slate-900 mb-3">Catatan Perbaikan untuk Mahasiswa</h2>
-          {sortedImprovement.length === 0 ? (
-            <p className="text-sm text-neutral-gray italic">Tidak ada saran dosen yang tercatat dalam sesi ini.</p>
-          ) : (
-            <div className="space-y-3">
-              {sortedImprovement.map((item, idx) => (
-                <div key={idx} data-testid={`improvement-item-${idx}`} className="bg-white border border-gray-100 rounded-xl p-4">
-                  <p className="font-bold text-sm text-slate-900">{item.area}</p>
-                  <p className="text-sm text-slate-700 mt-1">{item.action}</p>
-                  {item.grounded === false && <GroundednessChip />}
+            <section className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+              <h2 className="font-headline font-bold text-lg text-slate-900 mb-3">Catatan Perbaikan untuk Mahasiswa</h2>
+              {sortedImprovement.length === 0 ? (
+                <p className="text-sm text-neutral-gray italic">Tidak ada saran dosen yang tercatat dalam sesi ini.</p>
+              ) : (
+                <div className="space-y-3">
+                  {sortedImprovement.map((item, idx) => (
+                    <div key={idx} data-testid={`improvement-item-${idx}`} className="bg-white border border-gray-100 rounded-xl p-4">
+                      <p className="font-bold text-sm text-slate-900">{item.area}</p>
+                      <p className="text-sm text-slate-700 mt-1">{item.action}</p>
+                      {item.grounded === false && <GroundednessChip />}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
-        </section>
+              )}
+            </section>
+          </>
+        )}
       </main>
 
       <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 p-4 max-w-md mx-auto space-y-2">

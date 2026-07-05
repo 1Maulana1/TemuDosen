@@ -30,6 +30,19 @@ export interface LogbookSummary {
   improvement_notes: ImprovementNote[];
 }
 
+export interface ManualNotesSummary {
+  manual_notes: string;
+}
+
+/** ManualNotesView (STT-07 fallback) stores {manual_notes} instead of the
+ * structured {advice_points, improvement_notes} shape — callers must check
+ * this before assuming either summary_raw or summary_edited has those keys. */
+export function isManualNotesSummary(
+  summary: LogbookSummary | ManualNotesSummary | null | undefined,
+): summary is ManualNotesSummary {
+  return !!summary && 'manual_notes' in summary;
+}
+
 export interface LogbookListItem {
   id: number;
   session_id: number;
@@ -44,7 +57,7 @@ export interface LogbookDetail extends LogbookListItem {
   source_mode: 'offline' | 'online';
   transcript: string;
   summary_raw: LogbookSummary;
-  summary_edited: LogbookSummary | null;
+  summary_edited: LogbookSummary | ManualNotesSummary | null;
   approved_at: string | null;
 }
 
