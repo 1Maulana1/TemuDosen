@@ -59,6 +59,46 @@ class TestAdminStatsView:
         resp = authenticated_lecturer.get(self.url)
         assert resp.status_code == 403
 
+    def test_response_includes_stt_llm_block(self, authenticated_admin):
+        resp = authenticated_admin.get(self.url)
+        assert resp.status_code == 200
+        assert 'stt_llm' in resp.data
+        for key in ('transcription_success', 'summary_success', 'failed_fallback',
+                    'monthly_cost_idr', 'avg_cost_per_session_idr'):
+            assert key in resp.data['stt_llm']
+
+    def test_monthly_cost_idr_sums_stored_logbook_costs(
+        self, authenticated_admin, lecturer_user, pending_submission, submission_for, second_advisee_student,
+    ):
+        from decimal import Decimal
+        from apps.logbook.models import SessionLogbook
+
+        session1 = _approve(lecturer_user, pending_submission)
+        submission2 = submission_for(second_advisee_student)
+        session2 = _approve(lecturer_user, submission2)
+
+        SessionLogbook.objects.create(
+            session=session1, status=SessionLogbook.Status.APPROVED,
+            llm_cost_estimate_idr=Decimal('120.50'),
+        )
+        SessionLogbook.objects.create(
+            session=session2, status=SessionLogbook.Status.APPROVED,
+            llm_cost_estimate_idr=Decimal('79.50'),
+        )
+
+        resp = authenticated_admin.get(self.url)
+        assert resp.status_code == 200
+        assert Decimal(str(resp.data['stt_llm']['monthly_cost_idr'])) == Decimal('200.00')
+
+    def test_failed_fallback_counts_phase6_event_types(self, authenticated_admin):
+        SystemLog.objects.create(level=SystemLog.Level.ERROR, event_type='STT_FAILED', context={})
+        SystemLog.objects.create(level=SystemLog.Level.ERROR, event_type='LLM_TIMEOUT', context={})
+        SystemLog.objects.create(level=SystemLog.Level.ERROR, event_type='UNRELATED_EVENT', context={})
+
+        resp = authenticated_admin.get(self.url)
+        assert resp.status_code == 200
+        assert resp.data['stt_llm']['failed_fallback'] == 2
+
 
 @pytest.mark.django_db
 class TestAdminEmergencyCancelView:
