@@ -1,7 +1,7 @@
 # Phase 6: STT, AI Summarization & Logbook - Context
 
-**Gathered:** 2026-07-05 (updated 2026-07-05 — closed OQ#1-4, #6, #7; cancelled D-16 dual-audio mixing per research finding, D-17 lecturer-mic-only is now the default)
-**Status:** Ready for planning — 1 open question remains (see bottom of `<decisions>`)
+**Gathered:** 2026-07-05 (updated 2026-07-05 — closed OQ#1-4, #6, #7; cancelled D-16 dual-audio mixing per research finding, D-17 lecturer-mic-only is now the default; updated again 2026-07-05 — closed OQ#5/D-11, all 7 open questions now resolved)
+**Status:** Ready for planning — all open questions resolved (7/7)
 
 <domain>
 ## Phase Boundary
@@ -46,7 +46,12 @@ Every completed session with a recording automatically produces an editable, lec
 
 ### Monitoring & Quota (ADMIN-05)
 - **D-10:** Admin Dashboard shows STT/LLM job counts (success/failed) and a failure-log list, reusing the generic `SystemLog` model (`level`/`event_type`/`message`/`context`) — filter by `event_type` (e.g. `STT_FAILED`, `LLM_FAILED`) rather than adding new dedicated fields. Note: despite the ROADMAP text describing Phase 8's Admin Dashboard as already covering "STT/LLM quota," the actual `AdminDashboard.tsx` and backend have no STT/LLM-specific code today (verified — zero matches) — this is genuinely new work in Phase 6, not a Phase 8 leftover to wire up.
-- **D-11:** Since Claude API is a paid service, show a token/cost usage estimate. Exact calculation method (per-session vs aggregate, real-time vs batched) is **open — see Open Questions**.
+- **D-11 (resolved — closes OQ#5):** Since Claude API is a paid service, show a token/cost usage estimate on the Admin Dashboard (S-17's "Estimasi Biaya Bulan Ini" card).
+  - **Display:** Monthly aggregate spend is the primary/dominant number on the card (answers "how much has this feature cost this month"). A small sub-text shows the per-session average (e.g. "rata-rata ~RpX/sesi") as supporting context — both figures are shown, but the monthly aggregate is what's visually dominant, not the per-session figure.
+  - **Computation: batched/cached, not real-time.** Token usage (input + output) and the computed cost estimate are recorded onto the per-session logbook record **at the end of the LLM pipeline**, when `poll_summary_batch` (per AI-SPEC.md Section 4's Core Pattern) parses the successful batch result and token counts become available — not computed synchronously on every dashboard page load. The Admin Dashboard sums the already-stored per-session values; it never re-queries/re-derives cost from scratch across all sessions on each request. Rationale: cheap and scalable, consistent with Phase 6's async non-blocking pattern (D-06/D-07) — a dashboard load must not become an O(n) cost-recomputation query as session volume grows.
+  - **Formula:** `actual input tokens × input rate + actual output tokens × output rate`, converted to Rupiah. Rate is **configurable via a setting/env var** (not hardcoded) so it can be updated when Anthropic's pricing changes without a code change.
+  - **Flag for planner — rate discrepancy to reconcile, not silently resolved here:** the rate given during this decision was $1/$5 per million input/output tokens. This is Anthropic's **standard (non-batch) `claude-haiku-4-5` pricing**, not the batch-discounted rate ($0.50/$2.50 per MTok) that `06-AI-SPEC.md` Section 4b's cost table already uses for the Rp 100–300/session and Rp 100,000/semester budget projections (D-04). Since D-03 mandates the Batch API for every summarization call, the *actual* per-call cost booked by the pipeline will be at the $0.50/$2.50 batch rate, not $1/$5. The planner should set the configurable rate's **default** to match whichever rate the stored token counts are actually billed at (i.e. the batch rate, $0.50/$2.50, to stay consistent with AI-SPEC's own budget analysis) — the $1/$5 figure should not be hardcoded as the default without first confirming which rate this project is actually invoiced at.
+  - **Storage note (naming clarification for the planner):** "token/cost fields on SessionSummary" refers to new fields on the **`SessionLogbook` Django model (D-05)** — e.g. `llm_input_tokens`, `llm_output_tokens`, `llm_cost_estimate_idr` (naming is planner's call) — not the `SessionSummary` **Pydantic** schema in `06-AI-SPEC.md` Section 4b.1, which models only the extracted `advice_points[]`/`improvement_notes[]` content and must stay a pure representation of LLM output, not carry API-call metadata like token counts.
 
 ### In-App Video — Jitsi (VIDEO-01, new in v2.3)
 - **D-12 (retained, clarified 2026-07-05):** Online sessions embed video via the **Jitsi Meet External API** — `@jitsi/react-sdk`'s `JitsiMeeting` component (preferred, avoids hand-rolling iframe mount/unmount) or `external_api.js`/`JitsiMeetExternalAPI` directly — using **`meet.jit.si`** (public instance) for MVP/demo. Functions purely as in-app video conferencing (a Zoom-like embed), nothing more. **Known limitation, not a blocker:** `meet.jit.si` has no SLA/security guarantee — self-hosted or JaaS Jitsi is required before production use. Recorded explicitly in `PROJECT.md` v2.3 Key Decisions. **Unchanged by the D-16 cancellation below** — the video-call embedding itself is unaffected by the audio-capture finding.
@@ -66,13 +71,15 @@ Every completed session with a recording automatically produces an editable, lec
 - Exact Admin Dashboard layout for job counts / failure log filters.
 - Whether `SessionLogbook.status` values match the state machine in D-06 verbatim or need additional transitional states — planner's call within the state machine's intent.
 
-### Open Questions — Must Confirm Before Planning
+### Open Questions — All Resolved (7/7)
 
 **Resolved this session (2026-07-05):** ~~OQ#1 (Claude model)~~, ~~OQ#2 (API key provisioning)~~, ~~OQ#3 (CPU/GPU + model size)~~, ~~OQ#4 (retry policy)~~, ~~OQ#6 (Celery broker choice)~~ — see D-01, D-04, D-07, D-09 above.
 
 **Resolved 2026-07-05 (research pass, `06-RESEARCH.md`):** ~~OQ#7 (VideoProvider abstraction reference, D-13)~~ — confirmed no prior art exists anywhere; proceed as a fresh design. ~~D-16 dual-audio go/no-go~~ — cancelled per the finding above; D-17 (lecturer-mic-only) is now the shipped behavior, D-19 tracks the deferred full-mixing path.
 
-1. **Token/cost estimate display (D-11):** per-session cost, aggregate monthly spend, or both? Real-time computed or batched/cached?
+**Resolved 2026-07-05 (later same day):** ~~OQ#5 (token/cost estimate display, D-11)~~ — monthly aggregate as the dominant figure + per-session average as sub-text; computed batched/cached at LLM-pipeline completion (not real-time on dashboard load); formula is actual token usage × configurable rate — see D-11 above for full detail, including a flagged rate-discrepancy note for the planner.
+
+**All 7 original open questions are now resolved. Nothing remains open in this document.**
 
 </decisions>
 
