@@ -1,10 +1,11 @@
 ---
 phase: 6
 slug: stt-ai-summarization-logbook
-status: draft
+status: verified
 shadcn_initialized: false
 preset: none
 created: 2026-07-05
+verified: 2026-07-05
 ---
 
 # Phase 6 — UI Design Contract
@@ -96,6 +97,7 @@ Existing reserved list (Phase 1) stays in force. This phase adds:
 2. Active/expanded state of the "Lihat Transkrip Lengkap" toggle (S-13)
 3. "Bergabung" / connected-state accent ring around the Jitsi video container border (S-16) — subtle `ring-1 ring-primary/20`, not a fill
 4. Logbook-list "Tinjau Sekarang" action link (S-12)
+5. Admin "Estimasi Biaya Bulan Ini" stat-card icon (S-17)
 
 ### New semantic color usage this phase
 
@@ -346,19 +348,6 @@ All UI copy is in Bahasa Indonesia, matching the existing app's register.
 
 ---
 
-## Color
-
-| Role | Value | Usage |
-|------|-------|-------|
-| Dominant (60%) | `#FAFAF9` (`bg-gray-50`) | Page background |
-| Secondary (30%) | `#FFFFFF` (`bg-white`/`bg-surface`) | Cards, panels, video chrome |
-| Accent (10%) | `#F59E0B` (`bg-primary`/`text-primary`) | Reserved list above — CTAs, active toggles, connected-video ring |
-| Destructive | `#E02424` (`bg-error`/`text-error`) | Delete-item icon, failed-status badge, video error overlay icon |
-
-Accent reserved for: primary CTA fills ("Setujui & Simpan ke Logbook", "Setujui & Kunci"), the transcript-expanded toggle's active label color, the "Tinjau Sekarang" logbook-list link, the connected Jitsi container's subtle ring, and the admin cost-estimate stat-card icon — never used as a passive background tint on cards that aren't one of these specific interactive/branded elements.
-
----
-
 ## Registry Safety
 
 | Registry | Blocks Used | Safety Gate |
@@ -395,11 +384,11 @@ No component registry in use. `@jitsi/react-sdk` (npm, not a UI/shadcn registry 
 
 ## Checker Sign-Off
 
-- [ ] Dimension 1 Copywriting: PASS
-- [ ] Dimension 2 Visuals: PASS
-- [ ] Dimension 3 Color: PASS
-- [ ] Dimension 4 Typography: PASS
-- [ ] Dimension 5 Spacing: PASS
-- [ ] Dimension 6 Registry Safety: PASS
+- [x] Dimension 1 Copywriting: PASS
+- [x] Dimension 2 Visuals: PASS
+- [x] Dimension 3 Color: PASS
+- [x] Dimension 4 Typography: PASS
+- [x] Dimension 5 Spacing: PASS
+- [x] Dimension 6 Registry Safety: PASS
 
-**Approval:** pending
+**Approval:** approved (gsd-ui-checker, 2026-07-05) — see 06-CONTEXT.md/06-AI-SPEC.md/06-RESEARCH.md cross-check, no contradictions found
