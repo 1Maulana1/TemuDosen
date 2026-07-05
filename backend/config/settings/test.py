@@ -21,3 +21,7 @@ CORS_ALLOW_CREDENTIALS = True
 
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
+
+# Phase 6: run Celery tasks synchronously (no live Redis broker needed in tests)
+CELERY_TASK_ALWAYS_EAGER = True
+CELERY_TASK_EAGER_PROPAGATES = True
