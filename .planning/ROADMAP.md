@@ -144,15 +144,15 @@ Phases 4, 5, 7, and 8 (Google Calendar sync, session recording, advisory continu
   7. *(new, v2.3)* Online sessions run via in-app embedded Jitsi video instead of an external meeting link — ❌ NOT STARTED
   8. *(new, v2.3; revised 2026-07-05 per research finding)* For online sessions, the existing `useMediaRecorder` flow records lecturer-mic-only audio (identical to Phase 5's behavior), feeding the same STT pipeline as offline sessions. Full dual-party audio mixing (D-16) was found not implementable against the locked Jitsi iframe stack — cancelled, tracked as a deferred idea (D-19), not attempted this phase — ❌ NOT STARTED
 
-**Plans**: 5/9 plans executed
+**Plans**: 7/9 plans executed
 
 - [x] 06-01-PLAN.md
 - [x] 06-02-PLAN.md
 - [x] 06-03-PLAN.md
 - [x] 06-04-PLAN.md
 - [x] 06-05-PLAN.md
-- [ ] 06-06-PLAN.md
-- [ ] 06-07-PLAN.md
+- [x] 06-06-PLAN.md
+- [x] 06-07-PLAN.md
 - [ ] 06-08-PLAN.md
 - [ ] 06-09-PLAN.md
 
