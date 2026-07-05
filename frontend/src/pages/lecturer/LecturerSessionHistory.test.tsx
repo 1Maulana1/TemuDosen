@@ -1,7 +1,7 @@
 /**
  * Vitest tests for LecturerHistory (/dosen/riwayat) and LecturerSessionDetail
- * (/dosen/sesi/:id) — Phase 6 (UI-first, partial): riwayat sesi, rekaman,
- * ringkasan manual.
+ * (/dosen/sesi/:id) — Phase 6 (merge): riwayat sesi, rekaman, ringkasan via
+ * SessionLogbook (/api/logbook/).
  */
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
@@ -39,7 +39,7 @@ describe('LecturerHistory', () => {
           {
             id: 7, scheduled_at: '2026-07-04T09:00:00Z', ts2: '2026-07-04T10:00:00Z',
             mahasiswa_name: 'Budi Santoso', nim: '20230001', dosen_name: 'Dr. Rina Sari',
-            symptom_name: 'Metodologi', has_recording: true, has_summary: false,
+            symptom_name: 'Metodologi', has_recording: true, summary_status: 'pending',
             summary_approved_at: null,
           },
         ])
@@ -64,11 +64,12 @@ describe('LecturerHistory', () => {
 describe('LecturerSessionDetail', () => {
   beforeEach(() => {
     server.use(
-      http.get('/api/queue/7/summary/', () =>
+      http.get('/api/logbook/7/', () =>
         HttpResponse.json({
-          id: 7, mahasiswa_name: 'Budi Santoso', nim: '20230001', dosen_name: 'Dr. Rina Sari',
+          session_id: 7, mahasiswa_name: 'Budi Santoso', nim: '20230001', dosen_name: 'Dr. Rina Sari',
           scheduled_at: '2026-07-04T09:00:00Z', ts1: '2026-07-04T09:05:00Z', ts2: '2026-07-04T10:00:00Z',
-          has_recording: true, summary: '', summary_approved_at: null,
+          has_recording: true, status: 'pending', is_manual: false,
+          transcript: '', summary_raw: {}, summary_edited: null, approved_at: null,
         })
       )
     );
@@ -88,38 +89,19 @@ describe('LecturerSessionDetail', () => {
     expect(screen.getByRole('button', { name: /Setujui & Kirim/i })).toBeDisabled();
   });
 
-  it('saving a draft calls PATCH with the typed summary', async () => {
+  it('approving a pending logbook posts manual notes and shows the approved badge', async () => {
     let capturedBody: unknown = null;
     server.use(
-      http.patch('/api/queue/7/summary/', async ({ request }) => {
+      http.post('/api/logbook/7/manual-notes/', async ({ request }) => {
         capturedBody = await request.json();
         return HttpResponse.json({
-          id: 7, mahasiswa_name: 'Budi Santoso', nim: '20230001', dosen_name: 'Dr. Rina Sari',
+          session_id: 7, mahasiswa_name: 'Budi Santoso', nim: '20230001', dosen_name: 'Dr. Rina Sari',
           scheduled_at: '2026-07-04T09:00:00Z', ts1: null, ts2: '2026-07-04T10:00:00Z',
-          has_recording: true, summary: 'Draf ringkasan.', summary_approved_at: null,
+          has_recording: true, status: 'approved', is_manual: true,
+          transcript: '', summary_raw: {}, summary_edited: { manual_notes: 'Sudah bagus.' },
+          approved_at: '2026-07-04T10:05:00Z',
         });
       })
-    );
-    renderDetail();
-    await waitFor(() => expect(screen.getByText('Budi Santoso')).toBeInTheDocument());
-
-    const textarea = screen.getByPlaceholderText(/Tuliskan ringkasan/i);
-    fireEvent.change(textarea, { target: { value: 'Draf ringkasan.' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Simpan Draf' }));
-
-    await waitFor(() => expect(capturedBody).toEqual({ summary: 'Draf ringkasan.', approve: false }));
-    await waitFor(() => expect(screen.getByText('Draf ringkasan disimpan.')).toBeInTheDocument());
-  });
-
-  it('approving shows the approved badge', async () => {
-    server.use(
-      http.patch('/api/queue/7/summary/', () =>
-        HttpResponse.json({
-          id: 7, mahasiswa_name: 'Budi Santoso', nim: '20230001', dosen_name: 'Dr. Rina Sari',
-          scheduled_at: '2026-07-04T09:00:00Z', ts1: null, ts2: '2026-07-04T10:00:00Z',
-          has_recording: true, summary: 'Sudah bagus.', summary_approved_at: '2026-07-04T10:05:00Z',
-        })
-      )
     );
     renderDetail();
     await waitFor(() => expect(screen.getByText('Budi Santoso')).toBeInTheDocument());
@@ -127,6 +109,7 @@ describe('LecturerSessionDetail', () => {
     fireEvent.change(screen.getByPlaceholderText(/Tuliskan ringkasan/i), { target: { value: 'Sudah bagus.' } });
     fireEvent.click(screen.getByRole('button', { name: /Setujui & Kirim/i }));
 
+    await waitFor(() => expect(capturedBody).toEqual({ notes: 'Sudah bagus.' }));
     await waitFor(() => expect(screen.getByText(/Disetujui \d/)).toBeInTheDocument());
   });
 });

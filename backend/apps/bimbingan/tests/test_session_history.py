@@ -2,15 +2,16 @@
 Phase 6 (partial, UI-first) — riwayat sesi, rekaman audio, ringkasan manual.
 
 Covers:
-  GET   /api/queue/lecturer/history/ → LecturerSessionHistoryView
-  GET   /api/queue/my/history/       → StudentSessionHistoryView
-  GET   /api/queue/<id>/recording/   → SessionRecordingFileView
-  GET   /api/queue/<id>/summary/     → SessionSummaryView (view)
-  PATCH /api/queue/<id>/summary/     → SessionSummaryView (edit/approve)
+  GET  /api/queue/lecturer/history/       → LecturerSessionHistoryView
+  GET  /api/queue/my/history/             → StudentSessionHistoryView
+  GET  /api/queue/<id>/recording/         → SessionRecordingFileView
+  GET  /api/logbook/<id>/                 → LecturerLogbookDetailView
+  GET  /api/logbook/student/<id>/         → StudentLogbookView
+  POST /api/logbook/<id>/manual-notes/    → ManualNotesView (fallback STT-07)
 
-No STT/LLM automation exists yet — `summary` is filled in manually by the
-lecturer (the spec's own fallback path for when the automatic pipeline isn't
-available), so these tests only exercise the manual CRUD + permission paths.
+Ringkasan kini disimpan di SessionLogbook (apps.logbook), bukan Session.summary.
+STT/LLM otomatis belum ada — dosen mengisi via jalur manual (manual-notes), yang
+menyetujui logbook (status pending → approved, is_manual=True).
 """
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -150,50 +151,66 @@ class TestSessionRecordingFileView:
 
 
 @pytest.mark.django_db
-class TestSessionSummaryView:
-    def test_student_can_view_summary(self, lecturer_user, advisee_student, pending_submission):
-        session = _done_session(lecturer_user, pending_submission)
-        resp = client_for(advisee_student).get(f'/api/queue/{session.id}/summary/')
-        assert resp.status_code == 200
-        assert resp.data['summary'] == ''
-        assert resp.data['summary_approved_at'] is None
+class TestSessionLogbookView:
+    """Phase 6 (merge): ringkasan pindah ke SessionLogbook via /api/logbook/.
 
-    def test_lecturer_can_save_draft_summary(self, lecturer_user, pending_submission):
+    _done_session() otomatis membuat SessionLogbook (status pending) saat sesi
+    selesai, jadi setiap sesi selesai punya logbook yang bisa diisi manual.
+    """
+
+    def test_lecturer_can_read_own_logbook(self, lecturer_user, pending_submission):
         session = _done_session(lecturer_user, pending_submission)
-        resp = client_for(lecturer_user).patch(
-            f'/api/queue/{session.id}/summary/', {'summary': 'Draf ringkasan.'}, format='json'
+        resp = client_for(lecturer_user).get(f'/api/logbook/{session.id}/')
+        assert resp.status_code == 200
+        assert resp.data['status'] == 'pending'
+        assert resp.data['summary_edited'] is None
+
+    def test_student_cannot_view_unapproved_logbook(
+        self, lecturer_user, advisee_student, pending_submission
+    ):
+        session = _done_session(lecturer_user, pending_submission)
+        resp = client_for(advisee_student).get(f'/api/logbook/student/{session.id}/')
+        assert resp.status_code == 403  # pending → konten tak pernah bocor (STT-06)
+
+    def test_manual_notes_approves_logbook(self, lecturer_user, pending_submission):
+        session = _done_session(lecturer_user, pending_submission)
+        resp = client_for(lecturer_user).post(
+            f'/api/logbook/{session.id}/manual-notes/',
+            {'notes': 'Sudah bagus, lanjut bab 4.'}, format='json',
         )
         assert resp.status_code == 200
-        assert resp.data['summary'] == 'Draf ringkasan.'
-        assert resp.data['summary_approved_at'] is None
+        assert resp.data['status'] == 'approved'
+        assert resp.data['is_manual'] is True
+        assert resp.data['summary_edited'] == {'manual_notes': 'Sudah bagus, lanjut bab 4.'}
+        assert resp.data['approved_at'] is not None
 
-    def test_approve_requires_non_empty_summary(self, lecturer_user, pending_submission):
+    def test_student_sees_summary_after_approval(
+        self, lecturer_user, advisee_student, pending_submission
+    ):
         session = _done_session(lecturer_user, pending_submission)
-        resp = client_for(lecturer_user).patch(
-            f'/api/queue/{session.id}/summary/', {'approve': True}, format='json'
+        client_for(lecturer_user).post(
+            f'/api/logbook/{session.id}/manual-notes/',
+            {'notes': 'Lanjutkan.'}, format='json',
+        )
+        resp = client_for(advisee_student).get(f'/api/logbook/student/{session.id}/')
+        assert resp.status_code == 200
+        assert resp.data['summary_edited'] == {'manual_notes': 'Lanjutkan.'}
+
+    def test_manual_notes_empty_rejected(self, lecturer_user, pending_submission):
+        session = _done_session(lecturer_user, pending_submission)
+        resp = client_for(lecturer_user).post(
+            f'/api/logbook/{session.id}/manual-notes/', {'notes': '   '}, format='json'
         )
         assert resp.status_code == 400
 
-    def test_approve_sets_timestamp(self, lecturer_user, pending_submission):
+    def test_student_cannot_write_notes(self, lecturer_user, advisee_student, pending_submission):
         session = _done_session(lecturer_user, pending_submission)
-        resp = client_for(lecturer_user).patch(
-            f'/api/queue/{session.id}/summary/',
-            {'summary': 'Sudah bagus, lanjut bab 4.', 'approve': True},
-            format='json',
-        )
-        assert resp.status_code == 200
-        assert resp.data['summary_approved_at'] is not None
-
-    def test_student_cannot_edit_summary(self, lecturer_user, advisee_student, pending_submission):
-        session = _done_session(lecturer_user, pending_submission)
-        resp = client_for(advisee_student).patch(
-            f'/api/queue/{session.id}/summary/', {'summary': 'coba edit'}, format='json'
+        resp = client_for(advisee_student).post(
+            f'/api/logbook/{session.id}/manual-notes/', {'notes': 'coba edit'}, format='json'
         )
         assert resp.status_code == 403
 
-    def test_unrelated_lecturer_forbidden(
-        self, lecturer_user, pending_submission, second_advisee_student, symptom_category
-    ):
+    def test_unrelated_lecturer_forbidden(self, lecturer_user, pending_submission):
         from apps.accounts.models import CustomUser
 
         other_lecturer = CustomUser.objects.create_user(
@@ -201,7 +218,7 @@ class TestSessionSummaryView:
             full_name='Dr. Lain', nidn='9999999999', is_approved=True,
         )
         session = _done_session(lecturer_user, pending_submission)
-        resp = client_for(other_lecturer).patch(
-            f'/api/queue/{session.id}/summary/', {'summary': 'mencoba'}, format='json'
+        resp = client_for(other_lecturer).post(
+            f'/api/logbook/{session.id}/manual-notes/', {'notes': 'mencoba'}, format='json'
         )
         assert resp.status_code == 403

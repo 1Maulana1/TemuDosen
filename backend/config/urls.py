@@ -28,6 +28,7 @@ from apps.bimbingan.urls import (
     admin_urlpatterns, ketua_jurusan_urlpatterns, action_item_urlpatterns,
 )
 from apps.symptoms.urls import router as symptoms_router
+from apps.logbook.urls import logbook_urlpatterns
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -56,4 +57,6 @@ urlpatterns = [
     path('api/ketua-jurusan/', include((ketua_jurusan_urlpatterns, 'ketua-jurusan'))),
     # Phase 3: Action items (FR-KP04)
     path('api/action-items/', include((action_item_urlpatterns, 'action-items'))),
+    # Phase 6: Logbook (STT/AI summarization + manual fallback) — menggantikan /api/queue/<id>/summary/
+    path('api/logbook/', include((logbook_urlpatterns, 'logbook'))),
 ]

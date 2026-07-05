@@ -45,7 +45,6 @@ from .serializers import (
     RejectSubmissionSerializer,
     SessionDetailSerializer,
     SessionHistorySerializer,
-    SessionSummaryDetailSerializer,
     StudentQueueSerializer,
 )
 from .services import calendar as cal_service
@@ -583,75 +582,6 @@ class SessionRecordingFileView(APIView):
         return response
 
 
-class SessionSummaryView(APIView):
-    """
-    GET   /api/queue/<id>/summary/ — lihat status rekaman + ringkasan sesi.
-    PATCH /api/queue/<id>/summary/ — dosen mengisi/mengedit ringkasan manual,
-                                       opsional langsung menyetujui (approve=true).
-    """
-    permission_classes = [_permissions.IsAuthenticated]
-
-    def get(self, request, pk):
-        try:
-            session = Session.objects.select_related(
-                'submission__student__adviser', 'recording'
-            ).get(pk=pk)
-        except Session.DoesNotExist:
-            return Response({'detail': 'Sesi tidak ditemukan.'}, status=status.HTTP_404_NOT_FOUND)
-
-        if not _can_view_session(session, request.user):
-            return Response({'detail': 'Anda tidak memiliki izin.'}, status=status.HTTP_403_FORBIDDEN)
-
-        serializer = SessionSummaryDetailSerializer(session)
-        return Response(serializer.data)
-
-    def patch(self, request, pk):
-        try:
-            session = Session.objects.select_related('submission__student__adviser').get(pk=pk)
-        except Session.DoesNotExist:
-            return Response({'detail': 'Sesi tidak ditemukan.'}, status=status.HTTP_404_NOT_FOUND)
-
-        adviser = session.submission.student.adviser
-        if adviser is None or request.user != adviser:
-            return Response(
-                {'detail': 'Hanya dosen pembimbing yang dapat mengubah ringkasan.'},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
-        if session.status != Session.Status.DONE:
-            return Response(
-                {'detail': 'Ringkasan hanya dapat diisi untuk sesi yang sudah selesai.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        summary = request.data.get('summary')
-        approve = bool(request.data.get('approve'))
-
-        if summary is not None:
-            session.summary = str(summary).strip()
-
-        if approve:
-            if not session.summary:
-                return Response(
-                    {'detail': 'Ringkasan tidak boleh kosong sebelum disetujui.'},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-            session.summary_approved_at = timezone.now()
-
-        session.save(update_fields=['summary', 'summary_approved_at', 'updated_at'])
-
-        if approve:
-            notify_student(
-                session.submission.student,
-                'Ringkasan hasil bimbingan Anda sudah tersedia.',
-                session=session,
-                event_type='SUMMARY_APPROVED',
-            )
-
-        serializer = SessionSummaryDetailSerializer(session)
-        return Response(serializer.data)
-
-
 # ── Google Calendar OAuth ──────────────────────────────────────────────────────
 
 class CalendarAuthView(APIView):
@@ -948,7 +878,31 @@ class CompleteSessionView(APIView):
 
         recording = None
         if audio is not None:
-            recording = self._save_recording(session, audio)
+            # Durasi opsional dari klien (MediaRecorder); STT bisa menimpanya nanti.
+            try:
+                duration = float(request.data.get('duration_seconds'))
+            except (TypeError, ValueError):
+                duration = None
+            recording = self._save_recording(session, audio, duration_seconds=duration)
+
+        # Phase 6: setiap sesi selesai punya satu SessionLogbook. Bila STT_LLM_ENABLED
+        # aktif & ada rekaman, pipeline STT->LLM dijalankan (status → transcribing);
+        # selain itu logbook tetap pending untuk diisi dosen via jalur manual (STT-07).
+        from apps.logbook.models import SessionLogbook
+        from apps.logbook.tasks import dispatch_pipeline
+        logbook, _created = SessionLogbook.objects.get_or_create(
+            session=session,
+            defaults={
+                'status': SessionLogbook.Status.PENDING,
+                'source_mode': session.method or SessionLogbook.SourceMode.OFFLINE,
+                'summary_edited': {'manual_notes': notes} if notes else None,
+            },
+        )
+        if recording is not None:
+            try:
+                dispatch_pipeline(logbook)
+            except Exception:
+                logger.exception('Gagal memulai pipeline STT/LLM untuk logbook #%s', logbook.id)
 
         notify_student(
             session.submission.student,
@@ -974,7 +928,7 @@ class CompleteSessionView(APIView):
             'has_recording': recording is not None,
         })
 
-    def _save_recording(self, session, audio):
+    def _save_recording(self, session, audio, duration_seconds=None):
         """Simpan file audio ke MEDIA_ROOT/recordings/<uuid>.<ext> (pola SubmissionFile)."""
         import os
         import uuid as _uuid
@@ -999,6 +953,7 @@ class CompleteSessionView(APIView):
             file_path=file_path,
             file_size=audio.size,
             mime_type=content_type or 'audio/webm',
+            duration_seconds=duration_seconds,
         )
 
 

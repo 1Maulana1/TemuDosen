@@ -94,12 +94,14 @@ export default function LecturerHistory() {
                     ) : (
                       <span className="text-[11px] text-on-surface-variant bg-gray-100 rounded-full px-2 py-0.5">Tanpa rekaman</span>
                     )}
-                    {item.summary_approved_at ? (
+                    {item.summary_status === 'approved' ? (
                       <span className="inline-flex items-center gap-1 text-[11px] font-bold text-success bg-success/10 rounded-full px-2 py-0.5">
                         <span className="material-symbols-outlined text-sm" aria-hidden="true">check_circle</span>Disetujui
                       </span>
-                    ) : item.has_summary ? (
-                      <span className="text-[11px] font-bold text-warning bg-warning/10 rounded-full px-2 py-0.5">Draf ringkasan</span>
+                    ) : item.summary_status === 'ready_for_review' ? (
+                      <span className="text-[11px] font-bold text-warning bg-warning/10 rounded-full px-2 py-0.5">Menunggu tinjauan</span>
+                    ) : item.summary_status === 'failed' ? (
+                      <span className="text-[11px] font-bold text-error bg-error/10 rounded-full px-2 py-0.5">Gagal diringkas</span>
                     ) : (
                       <span className="text-[11px] text-on-surface-variant bg-gray-100 rounded-full px-2 py-0.5">Belum diringkas</span>
                     )}

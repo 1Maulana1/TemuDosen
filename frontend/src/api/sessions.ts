@@ -148,9 +148,13 @@ export async function rejectSubmission(id: number, payload: RejectPayload): Prom
   return res.json();
 }
 
-// ── Phase 6 (partial): riwayat sesi, rekaman, ringkasan manual ─────────────────
-// STT/LLM otomatis belum ada — dosen mengisi ringkasan secara manual sebagai
-// fallback resmi selama pipeline otomatis belum dibangun (lihat backend).
+// ── Phase 6 (merge): riwayat sesi + logbook (STT/AI + fallback manual) ─────────
+// Ringkasan kini disimpan di SessionLogbook (apps.logbook), bukan Session.summary.
+// Detail/approve/manual pindah dari /api/queue/<id>/summary/ ke /api/logbook/.
+
+export type LogbookStatus =
+  | 'pending' | 'transcribing' | 'summarizing'
+  | 'ready_for_review' | 'approved' | 'failed';
 
 export interface SessionHistoryItem {
   id: number;
@@ -161,12 +165,20 @@ export interface SessionHistoryItem {
   dosen_name: string;
   symptom_name: string;
   has_recording: boolean;
-  has_summary: boolean;
+  summary_status: LogbookStatus | null; // dulu: has_summary (boolean)
   summary_approved_at: string | null;
 }
 
-export interface SessionSummaryDetail {
-  id: number;
+// Ringkasan terstruktur hasil AI (schemas.SessionSummary). Untuk jalur manual,
+// backend mengisi { manual_notes } sebagai gantinya.
+export interface SessionSummaryContent {
+  advice_points?: { topic: string; detail: string }[];
+  improvement_notes?: { area: string; action: string }[];
+  manual_notes?: string;
+}
+
+export interface LogbookDetail {
+  session_id: number;
   mahasiswa_name: string;
   nim: string;
   dosen_name: string;
@@ -174,8 +186,12 @@ export interface SessionSummaryDetail {
   ts1: string | null;
   ts2: string | null;
   has_recording: boolean;
-  summary: string;
-  summary_approved_at: string | null;
+  status: LogbookStatus;
+  is_manual: boolean;
+  transcript: string;
+  summary_raw: SessionSummaryContent;
+  summary_edited: SessionSummaryContent | null;
+  approved_at: string | null;
 }
 
 export async function getLecturerSessionHistory(): Promise<SessionHistoryItem[]> {
@@ -190,26 +206,54 @@ export async function getStudentSessionHistory(): Promise<SessionHistoryItem[]> 
   return res.json();
 }
 
-export async function getSessionSummary(sessionId: number): Promise<SessionSummaryDetail> {
-  const res = await apiRequest(`/api/queue/${sessionId}/summary/`);
+/** Dosen: detail logbook (transkrip + ringkasan raw/editan). */
+export async function getLogbookDetail(sessionId: number): Promise<LogbookDetail> {
+  const res = await apiRequest(`/api/logbook/${sessionId}/`);
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error((body as { detail?: string }).detail ?? 'Gagal memuat ringkasan sesi.');
+    throw new Error((body as { detail?: string }).detail ?? 'Gagal memuat logbook.');
   }
   return res.json();
 }
 
-export async function saveSessionSummary(
+/** Mahasiswa: hanya logbook miliknya yang sudah disetujui. */
+export async function getStudentLogbookDetail(sessionId: number): Promise<LogbookDetail> {
+  const res = await apiRequest(`/api/logbook/student/${sessionId}/`);
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error((body as { detail?: string }).detail ?? 'Ringkasan belum tersedia.');
+  }
+  return res.json();
+}
+
+/** Dosen menyetujui logbook ready_for_review dengan ringkasan editan. */
+export async function approveLogbook(
   sessionId: number,
-  opts: { summary?: string; approve?: boolean }
-): Promise<SessionSummaryDetail> {
-  const res = await apiRequest(`/api/queue/${sessionId}/summary/`, {
-    method: 'PATCH',
-    body: JSON.stringify(opts),
+  summaryEdited: SessionSummaryContent
+): Promise<LogbookDetail> {
+  const res = await apiRequest(`/api/logbook/${sessionId}/approve/`, {
+    method: 'POST',
+    body: JSON.stringify({ summary_edited: summaryEdited }),
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error((body as { detail?: string }).detail ?? 'Gagal menyimpan ringkasan.');
+    throw new Error((body as { detail?: string }).detail ?? 'Gagal menyetujui ringkasan.');
+  }
+  return res.json();
+}
+
+/** Fallback manual (STT-07): dosen menulis catatan bebas saat pipeline gagal/mati. */
+export async function saveManualNotes(
+  sessionId: number,
+  notes: string
+): Promise<LogbookDetail> {
+  const res = await apiRequest(`/api/logbook/${sessionId}/manual-notes/`, {
+    method: 'POST',
+    body: JSON.stringify({ notes }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error((body as { detail?: string }).detail ?? 'Gagal menyimpan catatan.');
   }
   return res.json();
 }

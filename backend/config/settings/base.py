@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     'apps.submissions',
     'apps.symptoms',
     'apps.bimbingan',
+    'apps.logbook',
     'core',
 ]
 
@@ -130,3 +131,31 @@ DOSEN_DAILY_QUOTA_MINUTES = env.int('DOSEN_DAILY_QUOTA_MINUTES', default=480)
 # Phase 5 (SESSION-03/04): batas ukuran upload rekaman audio sesi; default 100MB
 # (~2 jam Opus 64kbps masih jauh di bawah ini)
 RECORDING_MAX_UPLOAD_SIZE = env.int('RECORDING_MAX_UPLOAD_SIZE', default=100 * 1024 * 1024)
+
+# ── Phase 6: STT + AI Summarization + Logbook (Celery/Redis/faster-whisper/Anthropic) ──
+# Celery broker (Redis). CELERY_RESULT_BACKEND sengaja TIDAK diset — semua task
+# ignore_result=True (lihat apps/logbook/tasks.py), status dilacak di SessionLogbook.
+CELERY_BROKER_URL = env('CELERY_BROKER_URL', default='redis://redis:6379/0')
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TIMEZONE = TIME_ZONE  # 'Asia/Jakarta'
+CELERY_TASK_TIME_LIMIT = 60 * 60 * 4  # ceiling di atas LLM_BATCH_TIMEOUT_MINUTES (D-08)
+
+# Feature flag: mematikan (default) seluruh pipeline STT->LLM → setiap sesi jatuh ke
+# editor catatan manual (graceful degradation, STT-07). "Belum ada API key" = aman.
+STT_LLM_ENABLED = env.bool('STT_LLM_ENABLED', default=False)  # D-04
+
+# faster-whisper (D-01)
+STT_MODEL_SIZE = env('STT_MODEL_SIZE', default='small')
+STT_COMPUTE_TYPE = env('STT_COMPUTE_TYPE', default='int8')
+STT_LANGUAGE = env('STT_LANGUAGE', default='id')
+STT_MODEL_DOWNLOAD_ROOT = env('STT_MODEL_DOWNLOAD_ROOT', default=str(BASE_DIR / 'storage' / 'whisper_models'))
+
+# Anthropic LLM summarization (D-04). Model id harus valid — jangan disubstitusi.
+LLM_MODEL = env('LLM_MODEL', default='claude-haiku-4-5')
+ANTHROPIC_API_KEY = env('ANTHROPIC_API_KEY', default='')
+LLM_BATCH_TIMEOUT_MINUTES = env.int('LLM_BATCH_TIMEOUT_MINUTES', default=180)  # D-08
+MAX_TRANSCRIPT_TOKENS = env.int('MAX_TRANSCRIPT_TOKENS', default=48000)
+# Tarif untuk estimasi biaya (D-11), disimpan ke SessionLogbook.llm_cost_estimate_idr.
+LLM_INPUT_RATE_USD_PER_MTOK = env.float('LLM_INPUT_RATE_USD_PER_MTOK', default=0.50)
+LLM_OUTPUT_RATE_USD_PER_MTOK = env.float('LLM_OUTPUT_RATE_USD_PER_MTOK', default=2.50)
+USD_TO_IDR_RATE = env.float('USD_TO_IDR_RATE', default=16000.0)

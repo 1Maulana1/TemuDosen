@@ -21,3 +21,10 @@ CORS_ALLOW_CREDENTIALS = True
 
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
+
+# Phase 6: jalankan task Celery sinkron di test (tanpa broker Redis). Hanya
+# berpengaruh jika `celery` terpasang; jalur graceful-degradation diuji tanpa
+# dependency berat karena STT_LLM_ENABLED tetap False.
+CELERY_TASK_ALWAYS_EAGER = True
+CELERY_TASK_EAGER_PROPAGATES = True
+STT_LLM_ENABLED = False

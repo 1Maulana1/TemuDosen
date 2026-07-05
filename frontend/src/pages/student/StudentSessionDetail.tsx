@@ -7,7 +7,7 @@
  */
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useParams, useRouteLoaderData } from 'react-router';
-import { getSessionSummary, getSessionRecordingUrl, type SessionSummaryDetail } from '../../api/sessions';
+import { getStudentLogbookDetail, getSessionRecordingUrl, type LogbookDetail, type SessionSummaryContent } from '../../api/sessions';
 import { logout, type User } from '../../api/auth';
 import { AppNavbar, AppBottomNav, NAV_ITEMS } from '../../components/AppNav';
 
@@ -18,20 +18,31 @@ function fmtDateTime(iso: string | null): string {
   } catch { return '-'; }
 }
 
+function summaryToText(c: SessionSummaryContent | null | undefined): string {
+  if (!c) return '';
+  if (c.manual_notes) return c.manual_notes;
+  const lines: string[] = [];
+  for (const a of c.advice_points ?? []) lines.push(`• ${a.topic}: ${a.detail}`);
+  for (const n of c.improvement_notes ?? []) lines.push(`→ ${n.area}: ${n.action}`);
+  return lines.join('\n');
+}
+
 export default function StudentSessionDetail() {
   const user = useRouteLoaderData('mahasiswa') as User;
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const sessionId = Number(id);
 
-  const [data, setData] = useState<SessionSummaryDetail | null>(null);
+  const [data, setData] = useState<LogbookDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(() => {
     setLoading(true);
     setError(null);
-    getSessionSummary(sessionId)
+    // Endpoint mahasiswa hanya mengembalikan logbook yang SUDAH disetujui;
+    // sebelum itu → 403 "Ringkasan belum tersedia." (tampil sebagai state menunggu).
+    getStudentLogbookDetail(sessionId)
       .then(setData)
       .catch((e) => setError(e instanceof Error ? e.message : 'Gagal memuat sesi.'))
       .finally(() => setLoading(false));
@@ -43,8 +54,6 @@ export default function StudentSessionDetail() {
     await logout();
     navigate('/login');
   }
-
-  const isApproved = !!data?.summary_approved_at;
 
   return (
     <div className="bg-gray-50 min-h-screen flex flex-col">
@@ -64,9 +73,16 @@ export default function StudentSessionDetail() {
         )}
 
         {!loading && error && (
-          <div className="bg-error/5 border border-error/20 rounded-xl p-4 text-center" aria-live="assertive">
-            <p className="text-sm text-error">{error}</p>
-          </div>
+          error.toLowerCase().includes('belum tersedia') ? (
+            <div className="bg-surface rounded-2xl border border-gray-200 shadow-sm p-5 flex flex-col items-center text-center py-10" aria-live="polite">
+              <span className="material-symbols-outlined text-gray-300 text-3xl mb-2" aria-hidden="true">hourglass_top</span>
+              <p className="text-sm text-on-surface-variant">Ringkasan belum tersedia — menunggu dosen mengisi dan menyetujuinya.</p>
+            </div>
+          ) : (
+            <div className="bg-error/5 border border-error/20 rounded-xl p-4 text-center" aria-live="assertive">
+              <p className="text-sm text-error">{error}</p>
+            </div>
+          )
         )}
 
         {!loading && !error && data && (
@@ -105,20 +121,11 @@ export default function StudentSessionDetail() {
             <section>
               <h2 className="font-headline font-bold text-lg text-slate-900 mb-3">Ringkasan Hasil Bimbingan</h2>
               <div className="bg-surface rounded-2xl border border-gray-200 shadow-sm p-5">
-                {isApproved ? (
-                  <>
-                    <div className="flex items-center gap-1.5 mb-3 text-[11px] font-bold text-success bg-success/10 rounded-full px-2 py-1 w-fit">
-                      <span className="material-symbols-outlined text-sm" aria-hidden="true">check_circle</span>
-                      Disetujui dosen {fmtDateTime(data.summary_approved_at)}
-                    </div>
-                    <p className="text-sm text-slate-700 whitespace-pre-wrap">{data.summary}</p>
-                  </>
-                ) : (
-                  <div className="flex flex-col items-center text-center py-6">
-                    <span className="material-symbols-outlined text-gray-300 text-3xl mb-2" aria-hidden="true">hourglass_top</span>
-                    <p className="text-sm text-on-surface-variant">Ringkasan belum tersedia — menunggu dosen mengisi dan menyetujuinya.</p>
-                  </div>
-                )}
+                <div className="flex items-center gap-1.5 mb-3 text-[11px] font-bold text-success bg-success/10 rounded-full px-2 py-1 w-fit">
+                  <span className="material-symbols-outlined text-sm" aria-hidden="true">check_circle</span>
+                  Disetujui dosen {fmtDateTime(data.approved_at)}
+                </div>
+                <p className="text-sm text-slate-700 whitespace-pre-wrap">{summaryToText(data.summary_edited)}</p>
               </div>
             </section>
           </>

@@ -151,19 +151,25 @@ class LecturerQueueItemSerializer(serializers.ModelSerializer):
 # ── Phase 6 (partial): riwayat sesi + ringkasan manual ─────────────────────────
 
 class SessionHistorySerializer(serializers.ModelSerializer):
-    """Baris ringkas untuk daftar riwayat sesi (dosen & mahasiswa)."""
+    """Baris ringkas untuk daftar riwayat sesi (dosen & mahasiswa).
+
+    Phase 6 merge: status ringkasan kini dibaca dari relasi `logbook`
+    (SessionLogbook) — bukan lagi field Session.summary yang sudah dihapus.
+    Detail ringkasan pindah ke endpoint /api/logbook/ (LogbookDetailSerializer).
+    """
     mahasiswa_name = serializers.CharField(source='submission.student.full_name', read_only=True)
     nim = serializers.CharField(source='submission.student.nim', read_only=True)
     dosen_name = serializers.SerializerMethodField()
     symptom_name = serializers.SerializerMethodField()
     has_recording = serializers.SerializerMethodField()
-    has_summary = serializers.SerializerMethodField()
+    summary_status = serializers.SerializerMethodField()
+    summary_approved_at = serializers.SerializerMethodField()
 
     class Meta:
         model = Session
         fields = [
             'id', 'scheduled_at', 'ts2', 'mahasiswa_name', 'nim', 'dosen_name',
-            'symptom_name', 'has_recording', 'has_summary', 'summary_approved_at',
+            'symptom_name', 'has_recording', 'summary_status', 'summary_approved_at',
         ]
 
     def get_dosen_name(self, obj):
@@ -177,27 +183,10 @@ class SessionHistorySerializer(serializers.ModelSerializer):
     def get_has_recording(self, obj):
         return hasattr(obj, 'recording')
 
-    def get_has_summary(self, obj):
-        return bool(obj.summary)
+    def get_summary_status(self, obj):
+        logbook = getattr(obj, 'logbook', None)
+        return logbook.status if logbook else None
 
-
-class SessionSummaryDetailSerializer(serializers.ModelSerializer):
-    """Detail 1 sesi: info dasar + status rekaman + ringkasan (editable oleh dosen)."""
-    mahasiswa_name = serializers.CharField(source='submission.student.full_name', read_only=True)
-    nim = serializers.CharField(source='submission.student.nim', read_only=True)
-    dosen_name = serializers.SerializerMethodField()
-    has_recording = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Session
-        fields = [
-            'id', 'mahasiswa_name', 'nim', 'dosen_name', 'scheduled_at', 'ts1', 'ts2',
-            'has_recording', 'summary', 'summary_approved_at',
-        ]
-
-    def get_dosen_name(self, obj):
-        dosen = obj.submission.student.adviser
-        return dosen.full_name if dosen else ''
-
-    def get_has_recording(self, obj):
-        return hasattr(obj, 'recording')
+    def get_summary_approved_at(self, obj):
+        logbook = getattr(obj, 'logbook', None)
+        return logbook.approved_at if logbook else None

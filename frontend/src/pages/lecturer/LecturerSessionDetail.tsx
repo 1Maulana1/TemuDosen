@@ -11,8 +11,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useParams, useRouteLoaderData } from 'react-router';
 import {
-  getSessionSummary, saveSessionSummary, getSessionRecordingUrl,
-  type SessionSummaryDetail,
+  getLogbookDetail, approveLogbook, saveManualNotes, getSessionRecordingUrl,
+  type LogbookDetail, type SessionSummaryContent,
 } from '../../api/sessions';
 import { logout, type User } from '../../api/auth';
 import { AppNavbar, AppBottomNav, NAV_ITEMS } from '../../components/AppNav';
@@ -24,24 +24,34 @@ function fmtDateTime(iso: string | null): string {
   } catch { return '-'; }
 }
 
+/** Ratakan ringkasan (manual atau terstruktur AI) menjadi teks untuk textarea. */
+function summaryToText(c: SessionSummaryContent | null | undefined): string {
+  if (!c) return '';
+  if (c.manual_notes) return c.manual_notes;
+  const lines: string[] = [];
+  for (const a of c.advice_points ?? []) lines.push(`• ${a.topic}: ${a.detail}`);
+  for (const n of c.improvement_notes ?? []) lines.push(`→ ${n.area}: ${n.action}`);
+  return lines.join('\n');
+}
+
 export default function LecturerSessionDetail() {
   const user = useRouteLoaderData('dosen') as User;
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const sessionId = Number(id);
 
-  const [data, setData] = useState<SessionSummaryDetail | null>(null);
+  const [data, setData] = useState<LogbookDetail | null>(null);
   const [summaryDraft, setSummaryDraft] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState<'draft' | 'approve' | null>(null);
+  const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
 
   const load = useCallback(() => {
     setLoading(true);
     setError(null);
-    getSessionSummary(sessionId)
-      .then((d) => { setData(d); setSummaryDraft(d.summary); })
+    getLogbookDetail(sessionId)
+      .then((d) => { setData(d); setSummaryDraft(summaryToText(d.summary_edited ?? d.summary_raw)); })
       .catch((e) => setError(e instanceof Error ? e.message : 'Gagal memuat sesi.'))
       .finally(() => setLoading(false));
   }, [sessionId]);
@@ -53,22 +63,26 @@ export default function LecturerSessionDetail() {
     navigate('/login');
   }
 
-  async function handleSave(approve: boolean) {
-    setSaving(approve ? 'approve' : 'draft');
+  async function handleApprove() {
+    if (!data) return;
+    setSaving(true);
     setMsg('');
     try {
-      const updated = await saveSessionSummary(sessionId, { summary: summaryDraft, approve });
+      // AI menghasilkan draf → approve dengan ringkasan editan; selain itu jalur manual (STT-07).
+      const updated = data.status === 'ready_for_review'
+        ? await approveLogbook(sessionId, { manual_notes: summaryDraft })
+        : await saveManualNotes(sessionId, summaryDraft);
       setData(updated);
-      setMsg(approve ? 'Ringkasan disetujui — mahasiswa sekarang bisa melihatnya.' : 'Draf ringkasan disimpan.');
+      setMsg('Ringkasan disetujui — mahasiswa sekarang bisa melihatnya.');
     } catch (e) {
       setMsg(e instanceof Error ? e.message : 'Gagal menyimpan.');
     } finally {
-      setSaving(null);
+      setSaving(false);
       setTimeout(() => setMsg(''), 5000);
     }
   }
 
-  const isApproved = !!data?.summary_approved_at;
+  const isApproved = data?.status === 'approved';
 
   return (
     <div className="bg-gray-50 min-h-screen flex flex-col">
@@ -134,32 +148,34 @@ export default function LecturerSessionDetail() {
                 {isApproved && (
                   <span className="inline-flex items-center gap-1 text-[11px] font-bold text-success bg-success/10 rounded-full px-2 py-1">
                     <span className="material-symbols-outlined text-sm" aria-hidden="true">check_circle</span>
-                    Disetujui {fmtDateTime(data.summary_approved_at)}
+                    Disetujui {fmtDateTime(data.approved_at)}
                   </span>
                 )}
               </div>
               <div className="bg-surface rounded-2xl border border-gray-200 shadow-sm p-5 space-y-3">
-                <p className="text-[11px] text-on-surface-variant">
-                  Transkripsi & ringkasan otomatis belum tersedia — tuliskan ringkasan hasil bimbingan secara manual di bawah ini.
-                </p>
-                <textarea
-                  value={summaryDraft}
-                  onChange={(e) => setSummaryDraft(e.target.value)}
-                  placeholder="Tuliskan ringkasan hasil bimbingan, saran, dan tindak lanjut untuk mahasiswa…"
-                  rows={6}
-                  className="w-full text-sm border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-                />
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <button type="button" disabled={saving !== null} onClick={() => handleSave(false)}
-                    className="flex-1 py-3 rounded-xl border border-gray-200 text-sm font-bold text-slate-600 hover:bg-gray-50 disabled:opacity-60 min-h-[44px] focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">
-                    {saving === 'draft' ? 'Menyimpan…' : 'Simpan Draf'}
-                  </button>
-                  <button type="button" disabled={saving !== null || !summaryDraft.trim()} onClick={() => handleSave(true)}
-                    className="flex-1 py-3 rounded-xl bg-primary text-on-primary text-sm font-bold hover:bg-primary-hover disabled:opacity-60 min-h-[44px] flex items-center justify-center gap-1.5 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">
-                    <span className="material-symbols-outlined text-base" aria-hidden="true">check_circle</span>
-                    {saving === 'approve' ? 'Menyetujui…' : 'Setujui & Kirim ke Mahasiswa'}
-                  </button>
-                </div>
+                {isApproved ? (
+                  <p className="text-sm text-slate-700 whitespace-pre-wrap">{summaryDraft || '—'}</p>
+                ) : (
+                  <>
+                    <p className="text-[11px] text-on-surface-variant">
+                      {data.status === 'ready_for_review'
+                        ? 'Draf ringkasan otomatis siap ditinjau — perbaiki bila perlu, lalu setujui.'
+                        : 'Transkripsi & ringkasan otomatis belum tersedia — tuliskan ringkasan hasil bimbingan secara manual di bawah ini.'}
+                    </p>
+                    <textarea
+                      value={summaryDraft}
+                      onChange={(e) => setSummaryDraft(e.target.value)}
+                      placeholder="Tuliskan ringkasan hasil bimbingan, saran, dan tindak lanjut untuk mahasiswa…"
+                      rows={6}
+                      className="w-full text-sm border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                    />
+                    <button type="button" disabled={saving || !summaryDraft.trim()} onClick={handleApprove}
+                      className="w-full py-3 rounded-xl bg-primary text-on-primary text-sm font-bold hover:bg-primary-hover disabled:opacity-60 min-h-[44px] flex items-center justify-center gap-1.5 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">
+                      <span className="material-symbols-outlined text-base" aria-hidden="true">check_circle</span>
+                      {saving ? 'Menyetujui…' : 'Setujui & Kirim ke Mahasiswa'}
+                    </button>
+                  </>
+                )}
               </div>
             </section>
           </>

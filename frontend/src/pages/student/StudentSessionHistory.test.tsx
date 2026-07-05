@@ -1,6 +1,7 @@
 /**
  * Vitest tests for StudentHistory (/mahasiswa/riwayat) and StudentSessionDetail
- * (/mahasiswa/sesi/:id) — Phase 6 (UI-first, partial): riwayat + ringkasan (read-only).
+ * (/mahasiswa/sesi/:id) — Phase 6 (merge): riwayat + ringkasan (read-only) via
+ * SessionLogbook (/api/logbook/student/).
  */
 import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
@@ -38,7 +39,7 @@ describe('StudentHistory', () => {
           {
             id: 7, scheduled_at: '2026-07-04T09:00:00Z', ts2: '2026-07-04T10:00:00Z',
             mahasiswa_name: 'Budi Santoso', nim: '20230001', dosen_name: 'Dr. Rina Sari',
-            symptom_name: 'Metodologi', has_recording: true, has_summary: false,
+            symptom_name: 'Metodologi', has_recording: true, summary_status: 'pending',
             summary_approved_at: null,
           },
         ])
@@ -59,11 +60,13 @@ describe('StudentHistory', () => {
 describe('StudentSessionDetail', () => {
   beforeEach(() => {
     server.use(
-      http.get('/api/queue/7/summary/', () =>
+      http.get('/api/logbook/student/7/', () =>
         HttpResponse.json({
-          id: 7, mahasiswa_name: 'Budi Santoso', nim: '20230001', dosen_name: 'Dr. Rina Sari',
+          session_id: 7, mahasiswa_name: 'Budi Santoso', nim: '20230001', dosen_name: 'Dr. Rina Sari',
           scheduled_at: '2026-07-04T09:00:00Z', ts1: '2026-07-04T09:05:00Z', ts2: '2026-07-04T10:00:00Z',
-          has_recording: true, summary: 'Sudah bagus, lanjut bab 4.', summary_approved_at: '2026-07-04T10:05:00Z',
+          has_recording: true, status: 'approved', is_manual: true,
+          transcript: '', summary_raw: {}, summary_edited: { manual_notes: 'Sudah bagus, lanjut bab 4.' },
+          approved_at: '2026-07-04T10:05:00Z',
         })
       )
     );
@@ -78,13 +81,10 @@ describe('StudentSessionDetail', () => {
   });
 
   it('shows a waiting state when summary is not yet approved', async () => {
+    // Endpoint mahasiswa menolak logbook yang belum disetujui dengan 403.
     server.use(
-      http.get('/api/queue/7/summary/', () =>
-        HttpResponse.json({
-          id: 7, mahasiswa_name: 'Budi Santoso', nim: '20230001', dosen_name: 'Dr. Rina Sari',
-          scheduled_at: '2026-07-04T09:00:00Z', ts1: null, ts2: '2026-07-04T10:00:00Z',
-          has_recording: false, summary: '', summary_approved_at: null,
-        })
+      http.get('/api/logbook/student/7/', () =>
+        HttpResponse.json({ detail: 'Ringkasan belum tersedia.' }, { status: 403 })
       )
     );
     renderDetail();

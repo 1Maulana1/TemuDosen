@@ -58,11 +58,9 @@ class Session(models.Model):
     consent_given_at = models.DateTimeField(null=True, blank=True)
     consent_by_dosen = models.BooleanField(default=False)
     consent_by_mahasiswa = models.BooleanField(default=False)
-    # Phase 6 (STT-03/05): ringkasan hasil bimbingan. Diisi manual oleh dosen untuk
-    # sekarang (fallback path resmi di spec selama STT/LLM otomatis belum dibangun);
-    # field ini tetap dipakai apa adanya begitu auto-transcribe/summarize ditambahkan.
-    summary = models.TextField(blank=True, default='')
-    summary_approved_at = models.DateTimeField(null=True, blank=True)
+    # Phase 6 merge: ringkasan hasil bimbingan pindah ke apps.logbook.SessionLogbook
+    # (OneToOne via related_name='logbook'). Field summary/summary_approved_at lama
+    # dihapus di migrasi 0007 setelah data di-backfill oleh 0006.
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -90,6 +88,9 @@ class SessionRecording(models.Model):
     file_path = models.CharField(max_length=500)
     file_size = models.PositiveIntegerField()
     mime_type = models.CharField(max_length=50, default='audio/webm')
+    # Durasi rekaman (detik). Diisi klien (MediaRecorder) saat upload, atau
+    # dari hasil STT (faster-whisper) begitu pipeline transkripsi jalan.
+    duration_seconds = models.FloatField(null=True, blank=True)
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

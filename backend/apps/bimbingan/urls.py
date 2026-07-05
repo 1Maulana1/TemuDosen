@@ -10,7 +10,7 @@ from .views import (
     KetuaJurusanStatsView, KetuaJurusanExportView, KetuaJurusanComplianceView,
     SessionActionItemsView, CompleteActionItemView,
     LecturerSessionHistoryView, StudentSessionHistoryView,
-    SessionRecordingFileView, SessionSummaryView,
+    SessionRecordingFileView,
 )
 
 queue_urlpatterns = [
@@ -20,7 +20,7 @@ queue_urlpatterns = [
     path('<int:pk>/start/', StartSessionView.as_view(), name='queue-start'),
     path('<int:pk>/complete/', CompleteSessionView.as_view(), name='queue-complete'),
     path('<int:pk>/recording/', SessionRecordingFileView.as_view(), name='queue-recording'),
-    path('<int:pk>/summary/', SessionSummaryView.as_view(), name='queue-summary'),
+    # Phase 6 merge: ringkasan pindah ke /api/logbook/ (lihat apps.logbook.urls)
     path('lecturer/', LecturerQueueView.as_view(), name='queue-lecturer'),
     path('lecturer/history/', LecturerSessionHistoryView.as_view(), name='queue-lecturer-history'),
     # FR-KP04: saran / tindak lanjut bimbingan, dilekatkan ke sebuah sesi

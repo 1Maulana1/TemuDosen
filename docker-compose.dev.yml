@@ -42,10 +42,50 @@ services:
       - ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0
       - MEDIA_ROOT=/app/storage
       - DEBUG=True
+      - CELERY_BROKER_URL=redis://redis:6379/0
     depends_on:
       db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Phase 6: broker Celery (dev)
+  redis:
+    image: redis:7-alpine
+    container_name: temudosen_redis_dev
+    restart: unless-stopped
+    volumes:
+      - redis_dev_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Phase 6: worker Celery (dev). STT_LLM_ENABLED=False = pipeline nonaktif (aman).
+  celery-worker:
+    build: .
+    container_name: temudosen_celery_worker_dev
+    command: >
+      sh -c "celery -A config worker --loglevel=info --concurrency=2 -Q stt,llm"
+    volumes:
+      - ./backend:/app
+      - storage_dev_data:/app/storage
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.docker
+      - SECRET_KEY=dev-secret-key-not-for-production
+      - DATABASE_URL=postgres://temudosen:temudosen123@db:5432/temudosen_dev
+      - MEDIA_ROOT=/app/storage
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - STT_LLM_ENABLED=False
+      - STT_MODEL_DOWNLOAD_ROOT=/app/storage/whisper_models
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
 volumes:
   postgres_dev_data:
   storage_dev_data:
+  redis_dev_data:
