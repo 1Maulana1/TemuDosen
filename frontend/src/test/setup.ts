@@ -4,9 +4,33 @@
  * - MSW: Mock Service Worker for API mocking in tests
  */
 import '@testing-library/jest-dom';
-import { afterAll, afterEach, beforeAll } from 'vitest';
+import { afterAll, afterEach, beforeAll, vi } from 'vitest';
 import { setupServer } from 'msw/node';
 import { http, HttpResponse } from 'msw';
+import React from 'react';
+
+// ── @jitsi/react-sdk shim (Phase 6 Wave 5) ─────────────────────────────────────
+// A real Jitsi iframe cannot mount in jsdom. This stub renders a marker element
+// (asserting roomName/domain were passed through) plus a hidden test-only
+// button that fires onApiReady when clicked — letting tests drive the
+// loading -> ready transition deliberately instead of it firing before the
+// test can observe the loading state.
+vi.mock('@jitsi/react-sdk', () => ({
+  JitsiMeeting: (props: {
+    roomName: string;
+    domain?: string;
+    onApiReady?: (api: unknown) => void;
+    getIFrameRef?: (el: HTMLDivElement) => void;
+  }) => {
+    props.getIFrameRef?.(document.createElement('div') as unknown as HTMLDivElement);
+    return React.createElement('button', {
+      'data-testid': 'jitsi-mock-fire-ready',
+      'data-room-name': props.roomName,
+      'data-domain': props.domain,
+      onClick: () => props.onApiReady?.({}),
+    }, 'mock-jitsi-meeting');
+  },
+}));
 
 // Default MSW handlers — override in individual test files as needed
 const defaultHandlers = [
