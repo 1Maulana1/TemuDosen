@@ -16,10 +16,14 @@ import StudentDashboard from './pages/student/StudentDashboard';
 import SubmissionForm from './pages/student/SubmissionForm';
 import StudentQueue from './pages/student/StudentQueue';
 import StudentProfile from './pages/student/StudentProfile';
+import StudentHistory from './pages/student/StudentHistory';
+import StudentSessionDetail from './pages/student/StudentSessionDetail';
 import LecturerDashboard from './pages/lecturer/LecturerDashboard';
 import LecturerRequests from './pages/lecturer/LecturerRequests';
 import LecturerQueue from './pages/lecturer/LecturerQueue';
 import LecturerSettings from './pages/lecturer/LecturerSettings';
+import LecturerHistory from './pages/lecturer/LecturerHistory';
+import LecturerSessionDetail from './pages/lecturer/LecturerSessionDetail';
 import KetuaJurusanDashboard from './pages/ketua-jurusan/KetuaJurusanDashboard';
 import { getCurrentUser } from './api/auth';
 import type { User } from './api/auth';
@@ -73,6 +77,8 @@ export const router = createBrowserRouter([
       { index: true, element: <StudentDashboard /> },
       { path: 'ajukan', element: <SubmissionForm /> },
       { path: 'queue', element: <StudentQueue /> },
+      { path: 'riwayat', element: <StudentHistory /> },
+      { path: 'sesi/:id', element: <StudentSessionDetail /> },
       { path: 'profil', element: <StudentProfile /> },
     ],
   },
@@ -86,6 +92,8 @@ export const router = createBrowserRouter([
       { index: true, element: <LecturerDashboard /> },
       { path: 'requests', element: <LecturerRequests /> },
       { path: 'queue', element: <LecturerQueue /> },
+      { path: 'riwayat', element: <LecturerHistory /> },
+      { path: 'sesi/:id', element: <LecturerSessionDetail /> },
       { path: 'pengaturan', element: <LecturerSettings /> },
     ],
   },

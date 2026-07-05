@@ -310,12 +310,12 @@ export default function StudentDashboard() {
             <section className="lg:col-span-2 lg:row-start-2 bg-surface rounded-2xl border border-gray-200 shadow-sm p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-headline font-bold text-lg text-on-surface">Riwayat Sesi Bimbingan</h2>
-                <span
-                  className="text-sm font-bold text-on-surface-variant/50 cursor-not-allowed"
-                  title="Halaman riwayat lengkap belum tersedia"
+                <Link
+                  to="/mahasiswa/riwayat"
+                  className="text-sm font-bold text-primary hover:underline focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none rounded"
                 >
                   Lihat Semua
-                </span>
+                </Link>
               </div>
 
               {subsLoading && (

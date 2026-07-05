@@ -146,3 +146,58 @@ class LecturerQueueItemSerializer(serializers.ModelSerializer):
     def get_symptom_name(self, obj):
         symptoms = obj.submission.symptoms.all()
         return ', '.join(s.name for s in symptoms) if symptoms else ''
+
+
+# ── Phase 6 (partial): riwayat sesi + ringkasan manual ─────────────────────────
+
+class SessionHistorySerializer(serializers.ModelSerializer):
+    """Baris ringkas untuk daftar riwayat sesi (dosen & mahasiswa)."""
+    mahasiswa_name = serializers.CharField(source='submission.student.full_name', read_only=True)
+    nim = serializers.CharField(source='submission.student.nim', read_only=True)
+    dosen_name = serializers.SerializerMethodField()
+    symptom_name = serializers.SerializerMethodField()
+    has_recording = serializers.SerializerMethodField()
+    has_summary = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Session
+        fields = [
+            'id', 'scheduled_at', 'ts2', 'mahasiswa_name', 'nim', 'dosen_name',
+            'symptom_name', 'has_recording', 'has_summary', 'summary_approved_at',
+        ]
+
+    def get_dosen_name(self, obj):
+        dosen = obj.submission.student.adviser
+        return dosen.full_name if dosen else ''
+
+    def get_symptom_name(self, obj):
+        symptoms = obj.submission.symptoms.all()
+        return ', '.join(s.name for s in symptoms) if symptoms else ''
+
+    def get_has_recording(self, obj):
+        return hasattr(obj, 'recording')
+
+    def get_has_summary(self, obj):
+        return bool(obj.summary)
+
+
+class SessionSummaryDetailSerializer(serializers.ModelSerializer):
+    """Detail 1 sesi: info dasar + status rekaman + ringkasan (editable oleh dosen)."""
+    mahasiswa_name = serializers.CharField(source='submission.student.full_name', read_only=True)
+    nim = serializers.CharField(source='submission.student.nim', read_only=True)
+    dosen_name = serializers.SerializerMethodField()
+    has_recording = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Session
+        fields = [
+            'id', 'mahasiswa_name', 'nim', 'dosen_name', 'scheduled_at', 'ts1', 'ts2',
+            'has_recording', 'summary', 'summary_approved_at',
+        ]
+
+    def get_dosen_name(self, obj):
+        dosen = obj.submission.student.adviser
+        return dosen.full_name if dosen else ''
+
+    def get_has_recording(self, obj):
+        return hasattr(obj, 'recording')

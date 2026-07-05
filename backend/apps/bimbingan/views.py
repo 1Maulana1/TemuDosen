@@ -44,6 +44,8 @@ from .serializers import (
     LecturerQueueItemSerializer,
     RejectSubmissionSerializer,
     SessionDetailSerializer,
+    SessionHistorySerializer,
+    SessionSummaryDetailSerializer,
     StudentQueueSerializer,
 )
 from .services import calendar as cal_service
@@ -511,6 +513,143 @@ class LecturerQueueView(APIView):
             'queue': serializer.data,
             'activeSession': active_data,
         })
+
+
+# ── Phase 6 (partial): riwayat sesi, rekaman, ringkasan manual ─────────────────
+# STT/LLM otomatis belum dibangun — dosen mengisi/menyetujui ringkasan secara
+# manual (fallback resmi di spec STT-05 selama pipeline otomatis belum ada).
+
+def _can_view_session(session, user):
+    student = session.submission.student
+    adviser = student.adviser
+    is_owner = user == student
+    is_adviser = adviser is not None and user == adviser
+    is_admin_or_kajur = user.role in ('admin', 'ketua_jurusan')
+    return is_owner or is_adviser or is_admin_or_kajur
+
+
+class LecturerSessionHistoryView(APIView):
+    """GET /api/queue/lecturer/history/ — dosen lihat daftar sesi selesai miliknya."""
+    permission_classes = [IsLecturer]
+
+    def get(self, request):
+        sessions = Session.objects.filter(
+            submission__student__adviser=request.user,
+            status=Session.Status.DONE,
+        ).select_related('submission__student', 'recording').order_by('-ts2')[:50]
+        serializer = SessionHistorySerializer(sessions, many=True)
+        return Response(serializer.data)
+
+
+class StudentSessionHistoryView(APIView):
+    """GET /api/queue/my/history/ — mahasiswa lihat daftar sesi selesai miliknya."""
+    permission_classes = [IsStudent]
+
+    def get(self, request):
+        sessions = Session.objects.filter(
+            submission__student=request.user,
+            status=Session.Status.DONE,
+        ).select_related('submission__student__adviser', 'recording').order_by('-ts2')[:50]
+        serializer = SessionHistorySerializer(sessions, many=True)
+        return Response(serializer.data)
+
+
+class SessionRecordingFileView(APIView):
+    """GET /api/queue/<id>/recording/ — serve rekaman audio (auth-gated, pola D-29)."""
+    permission_classes = [_permissions.IsAuthenticated]
+
+    def get(self, request, pk):
+        try:
+            session = Session.objects.select_related(
+                'submission__student__adviser', 'recording'
+            ).get(pk=pk)
+        except Session.DoesNotExist:
+            return Response({'detail': 'Sesi tidak ditemukan.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if not _can_view_session(session, request.user):
+            return Response({'detail': 'Anda tidak memiliki izin.'}, status=status.HTTP_403_FORBIDDEN)
+
+        recording = getattr(session, 'recording', None)
+        if recording is None:
+            return Response({'detail': 'Sesi ini tidak memiliki rekaman.'}, status=status.HTTP_404_NOT_FOUND)
+
+        import os
+        from django.http import FileResponse, Http404
+        if not os.path.exists(recording.file_path):
+            raise Http404
+
+        response = FileResponse(open(recording.file_path, 'rb'), content_type=recording.mime_type)
+        response['Content-Disposition'] = f'inline; filename="{recording.original_filename}"'
+        return response
+
+
+class SessionSummaryView(APIView):
+    """
+    GET   /api/queue/<id>/summary/ — lihat status rekaman + ringkasan sesi.
+    PATCH /api/queue/<id>/summary/ — dosen mengisi/mengedit ringkasan manual,
+                                       opsional langsung menyetujui (approve=true).
+    """
+    permission_classes = [_permissions.IsAuthenticated]
+
+    def get(self, request, pk):
+        try:
+            session = Session.objects.select_related(
+                'submission__student__adviser', 'recording'
+            ).get(pk=pk)
+        except Session.DoesNotExist:
+            return Response({'detail': 'Sesi tidak ditemukan.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if not _can_view_session(session, request.user):
+            return Response({'detail': 'Anda tidak memiliki izin.'}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = SessionSummaryDetailSerializer(session)
+        return Response(serializer.data)
+
+    def patch(self, request, pk):
+        try:
+            session = Session.objects.select_related('submission__student__adviser').get(pk=pk)
+        except Session.DoesNotExist:
+            return Response({'detail': 'Sesi tidak ditemukan.'}, status=status.HTTP_404_NOT_FOUND)
+
+        adviser = session.submission.student.adviser
+        if adviser is None or request.user != adviser:
+            return Response(
+                {'detail': 'Hanya dosen pembimbing yang dapat mengubah ringkasan.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if session.status != Session.Status.DONE:
+            return Response(
+                {'detail': 'Ringkasan hanya dapat diisi untuk sesi yang sudah selesai.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        summary = request.data.get('summary')
+        approve = bool(request.data.get('approve'))
+
+        if summary is not None:
+            session.summary = str(summary).strip()
+
+        if approve:
+            if not session.summary:
+                return Response(
+                    {'detail': 'Ringkasan tidak boleh kosong sebelum disetujui.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            session.summary_approved_at = timezone.now()
+
+        session.save(update_fields=['summary', 'summary_approved_at', 'updated_at'])
+
+        if approve:
+            notify_student(
+                session.submission.student,
+                'Ringkasan hasil bimbingan Anda sudah tersedia.',
+                session=session,
+                event_type='SUMMARY_APPROVED',
+            )
+
+        serializer = SessionSummaryDetailSerializer(session)
+        return Response(serializer.data)
 
 
 # ── Google Calendar OAuth ──────────────────────────────────────────────────────

@@ -34,12 +34,14 @@ export const NAV_ITEMS: Record<AppRole, NavItem[]> = {
     { key: 'beranda', to: '/mahasiswa', icon: 'home', label: 'Beranda' },
     { key: 'ajukan', to: '/mahasiswa/ajukan', icon: 'add_circle', label: 'Ajukan' },
     { key: 'antrean', to: '/mahasiswa/queue', icon: 'format_list_numbered', label: 'Antrean' },
+    { key: 'riwayat', to: '/mahasiswa/riwayat', icon: 'history', label: 'Riwayat' },
     { key: 'profil', to: '/mahasiswa/profil', icon: 'person', label: 'Profil' },
   ],
   dosen: [
     { key: 'beranda', to: '/dosen', icon: 'home', label: 'Beranda' },
     { key: 'permintaan', to: '/dosen/requests', icon: 'inbox', label: 'Permintaan' },
     { key: 'antrian', to: '/dosen/queue', icon: 'format_list_numbered', label: 'Antrian' },
+    { key: 'riwayat', to: '/dosen/riwayat', icon: 'history', label: 'Riwayat' },
     { key: 'profil', to: '/dosen/pengaturan', icon: 'person', label: 'Profil' },
   ],
   admin: [

@@ -58,6 +58,11 @@ class Session(models.Model):
     consent_given_at = models.DateTimeField(null=True, blank=True)
     consent_by_dosen = models.BooleanField(default=False)
     consent_by_mahasiswa = models.BooleanField(default=False)
+    # Phase 6 (STT-03/05): ringkasan hasil bimbingan. Diisi manual oleh dosen untuk
+    # sekarang (fallback path resmi di spec selama STT/LLM otomatis belum dibangun);
+    # field ini tetap dipakai apa adanya begitu auto-transcribe/summarize ditambahkan.
+    summary = models.TextField(blank=True, default='')
+    summary_approved_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

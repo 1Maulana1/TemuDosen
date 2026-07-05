@@ -148,6 +148,77 @@ export async function rejectSubmission(id: number, payload: RejectPayload): Prom
   return res.json();
 }
 
+// ── Phase 6 (partial): riwayat sesi, rekaman, ringkasan manual ─────────────────
+// STT/LLM otomatis belum ada — dosen mengisi ringkasan secara manual sebagai
+// fallback resmi selama pipeline otomatis belum dibangun (lihat backend).
+
+export interface SessionHistoryItem {
+  id: number;
+  scheduled_at: string | null;
+  ts2: string | null;
+  mahasiswa_name: string;
+  nim: string;
+  dosen_name: string;
+  symptom_name: string;
+  has_recording: boolean;
+  has_summary: boolean;
+  summary_approved_at: string | null;
+}
+
+export interface SessionSummaryDetail {
+  id: number;
+  mahasiswa_name: string;
+  nim: string;
+  dosen_name: string;
+  scheduled_at: string | null;
+  ts1: string | null;
+  ts2: string | null;
+  has_recording: boolean;
+  summary: string;
+  summary_approved_at: string | null;
+}
+
+export async function getLecturerSessionHistory(): Promise<SessionHistoryItem[]> {
+  const res = await apiRequest('/api/queue/lecturer/history/');
+  if (!res.ok) throw new Error('Gagal memuat riwayat sesi.');
+  return res.json();
+}
+
+export async function getStudentSessionHistory(): Promise<SessionHistoryItem[]> {
+  const res = await apiRequest('/api/queue/my/history/');
+  if (!res.ok) throw new Error('Gagal memuat riwayat sesi.');
+  return res.json();
+}
+
+export async function getSessionSummary(sessionId: number): Promise<SessionSummaryDetail> {
+  const res = await apiRequest(`/api/queue/${sessionId}/summary/`);
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error((body as { detail?: string }).detail ?? 'Gagal memuat ringkasan sesi.');
+  }
+  return res.json();
+}
+
+export async function saveSessionSummary(
+  sessionId: number,
+  opts: { summary?: string; approve?: boolean }
+): Promise<SessionSummaryDetail> {
+  const res = await apiRequest(`/api/queue/${sessionId}/summary/`, {
+    method: 'PATCH',
+    body: JSON.stringify(opts),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error((body as { detail?: string }).detail ?? 'Gagal menyimpan ringkasan.');
+  }
+  return res.json();
+}
+
+/** URL untuk elemen <audio src=...> — cookie sesi ikut terkirim (same-origin via proxy). */
+export function getSessionRecordingUrl(sessionId: number): string {
+  return `/api/queue/${sessionId}/recording/`;
+}
+
 // ── Calendar status ────────────────────────────────────────────────────────────
 
 export async function getCalendarStatus(): Promise<{ enabled: boolean; connected: boolean }> {

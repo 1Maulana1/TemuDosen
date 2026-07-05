@@ -9,14 +9,20 @@ from .views import (
     AdminLogsView, AdminLogsCleanupView,
     KetuaJurusanStatsView, KetuaJurusanExportView, KetuaJurusanComplianceView,
     SessionActionItemsView, CompleteActionItemView,
+    LecturerSessionHistoryView, StudentSessionHistoryView,
+    SessionRecordingFileView, SessionSummaryView,
 )
 
 queue_urlpatterns = [
     path('my/', StudentQueueView.as_view(), name='queue-my'),
+    path('my/history/', StudentSessionHistoryView.as_view(), name='queue-my-history'),
     path('<int:pk>/cancel/', CancelStudentQueueView.as_view(), name='queue-cancel'),
     path('<int:pk>/start/', StartSessionView.as_view(), name='queue-start'),
     path('<int:pk>/complete/', CompleteSessionView.as_view(), name='queue-complete'),
+    path('<int:pk>/recording/', SessionRecordingFileView.as_view(), name='queue-recording'),
+    path('<int:pk>/summary/', SessionSummaryView.as_view(), name='queue-summary'),
     path('lecturer/', LecturerQueueView.as_view(), name='queue-lecturer'),
+    path('lecturer/history/', LecturerSessionHistoryView.as_view(), name='queue-lecturer-history'),
     # FR-KP04: saran / tindak lanjut bimbingan, dilekatkan ke sebuah sesi
     path('<int:session_id>/action-items/', SessionActionItemsView.as_view(), name='queue-action-items'),
 ]
