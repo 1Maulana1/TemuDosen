@@ -1,11 +1,15 @@
 /**
  * SessionTable — riwayat sesi bimbingan (No/Tanggal/Topik/Dosen/Status/Aksi).
  *
- * FR-M05 note: "Aksi" hanya membuka pratinjau berkas draft yang diunggah (data nyata,
- * via file_uuid). Transkrip & ringkasan sesi belum didukung backend (tidak ada field
- * transcript/summary di model Session) — lihat TODO di StudentDashboard.tsx.
+ * FR-M05: "Aksi" (visibility icon) membuka pratinjau berkas draft yang diunggah
+ * (data nyata, via file_uuid). Phase 6 (STT-06) adds a second "Aksi" icon —
+ * `description`, enabled only once the row's SessionLogbook is `approved` —
+ * linking to the student's read-only logbook view.
  */
+import { Link } from 'react-router';
 import StatusBadge from './StatusBadge';
+import LogbookStatusBadge from './LogbookStatusBadge';
+import type { LogbookStatus } from '../api/logbook';
 
 type BadgeStatus = 'MENUNGGU' | 'DISETUJUI' | 'BERLANGSUNG' | 'SELESAI' | 'DIBATALKAN' | 'REVISI' | 'DITOLAK';
 
@@ -17,6 +21,10 @@ export interface SessionTableRow {
   status: BadgeStatus;
   fileUuid: string | null;
   fileName: string | null;
+  /** Session id for the STT-06 logbook link — null when this submission has no
+   * linked Session yet, or the current data source doesn't expose one. */
+  sessionId?: number | null;
+  logbookStatus?: LogbookStatus | null;
 }
 
 interface SessionTableProps {
@@ -58,21 +66,53 @@ export default function SessionTable({ rows, onView, fmtDate }: SessionTableProp
               <td className="px-2 py-3 text-slate-700 whitespace-nowrap">{fmtDate(row.date)}</td>
               <td className="px-2 py-3 text-slate-800 font-bold max-w-[220px] truncate">{row.topic}</td>
               <td className="px-2 py-3 text-slate-700">{row.dosen}</td>
-              <td className="px-2 py-3"><StatusBadge status={row.status} /></td>
+              <td className="px-2 py-3">
+                <div className="flex items-center gap-1.5">
+                  <StatusBadge status={row.status} />
+                  {row.logbookStatus && row.logbookStatus !== 'approved' && (
+                    <LogbookStatusBadge status={row.logbookStatus} />
+                  )}
+                </div>
+              </td>
               <td className="px-2 py-3 text-right">
-                <button
-                  type="button"
-                  onClick={() => onView(row)}
-                  disabled={!row.fileUuid}
-                  aria-label={`Lihat detail sesi ${row.topic}`}
-                  title={row.fileUuid ? 'Lihat detail' : 'Tidak ada berkas untuk sesi ini'}
-                  className="inline-flex items-center justify-center w-9 h-9 rounded-lg text-on-surface-variant
-                             hover:bg-primary/10 hover:text-accent-link transition-colors
-                             disabled:opacity-30 disabled:cursor-not-allowed
-                             focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
-                >
-                  <span className="material-symbols-outlined text-xl" aria-hidden="true">visibility</span>
-                </button>
+                <div className="flex items-center justify-end gap-1">
+                  <button
+                    type="button"
+                    onClick={() => onView(row)}
+                    disabled={!row.fileUuid}
+                    aria-label={`Lihat detail sesi ${row.topic}`}
+                    title={row.fileUuid ? 'Lihat detail' : 'Tidak ada berkas untuk sesi ini'}
+                    className="inline-flex items-center justify-center w-9 h-9 rounded-lg text-on-surface-variant
+                               hover:bg-primary/10 hover:text-accent-link transition-colors
+                               disabled:opacity-30 disabled:cursor-not-allowed
+                               focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+                  >
+                    <span className="material-symbols-outlined text-xl" aria-hidden="true">visibility</span>
+                  </button>
+                  {row.logbookStatus === 'approved' && row.sessionId != null ? (
+                    <Link
+                      to={`/mahasiswa/logbook/${row.sessionId}`}
+                      aria-label="Lihat Ringkasan Bimbingan"
+                      title="Lihat Ringkasan Bimbingan"
+                      className="inline-flex items-center justify-center w-9 h-9 rounded-lg text-on-surface-variant
+                                 hover:bg-primary/10 hover:text-accent-link transition-colors
+                                 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+                    >
+                      <span className="material-symbols-outlined text-xl" aria-hidden="true">description</span>
+                    </Link>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled
+                      aria-label="Lihat Ringkasan Bimbingan"
+                      title="Ringkasan belum tersedia untuk sesi ini"
+                      className="inline-flex items-center justify-center w-9 h-9 rounded-lg text-on-surface-variant
+                                 opacity-30 cursor-not-allowed"
+                    >
+                      <span className="material-symbols-outlined text-xl" aria-hidden="true">description</span>
+                    </button>
+                  )}
+                </div>
               </td>
             </tr>
           ))}

@@ -201,6 +201,12 @@ export default function StudentDashboard() {
     status: SUBMISSION_STATUS_BADGE[s.status] ?? 'MENUNGGU',
     fileUuid: s.file_uuid,
     fileName: s.file_name,
+    // STT-06 entry point (Phase 6): SubmissionSummary doesn't expose a linked
+    // Session id or logbook status yet, so the second "Aksi" icon in
+    // SessionTable stays disabled here — closing this needs a backend
+    // serializer change, out of scope for this frontend-only plan.
+    sessionId: null,
+    logbookStatus: null,
   }));
 
   return (

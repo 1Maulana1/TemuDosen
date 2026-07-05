@@ -19,6 +19,10 @@ import LecturerDashboard from './pages/lecturer/LecturerDashboard';
 import LecturerRequests from './pages/lecturer/LecturerRequests';
 import LecturerQueue from './pages/lecturer/LecturerQueue';
 import LecturerSettings from './pages/lecturer/LecturerSettings';
+import LecturerLogbookList from './pages/lecturer/LecturerLogbookList';
+import LecturerLogbookReview from './pages/lecturer/LecturerLogbookReview';
+import LecturerManualNotes from './pages/lecturer/LecturerManualNotes';
+import StudentLogbookView from './pages/student/StudentLogbookView';
 import KetuaJurusanDashboard from './pages/ketua-jurusan/KetuaJurusanDashboard';
 import { getCurrentUser } from './api/auth';
 import type { User } from './api/auth';
@@ -72,6 +76,7 @@ export const router = createBrowserRouter([
       { index: true, element: <StudentDashboard /> },
       { path: 'ajukan', element: <SubmissionForm /> },
       { path: 'queue', element: <StudentQueue /> },
+      { path: 'logbook/:sessionId', element: <StudentLogbookView /> },
     ],
   },
 
@@ -85,6 +90,9 @@ export const router = createBrowserRouter([
       { path: 'requests', element: <LecturerRequests /> },
       { path: 'queue', element: <LecturerQueue /> },
       { path: 'pengaturan', element: <LecturerSettings /> },
+      { path: 'logbook', element: <LecturerLogbookList /> },
+      { path: 'logbook/:sessionId', element: <LecturerLogbookReview /> },
+      { path: 'logbook/:sessionId/manual', element: <LecturerManualNotes /> },
     ],
   },
 
