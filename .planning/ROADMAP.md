@@ -144,7 +144,17 @@ Phases 4, 5, 7, and 8 (Google Calendar sync, session recording, advisory continu
   7. *(new, v2.3)* Online sessions run via in-app embedded Jitsi video instead of an external meeting link — ❌ NOT STARTED
   8. *(new, v2.3; revised 2026-07-05 per research finding)* For online sessions, the existing `useMediaRecorder` flow records lecturer-mic-only audio (identical to Phase 5's behavior), feeding the same STT pipeline as offline sessions. Full dual-party audio mixing (D-16) was found not implementable against the locked Jitsi iframe stack — cancelled, tracked as a deferred idea (D-19), not attempted this phase — ❌ NOT STARTED
 
-**Plans**: TBD — this is the real next greenfield phase. Its Phase 5 dependency is satisfied as of 2026-07-04 (audio files exist under `MEDIA_ROOT/recordings/`).
+**Plans**: 1/9 plans executed
+
+- [x] 06-01-PLAN.md
+- [ ] 06-02-PLAN.md
+- [ ] 06-03-PLAN.md
+- [ ] 06-04-PLAN.md
+- [ ] 06-05-PLAN.md
+- [ ] 06-06-PLAN.md
+- [ ] 06-07-PLAN.md
+- [ ] 06-08-PLAN.md
+- [ ] 06-09-PLAN.md
 
 ### Phase 7: Advisory Continuity & Campus Logbook Integration
 
@@ -194,17 +204,19 @@ Phases 4, 5, 7, and 8 (Google Calendar sync, session recording, advisory continu
 | 3. Live Queue Management & Quota | n/a (direct) | ✅ Verified (3/3 SC, 15 tests) | 2026-07-03 |
 | 4. Google Calendar Sync & Graceful Degradation | n/a (direct) | ✅ Verified (4/4 SC, 16 tests) | 2026-07-03 |
 | 5. Session Execution with Recording & Consent | n/a (direct) | ✅ Verified (6/6 SC; 17+7 new tests; manual mic checks open) | 2026-07-04 |
-| 6. STT, AI Summarization & Logbook | 0/TBD | ❌ Not started (confirmed) | - |
+| 6. STT, AI Summarization & Logbook | 1/9 | In Progress|  |
 | 7. Advisory Continuity & Campus Logbook Integration | n/a (direct) | 🟡 Verified (2/6 SC, 14 tests); backend works, zero frontend UI; campus sync not started | 2026-07-03 |
 | 8. Admin Emergency Controls & Ketua Jurusan Reporting | n/a (direct) | ✅ Verified (3/4 SC, 24 tests); `sesi_selesai` metric unblocked by Phase 5 close (regression guard now asserts real counts); 4th SC still data-starved by Phase 7 gap | 2026-07-03 |
 
 **Team assignments:**
+
 - Person A → Auth & User Management (registration, admin approval, role redirect)
 - Person B → Symptom Config & Submission (symptom weights, submission form, My Submissions)
 - Person C → Approval & Triage (approve/reject, duration calc, QueueSlot model)
 - Person D → Queue Engine (queue status, self-cancel, quota enforcement)
 
 **Sprint timeline:**
+
 - Jun 25–Jul 1: A+B finish Phase 1 remaining work; C+D design Phase 2 models
 - Jul 2–Jul 8: A+B join Phase 2; D builds queue engine foundation
 - Jul 9–Jul 15: All 4 on Phase 3 + integration testing + buffer

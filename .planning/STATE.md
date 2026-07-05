@@ -5,12 +5,12 @@ milestone_name: milestone
 current_phase: 06
 current_phase_name: stt-ai-summarization-logbook
 status: Phases 1-5 and 8 verified clean; 7 partial (backend only); 6 not started
-last_updated: "2026-07-05T08:48:17.673Z"
+last_updated: "2026-07-05T16:19:21+07:00"
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 14
-  completed_plans: 5
+  completed_plans: 6
   percent: 13
 ---
 
@@ -24,8 +24,8 @@ See `.planning/PROJECT.md` for core value, constraints, and full requirements.
 
 ## Current Position
 
-Phase: 06 (stt-ai-summarization-logbook) — EXECUTING
-**Status**: All 8 phases formally verified at least once. Phases 1, 2, 3, 4, 5, and 8 closed clean (Phase 5 re-verified 6/6 on 2026-07-04, superseding the 4/6 pass). Phase 7 remains PARTIAL. Phase 6 has zero work.
+Phase: 06 (stt-ai-summarization-logbook) — EXECUTING (Wave 0 complete: 06-01 done; Wave 1 next)
+**Status**: All 8 phases formally verified at least once. Phases 1, 2, 3, 4, 5, and 8 closed clean (Phase 5 re-verified 6/6 on 2026-07-04, superseding the 4/6 pass). Phase 7 remains PARTIAL. Phase 6: Wave 0 (06-01 — Celery/Redis infra + apps.logbook scaffold) complete; Waves 1-6 not started.
 
 **What's actually blocking full-scope completion, in order:**
 
