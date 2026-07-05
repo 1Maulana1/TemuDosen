@@ -30,7 +30,7 @@ created: 2026-07-05
 | **Quick run command (frontend)** | `npm run test -- --run JitsiVideoProvider` (from `frontend/`) |
 | **Full suite command (backend)** | `pytest -q` (from `backend/`) |
 | **Full suite command (frontend)** | `npm run test -- --run` (from `frontend/`) |
-| **Estimated runtime** | Not measured this session. Baseline pre-Phase-6 is 221 backend / 37 frontend tests (`STATE.md`) — take a fresh `time pytest -q` reading once Wave 0 lands, since a real faster-whisper model load in tests could change this materially (see Wave 0 Requirements) |
+| **Estimated runtime** | **Measured 2026-07-05**: quick-run/dev-loop commands — backend `pytest apps/logbook -q` = 4.27s; frontend `npm run test -- --run JitsiVideoProvider` = 3.95s. Both mocked (`WhisperModel`/Anthropic client never load real weights/hit the real API in any test), both far under the 120s ceiling. **This measures test-suite dev-loop speed only.** It is NOT a measurement of STT-02's real-world pipeline SLA (transcript ready within ≤2× audio duration for 90% of sessions) — that is a separate, deployment-verified requirement that this timing cannot speak to, mocked or not. |
 
 **New test-settings requirement (Wave 0, per `06-RESEARCH.md` Validation Architecture):** `config/settings/test.py` must set `CELERY_TASK_ALWAYS_EAGER = True` so `transcribe_session` / `submit_summary_batch` / `poll_summary_batch` run synchronously in-process during tests — no live Redis broker required for the suite.
 
@@ -41,7 +41,7 @@ created: 2026-07-05
 - **After every task commit:** `pytest apps/logbook -q` (backend) / `npm run test -- --run <changed-file>.test.tsx` (frontend)
 - **After every plan wave:** Full backend suite (`pytest -q`) + full frontend suite (`npm run test -- --run`)
 - **Before `/gsd-verify-work`:** Full suite must be green
-- **Max feedback latency:** ≤120s target for the quick-run loop (ceiling, not a measured baseline — re-check once Wave 0's faster-whisper test fixture strategy is known; a real model load per test run would blow this budget, so STT unit tests should mock `WhisperModel` rather than load the real 484MB model)
+- **Max feedback latency:** ≤120s target for the quick-run loop — **✅ MET, measured 2026-07-05**: backend `pytest apps/logbook -q` = 4.27s, frontend `npm run test -- --run JitsiVideoProvider` = 3.95s (mocked suite throughout, no real `WhisperModel`/Anthropic call). **Scope note (do not lose this):** this closes only the Nyquist dev-loop-speed checklist item. It does NOT verify, and `nyquist_compliant` does NOT imply, that STT-02's real pipeline SLA (≤2× audio duration, 90% of sessions) is met — that is a separate requirement, unmeasurable by any test-suite timing (mocked or not), and remains deployment-verified only.
 
 ---
 
