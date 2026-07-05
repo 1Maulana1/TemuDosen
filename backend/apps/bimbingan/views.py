@@ -829,6 +829,17 @@ class CompleteSessionView(APIView):
             },
         )
 
+        if recording is not None:
+            # Phase 6 (D-06): nothing to transcribe without a recording — only
+            # start the async logbook pipeline when audio was actually captured.
+            # Fire-and-return: .delay() never blocks this response (STT-02/NFR-01).
+            from apps.logbook.models import SessionLogbook
+            from apps.logbook.tasks import transcribe_session
+            logbook = SessionLogbook.objects.create(
+                session=session, source_mode=session.method or SessionLogbook.SourceMode.OFFLINE,
+            )
+            transcribe_session.delay(logbook.id)
+
         return Response({
             'message': 'Sesi berhasil diselesaikan.',
             'ts2': session.ts2.isoformat(),
