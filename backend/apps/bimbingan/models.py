@@ -85,6 +85,9 @@ class SessionRecording(models.Model):
     file_path = models.CharField(max_length=500)
     file_size = models.PositiveIntegerField()
     mime_type = models.CharField(max_length=50, default='audio/webm')
+    # D-02 (Phase 6): audio duration in seconds — needed for the STT SLA
+    # (<=2x duration NFR) and to compute the STT-stage timeout (D-08).
+    duration_seconds = models.FloatField(null=True, blank=True)
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
