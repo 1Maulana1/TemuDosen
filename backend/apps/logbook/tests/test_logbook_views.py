@@ -5,7 +5,7 @@ state guards, and the manual-notes fallback path.
 import pytest
 from django.utils import timezone
 
-from apps.bimbingan.models import Session
+from apps.bimbingan.models import Session, SystemLog
 from apps.logbook.models import SessionLogbook
 from apps.submissions.models import Submission
 
@@ -169,3 +169,57 @@ class TestManualNotes:
         )
 
         assert response.status_code == 400
+
+
+@pytest.mark.django_db
+class TestRejectLogbook:
+    """Gate Option A (2026-07-05) — STT-04 safety valve."""
+
+    def test_reject_happy_path_sets_status_failed(self, authenticated_lecturer, advisee_student, submission_for):
+        logbook = _make_logbook(advisee_student, submission_for, status=SessionLogbook.Status.READY_FOR_REVIEW)
+
+        response = authenticated_lecturer.post(f'/api/logbook/{logbook.session_id}/reject/')
+
+        assert response.status_code == 200
+        logbook.refresh_from_db()
+        assert logbook.status == SessionLogbook.Status.FAILED
+        assert SystemLog.objects.filter(
+            event_type='LOGBOOK_REJECTED', context__logbook_id=logbook.id,
+        ).exists()
+
+    def test_reject_wrong_state_returns_400(self, authenticated_lecturer, advisee_student, submission_for):
+        logbook = _make_logbook(advisee_student, submission_for, status=SessionLogbook.Status.APPROVED)
+
+        response = authenticated_lecturer.post(f'/api/logbook/{logbook.session_id}/reject/')
+
+        assert response.status_code == 400
+        logbook.refresh_from_db()
+        assert logbook.status == SessionLogbook.Status.APPROVED
+
+    def test_reject_non_owner_returns_403(self, authenticated_lecturer, second_approved_student, submission_for):
+        logbook = _make_logbook(second_approved_student, submission_for, status=SessionLogbook.Status.READY_FOR_REVIEW)
+
+        response = authenticated_lecturer.post(f'/api/logbook/{logbook.session_id}/reject/')
+
+        assert response.status_code == 403
+
+    def test_reject_then_manual_notes_endpoint_accepts_it(
+        self, authenticated_lecturer, advisee_student, submission_for,
+    ):
+        """Connection-proof: reject->FAILED must be the exact state
+        ManualNotesView already gates on — proven by actually calling both
+        endpoints in sequence, not asserted from either in isolation."""
+        logbook = _make_logbook(advisee_student, submission_for, status=SessionLogbook.Status.READY_FOR_REVIEW)
+
+        reject_response = authenticated_lecturer.post(f'/api/logbook/{logbook.session_id}/reject/')
+        assert reject_response.status_code == 200
+
+        manual_notes_response = authenticated_lecturer.post(
+            f'/api/logbook/{logbook.session_id}/manual-notes/',
+            {'notes': 'Catatan manual setelah menolak ringkasan AI.'}, format='json',
+        )
+
+        assert manual_notes_response.status_code == 200
+        logbook.refresh_from_db()
+        assert logbook.status == SessionLogbook.Status.APPROVED
+        assert logbook.is_manual is True

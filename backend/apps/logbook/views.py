@@ -88,6 +88,45 @@ class ApproveLogbookView(APIView):
         return Response(LogbookDetailSerializer(logbook).data)
 
 
+class RejectLogbookView(APIView):
+    """Gate Option A (2026-07-05) — STT-04 safety valve: a lecturer facing a
+    wrong-but-syntactically-valid AI summary can reject it, flipping the
+    logbook into the existing manual-notes fallback rather than being forced
+    to either approve the error permanently or stall the logbook forever."""
+    permission_classes = [IsLecturer]
+
+    def post(self, request, session_id):
+        try:
+            logbook = SessionLogbook.objects.select_related(
+                'session__submission__student__adviser',
+            ).get(session_id=session_id)
+        except SessionLogbook.DoesNotExist:
+            return Response({'detail': 'Logbook tidak ditemukan.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if logbook.session.submission.student.adviser != request.user:
+            return Response({'detail': 'Anda tidak memiliki izin.'}, status=status.HTTP_403_FORBIDDEN)
+
+        if logbook.status != SessionLogbook.Status.READY_FOR_REVIEW:
+            return Response(
+                {'detail': 'Hanya logbook berstatus "Menunggu Tinjauan" yang dapat ditolak.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        logbook.status = SessionLogbook.Status.FAILED
+        logbook.save(update_fields=['status', 'updated_at'])
+
+        # Deliberately distinct from every _fail() event_type in tasks.py —
+        # this is a lecturer's content judgment, never a pipeline failure.
+        SystemLog.objects.create(
+            level=SystemLog.Level.INFO,
+            event_type='LOGBOOK_REJECTED',
+            message=f'Logbook sesi #{logbook.session_id} ditolak oleh {request.user.email}',
+            context={'session_id': logbook.session_id, 'logbook_id': logbook.id},
+        )
+
+        return Response(LogbookDetailSerializer(logbook).data)
+
+
 class ManualNotesView(APIView):
     permission_classes = [IsLecturer]
 
