@@ -43,6 +43,46 @@ services:
       db:
         condition: service_healthy
 
+  redis:
+    image: redis:7-alpine
+    container_name: temudosen_redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  celery-worker:
+    build: .
+    container_name: temudosen_celery_worker
+    restart: unless-stopped
+    command: >
+      sh -c "celery -A config worker --loglevel=info --concurrency=2 -Q stt,llm"
+    volumes:
+      - ./backend:/app
+      - storage_data:/app/storage
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.docker
+      - SECRET_KEY=docker-secret-key-ganti-di-production
+      - DATABASE_URL=postgres://temudosen:temudosen123@db:5432/temudosen
+      - MEDIA_ROOT=/app/storage
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - STT_LLM_ENABLED=False
+      - STT_MODEL_SIZE=small
+      - STT_COMPUTE_TYPE=int8
+      - STT_LANGUAGE=id
+      - STT_MODEL_DOWNLOAD_ROOT=/app/storage/whisper_models
+      - LLM_BATCH_TIMEOUT_MINUTES=180
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
 volumes:
   postgres_data:
   storage_data:
+  redis_data:
