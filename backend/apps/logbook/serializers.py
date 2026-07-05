@@ -1,5 +1,6 @@
 """
-Serializers for Phase 6 (06-04) — lecturer/student logbook read views.
+Serializers for Phase 6 (06-04) — lecturer/student logbook read views + the
+approve/manual-notes write endpoints.
 """
 from rest_framework import serializers
 
@@ -35,3 +36,13 @@ class LogbookDetailSerializer(serializers.ModelSerializer):
             'status', 'is_manual', 'source_mode', 'transcript',
             'summary_raw', 'summary_edited', 'approved_at',
         ]
+
+
+class ApproveLogbookSerializer(serializers.Serializer):
+    """STT-04 — lecturer's edited summary, committed on approve."""
+    summary_edited = serializers.JSONField()
+
+
+class ManualNotesSerializer(serializers.Serializer):
+    """STT-07 — manual-notes fallback when STT/LLM failed."""
+    notes = serializers.CharField(allow_blank=False)

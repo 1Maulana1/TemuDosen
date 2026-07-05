@@ -1,6 +1,6 @@
 """
-Phase 6 / Wave 2 (06-04): lecturer/student logbook view tests — ownership and
-read-access guards.
+Phase 6 / Wave 2 (06-04): lecturer/student logbook view tests — ownership,
+state guards, and the manual-notes fallback path.
 """
 import pytest
 from django.utils import timezone
@@ -102,3 +102,70 @@ class TestStudentLogbook:
         response = authenticated_advisee.get(f'/api/logbook/student/{logbook.session_id}/')
 
         assert response.status_code == 404
+
+
+@pytest.mark.django_db
+class TestApproveLogbook:
+    def test_approve_happy_path_sets_status_and_audit_fields(
+        self, authenticated_lecturer, lecturer_user, advisee_student, submission_for,
+    ):
+        logbook = _make_logbook(advisee_student, submission_for)
+        edited = {'advice_points': [{'topic': 'T', 'detail': 'D'}], 'improvement_notes': []}
+
+        response = authenticated_lecturer.post(
+            f'/api/logbook/{logbook.session_id}/approve/', {'summary_edited': edited}, format='json',
+        )
+
+        assert response.status_code == 200
+        logbook.refresh_from_db()
+        assert logbook.status == SessionLogbook.Status.APPROVED
+        assert logbook.approved_at is not None
+        assert logbook.approved_by == lecturer_user
+        assert logbook.summary_edited == edited
+
+    def test_approve_wrong_state_returns_400(self, authenticated_lecturer, advisee_student, submission_for):
+        logbook = _make_logbook(advisee_student, submission_for, status=SessionLogbook.Status.PENDING)
+
+        response = authenticated_lecturer.post(
+            f'/api/logbook/{logbook.session_id}/approve/', {'summary_edited': {}}, format='json',
+        )
+
+        assert response.status_code == 400
+
+    def test_approve_non_owner_returns_403(self, authenticated_lecturer, second_approved_student, submission_for):
+        logbook = _make_logbook(second_approved_student, submission_for)
+
+        response = authenticated_lecturer.post(
+            f'/api/logbook/{logbook.session_id}/approve/', {'summary_edited': {}}, format='json',
+        )
+
+        assert response.status_code == 403
+
+
+@pytest.mark.django_db
+class TestManualNotes:
+    def test_manual_notes_on_failed_logbook_becomes_approved(
+        self, authenticated_lecturer, advisee_student, submission_for,
+    ):
+        logbook = _make_logbook(advisee_student, submission_for, status=SessionLogbook.Status.FAILED)
+
+        response = authenticated_lecturer.post(
+            f'/api/logbook/{logbook.session_id}/manual-notes/', {'notes': 'Catatan manual dosen.'}, format='json',
+        )
+
+        assert response.status_code == 200
+        logbook.refresh_from_db()
+        assert logbook.status == SessionLogbook.Status.APPROVED
+        assert logbook.is_manual is True
+        assert logbook.summary_edited == {'manual_notes': 'Catatan manual dosen.'}
+
+    def test_manual_notes_on_non_failed_logbook_returns_400(
+        self, authenticated_lecturer, advisee_student, submission_for,
+    ):
+        logbook = _make_logbook(advisee_student, submission_for, status=SessionLogbook.Status.READY_FOR_REVIEW)
+
+        response = authenticated_lecturer.post(
+            f'/api/logbook/{logbook.session_id}/manual-notes/', {'notes': 'Catatan.'}, format='json',
+        )
+
+        assert response.status_code == 400
