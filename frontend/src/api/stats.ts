@@ -12,6 +12,14 @@ export interface AdminLecturerOption {
   active_sessions: number;
 }
 
+export interface AdminSttLlmStats {
+  transcription_success: number;
+  summary_success: number;
+  failed_fallback: number;
+  monthly_cost_idr: number;
+  avg_cost_per_session_idr: number;
+}
+
 export interface AdminStats {
   total_students: number;
   total_lecturers: number;
@@ -19,6 +27,7 @@ export interface AdminStats {
   active_sessions_today: number;
   recent_errors: { id: number; event_type: string; message: string; created_at: string }[];
   lecturers: AdminLecturerOption[];
+  stt_llm: AdminSttLlmStats;
   integrations: {
     google_calendar: { enabled: boolean; connected_dosens: number };
     logbook: { enabled: boolean };
