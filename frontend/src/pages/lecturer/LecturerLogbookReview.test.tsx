@@ -15,6 +15,7 @@ vi.mock('../../api/logbook', async () => {
     ...actual,
     getLogbookDetail: vi.fn(),
     approveLogbook: vi.fn(),
+    rejectLogbook: vi.fn(),
   };
 });
 
@@ -44,6 +45,7 @@ function renderScreen() {
     <MemoryRouter initialEntries={['/dosen/logbook/42']}>
       <Routes>
         <Route path="/dosen/logbook/:sessionId" element={<LecturerLogbookReview />} />
+        <Route path="/dosen/logbook/:sessionId/manual" element={<div>MANUAL_NOTES_SCREEN</div>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -53,6 +55,7 @@ describe('LecturerLogbookReview (S-13)', () => {
   beforeEach(() => {
     vi.mocked(logbookApi.getLogbookDetail).mockResolvedValue(BASE_LOGBOOK);
     vi.mocked(logbookApi.approveLogbook).mockResolvedValue(BASE_LOGBOOK);
+    vi.mocked(logbookApi.rejectLogbook).mockResolvedValue(BASE_LOGBOOK);
   });
 
   it('disabled_until_transcript_expanded: approve button is disabled before any interaction', async () => {
@@ -101,6 +104,34 @@ describe('LecturerLogbookReview (S-13)', () => {
 
     await waitFor(() => {
       expect(screen.getByRole('dialog', { name: 'Konfirmasi Persetujuan Logbook' })).toBeInTheDocument();
+    });
+  });
+
+  it('reject_button_opens_confirmation_modal: clicking "Tolak Ringkasan" renders RejectLogbookModal', async () => {
+    renderScreen();
+
+    const rejectButton = await screen.findByRole('button', { name: 'Tolak Ringkasan' });
+    fireEvent.click(rejectButton);
+
+    await waitFor(() => {
+      expect(screen.getByRole('dialog', { name: 'Konfirmasi Penolakan Ringkasan' })).toBeInTheDocument();
+    });
+  });
+
+  it('confirm_reject_calls_api_and_navigates_to_manual_notes: confirming reject calls rejectLogbook and navigates to the manual-notes route', async () => {
+    renderScreen();
+
+    const rejectButton = await screen.findByRole('button', { name: 'Tolak Ringkasan' });
+    fireEvent.click(rejectButton);
+
+    const confirmButton = await screen.findByRole('button', { name: 'Ya, Tolak' });
+    fireEvent.click(confirmButton);
+
+    await waitFor(() => {
+      expect(logbookApi.rejectLogbook).toHaveBeenCalledWith(42);
+    });
+    await waitFor(() => {
+      expect(screen.getByText('MANUAL_NOTES_SCREEN')).toBeInTheDocument();
     });
   });
 });

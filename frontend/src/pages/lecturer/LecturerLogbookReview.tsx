@@ -6,11 +6,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import {
-  getLogbookDetail, approveLogbook,
+  getLogbookDetail, approveLogbook, rejectLogbook,
   type AdvicePoint, type ImprovementNote, type LogbookDetail, type LogbookSummary,
 } from '../../api/logbook';
 import LogbookStatusBadge from '../../components/LogbookStatusBadge';
 import ApproveLogbookModal from '../../components/ApproveLogbookModal';
+import RejectLogbookModal from '../../components/RejectLogbookModal';
 
 function fmtDate(iso: string | null): string {
   if (!iso) return '-';
@@ -48,6 +49,8 @@ export default function LecturerLogbookReview() {
   const [summary, setSummary] = useState<LogbookSummary | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [approving, setApproving] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejecting, setRejecting] = useState(false);
 
   useEffect(() => {
     if (!sessionId) return;
@@ -92,6 +95,20 @@ export default function LecturerLogbookReview() {
       setShowModal(false);
     } finally {
       setApproving(false);
+    }
+  };
+
+  const handleReject = async () => {
+    if (!sessionId || rejecting) return;
+    setRejecting(true);
+    try {
+      await rejectLogbook(Number(sessionId));
+      navigate(`/dosen/logbook/${sessionId}/manual`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Gagal menolak logbook.');
+      setShowRejectModal(false);
+    } finally {
+      setRejecting(false);
     }
   };
 
@@ -176,7 +193,14 @@ export default function LecturerLogbookReview() {
         </section>
       </main>
 
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 p-4 max-w-md mx-auto">
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 p-4 max-w-md mx-auto space-y-2">
+        <button
+          type="button"
+          onClick={() => setShowRejectModal(true)}
+          className="w-full py-2 text-error text-sm font-bold text-center min-h-[44px] focus-visible:ring-2 focus-visible:ring-error focus-visible:outline-none rounded-xl"
+        >
+          Tolak Ringkasan
+        </button>
         <button
           type="button"
           disabled={!hasExpandedOnce}
@@ -194,6 +218,14 @@ export default function LecturerLogbookReview() {
           onConfirm={handleApprove}
           onClose={() => setShowModal(false)}
           loading={approving}
+        />
+      )}
+
+      {showRejectModal && (
+        <RejectLogbookModal
+          onConfirm={handleReject}
+          onClose={() => setShowRejectModal(false)}
+          loading={rejecting}
         />
       )}
     </div>

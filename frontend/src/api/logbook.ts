@@ -74,6 +74,15 @@ export async function approveLogbook(sessionId: number, summaryEdited: LogbookSu
   return res.json();
 }
 
+export async function rejectLogbook(sessionId: number): Promise<LogbookDetail> {
+  const res = await apiRequest(`/api/logbook/${sessionId}/reject/`, { method: 'POST' });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error((body as { detail?: string }).detail ?? 'Gagal menolak logbook.');
+  }
+  return res.json();
+}
+
 export async function saveManualNotes(sessionId: number, notes: string): Promise<LogbookDetail> {
   const res = await apiRequest(`/api/logbook/${sessionId}/manual-notes/`, {
     method: 'POST',
