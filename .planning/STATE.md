@@ -72,6 +72,7 @@ Two team branches (`main`, with Farel's Phase 2 UI/consent work, and a teammate'
 
 - Requirements traceability table in REQUIREMENTS.md has phase numbers filled in as of 2026-06-21.
 - Phase 1 context document (01-CONTEXT.md) was written against PRD v1.0 — review and update before starting Phase 1 plan.
+- `06-UI-SPEC.md` line ~180 has a stray label mismatch: names the S-13 transcript-expansion gate button "Setujui & Kunci" (which is actually the S-14 modal's confirm button, per line 184 and the Copywriting Contract table). The gated button is really "Setujui & Simpan ke Logbook" (S-13 sticky footer) — confirmed by the Copywriting Contract table and the actual `06-06-PLAN.md` Task 3/4 implementation, both of which use the correct label. UI-SPEC.md's line 180 itself was never corrected. Found 2026-07-05 during `06-VALIDATION.md` reconciliation. Low-priority copy-doc cleanup — not blocking Phase 6 execution.
 
 ### Decisions
 
