@@ -129,6 +129,11 @@ class ApproveLogbookView(APIView):
             'summary_edited', 'status', 'approved_at', 'approved_by', 'updated_at'])
         _create_action_items_from_summary(logbook.session, logbook.summary_edited)
 
+        # Phase 7 SC3: sinkron ke logbook kampus (Sekawan/KPTI). Graceful — bila
+        # nonaktif/gagal, approve tetap sukses; kegagalan tercatat & di-retry.
+        from apps.logbook.services.campus_logbook import sync_logbook
+        sync_logbook(logbook)
+
         notify_student(
             logbook.session.submission.student,
             'Ringkasan hasil bimbingan Anda sudah tersedia.',

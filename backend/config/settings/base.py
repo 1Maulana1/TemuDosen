@@ -150,6 +150,16 @@ STT_COMPUTE_TYPE = env('STT_COMPUTE_TYPE', default='int8')
 STT_LANGUAGE = env('STT_LANGUAGE', default='id')
 STT_MODEL_DOWNLOAD_ROOT = env('STT_MODEL_DOWNLOAD_ROOT', default=str(BASE_DIR / 'storage' / 'whisper_models'))
 
+# ── Campus logbook integration (Phase 7 SC3-6: Sekawan/KPTI) ────────────────────
+# Feature flag off by default → sync is a no-op and the CSV/PDF export fallback is
+# offered instead (graceful degradation, LOGBOOK-03). "Belum ada API kampus" = aman.
+CAMPUS_LOGBOOK_ENABLED = env.bool('CAMPUS_LOGBOOK_ENABLED', default=False)
+CAMPUS_LOGBOOK_PROVIDER = env('CAMPUS_LOGBOOK_PROVIDER', default='sekawan')  # 'sekawan' | 'kpti'
+CAMPUS_LOGBOOK_BASE_URL = env('CAMPUS_LOGBOOK_BASE_URL', default='')
+CAMPUS_LOGBOOK_TOKEN = env('CAMPUS_LOGBOOK_TOKEN', default='')
+CAMPUS_LOGBOOK_TIMEOUT = env.int('CAMPUS_LOGBOOK_TIMEOUT', default=5)
+CAMPUS_LOGBOOK_MAX_RETRIES = env.int('CAMPUS_LOGBOOK_MAX_RETRIES', default=3)
+
 # Anthropic LLM summarization (D-04). Model id harus valid — jangan disubstitusi.
 LLM_MODEL = env('LLM_MODEL', default='claude-haiku-4-5')
 ANTHROPIC_API_KEY = env('ANTHROPIC_API_KEY', default='')

@@ -61,6 +61,22 @@ class SessionLogbook(models.Model):
     llm_cost_estimate_idr = models.DecimalField(
         max_digits=12, decimal_places=2, null=True, blank=True,
     )
+    # Phase 7 SC3-5 (LOGBOOK-01/03): sync ke logbook kampus (Sekawan/KPTI).
+    # Diisi saat dosen menyetujui ringkasan; degradasi anggun bila API mati.
+    class CampusSyncStatus(models.TextChoices):
+        NOT_SYNCED = 'not_synced', 'Belum Disinkron'
+        SYNCED = 'synced', 'Tersinkron'
+        FAILED = 'failed', 'Gagal'
+        PENDING_RETRY = 'pending_retry', 'Menunggu Coba Ulang'
+
+    campus_sync_status = models.CharField(
+        max_length=20,
+        choices=CampusSyncStatus.choices,
+        default=CampusSyncStatus.NOT_SYNCED,
+    )
+    campus_entry_id = models.CharField(max_length=128, blank=True, default='')
+    campus_synced_at = models.DateTimeField(null=True, blank=True)
+    campus_sync_attempts = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
