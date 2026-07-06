@@ -992,12 +992,12 @@ class LecturerStatsView(APIView):
 def _campus_logbook_integration_status():
     """Phase 7 SC5/SC6: campus logbook integration health for the Admin Dashboard."""
     from apps.logbook.models import SessionLogbook
-    base_url = getattr(settings, 'CAMPUS_LOGBOOK_BASE_URL', '')
-    token = getattr(settings, 'CAMPUS_LOGBOOK_TOKEN', '')
+    from apps.logbook.services.campus_logbook import effective_config
+    cfg = effective_config()
     return {
-        'enabled': getattr(settings, 'CAMPUS_LOGBOOK_ENABLED', False),
-        'configured': bool(base_url and token),
-        'provider': getattr(settings, 'CAMPUS_LOGBOOK_PROVIDER', ''),
+        'enabled': cfg['enabled'],
+        'configured': bool(cfg['base_url'] and cfg['token']),
+        'provider': cfg['provider'],
         'pending_retry': SessionLogbook.objects.filter(
             campus_sync_status=SessionLogbook.CampusSyncStatus.PENDING_RETRY).count(),
         'failed': SessionLogbook.objects.filter(

@@ -3,6 +3,7 @@ from django.urls import path
 
 from .views import (
     ApproveLogbookView,
+    CampusLogbookConfigView,
     LecturerLogbookDetailView,
     LecturerLogbookListView,
     LogbookExportView,
@@ -13,6 +14,8 @@ from .views import (
 )
 
 logbook_urlpatterns = [
+    # SC6 (ADMIN-04): admin mengatur kredensial/setelan integrasi logbook kampus
+    path('admin/campus-config/', CampusLogbookConfigView.as_view(), name='logbook-campus-config'),
     path('lecturer/', LecturerLogbookListView.as_view(), name='logbook-lecturer'),
     path('student/', StudentLogbookListView.as_view(), name='logbook-student-list'),
     path('student/<int:session_id>/', StudentLogbookView.as_view(), name='logbook-student'),

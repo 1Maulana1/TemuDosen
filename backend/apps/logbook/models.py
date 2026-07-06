@@ -85,3 +85,46 @@ class SessionLogbook(models.Model):
 
     def __str__(self):
         return f'Logbook sesi #{self.session_id} [{self.status}]'
+
+
+class CampusLogbookConfig(models.Model):
+    """Phase 7 SC6 (ADMIN-04): runtime config for campus logbook sync.
+
+    Singleton (pk=1). When a row exists it overrides the CAMPUS_LOGBOOK_* settings,
+    so an admin can configure credentials without a redeploy. The bearer token is
+    stored encrypted (reusing the calendar service's Fernet helper); it is never
+    returned by the API — callers see only `has_token`.
+    """
+    enabled = models.BooleanField(default=False)
+    provider = models.CharField(max_length=20, default='sekawan')
+    base_url = models.CharField(max_length=300, blank=True, default='')
+    token_enc = models.CharField(max_length=500, blank=True, default='')
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Konfigurasi Logbook Kampus'
+
+    def __str__(self):
+        return f'CampusLogbookConfig(enabled={self.enabled}, provider={self.provider})'
+
+    def save(self, *args, **kwargs):
+        self.pk = 1  # enforce singleton
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def load(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+    def set_token(self, plaintext: str):
+        from apps.bimbingan.services.calendar import encrypt_token
+        self.token_enc = encrypt_token(plaintext) if plaintext else ''
+
+    def get_token(self) -> str:
+        if not self.token_enc:
+            return ''
+        try:
+            from apps.bimbingan.services.calendar import decrypt_token
+            return decrypt_token(self.token_enc)
+        except Exception:
+            return ''

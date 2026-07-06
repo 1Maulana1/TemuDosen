@@ -265,3 +265,53 @@ class TestCampusIntegrationStatus:
         assert status_info['configured'] is True
         assert status_info['provider'] == 'sekawan'
         assert status_info['failed'] == 1
+
+
+@pytest.mark.django_db
+class TestCampusLogbookConfig:
+    """SC6 (ADMIN-04): admin-editable runtime config overriding settings."""
+
+    url = '/api/logbook/admin/campus-config/'
+
+    def test_admin_get_defaults_and_hides_token(self, admin_user):
+        resp = client_for(admin_user).get(self.url)
+        assert resp.status_code == 200
+        assert resp.data['has_token'] is False
+        assert 'token' not in resp.data  # secret never returned
+
+    def test_admin_put_updates_config(self, admin_user):
+        resp = client_for(admin_user).put(self.url, {
+            'enabled': True, 'provider': 'kpti',
+            'base_url': 'https://kpti.example/api', 'token': 'rahasia-123',
+        }, format='json')
+        assert resp.status_code == 200
+        assert resp.data['enabled'] is True
+        assert resp.data['provider'] == 'kpti'
+        assert resp.data['has_token'] is True
+        assert 'token' not in resp.data
+
+    def test_enabling_without_credentials_rejected(self, admin_user):
+        resp = client_for(admin_user).put(self.url, {'enabled': True}, format='json')
+        assert resp.status_code == 400
+
+    def test_non_admin_forbidden(self, lecturer_user):
+        assert client_for(lecturer_user).get(self.url).status_code == 403
+
+    def test_db_config_overrides_settings(self, pending_submission, monkeypatch):
+        """With settings disabled but a DB row enabled+configured, sync fires."""
+        from apps.logbook.models import CampusLogbookConfig
+        cfg = CampusLogbookConfig.load()
+        cfg.enabled = True
+        cfg.provider = 'sekawan'
+        cfg.base_url = 'https://campus.example/api'
+        cfg.set_token('tok-abc')
+        cfg.save()
+        # round-trip: encrypted at rest, decrypts back
+        assert cfg.get_token() == 'tok-abc'
+
+        monkeypatch.setattr(cl._HttpLogbookAdapter, 'sync', lambda self, payload: 'CAMPUS-DB')
+        lb = _logbook(pending_submission)
+        # settings leave CAMPUS_LOGBOOK_ENABLED at its default (False); DB row wins
+        assert cl.sync_logbook(lb) == 'synced'
+        lb.refresh_from_db()
+        assert lb.campus_entry_id == 'CAMPUS-DB'

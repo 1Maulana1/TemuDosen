@@ -10,7 +10,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.accounts.permissions import IsLecturer, IsStudent
+from apps.accounts.permissions import IsAdmin, IsLecturer, IsStudent
 from apps.bimbingan.models import ActionItem, SystemLog
 from apps.bimbingan.services.notification import notify_student
 
@@ -360,3 +360,59 @@ class LogbookExportView(APIView):
                 {'detail': 'Gagal membuat ekspor PDF. Coba gunakan format CSV.'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+
+class CampusLogbookConfigView(APIView):
+    """GET/PUT /api/admin/campus-logbook/ — SC6 (ADMIN-04).
+
+    Admin membaca & mengatur kredensial + setelan integrasi logbook kampus saat
+    runtime. Token tidak pernah dikembalikan (hanya `has_token`); dikirim lewat
+    field `token` saat PUT untuk memperbaruinya (string kosong = tidak diubah).
+    """
+    permission_classes = [IsAdmin]
+
+    def _serialize(self, cfg):
+        return {
+            'enabled': cfg.enabled,
+            'provider': cfg.provider,
+            'base_url': cfg.base_url,
+            'has_token': bool(cfg.token_enc),
+        }
+
+    def get(self, request):
+        from .models import CampusLogbookConfig
+        return Response(self._serialize(CampusLogbookConfig.load()))
+
+    def put(self, request):
+        from .models import CampusLogbookConfig
+        cfg = CampusLogbookConfig.load()
+        data = request.data
+
+        if 'provider' in data:
+            provider = str(data.get('provider') or '').strip().lower()
+            if provider not in ('sekawan', 'kpti'):
+                return Response({'detail': "Provider harus 'sekawan' atau 'kpti'."},
+                                status=status.HTTP_400_BAD_REQUEST)
+            cfg.provider = provider
+        if 'base_url' in data:
+            cfg.base_url = str(data.get('base_url') or '').strip()
+        if 'enabled' in data:
+            cfg.enabled = bool(data.get('enabled'))
+        # token opsional: hanya diperbarui bila string non-kosong dikirim
+        if data.get('token'):
+            cfg.set_token(str(data['token']))
+
+        if cfg.enabled and not (cfg.base_url and (cfg.token_enc or data.get('token'))):
+            return Response(
+                {'detail': 'URL dan token wajib diisi sebelum mengaktifkan integrasi.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        cfg.save()
+        SystemLog.objects.create(
+            level=SystemLog.Level.INFO,
+            event_type='CAMPUS_LOGBOOK_CONFIG',
+            message=f'Konfigurasi logbook kampus diperbarui oleh {request.user.email}',
+            context={'enabled': cfg.enabled, 'provider': cfg.provider},
+        )
+        return Response(self._serialize(cfg))

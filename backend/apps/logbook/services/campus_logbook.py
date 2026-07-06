@@ -30,15 +30,37 @@ ENDPOINT_PATH = '/api/v1/logbook/entries'
 
 # ── Config helpers ─────────────────────────────────────────────────────────────
 
+def effective_config() -> dict:
+    """Resolve effective campus config: the CampusLogbookConfig singleton (SC6)
+    overrides the CAMPUS_LOGBOOK_* settings when a row exists."""
+    cfg = {
+        'enabled': getattr(settings, 'CAMPUS_LOGBOOK_ENABLED', False),
+        'provider': getattr(settings, 'CAMPUS_LOGBOOK_PROVIDER', 'sekawan'),
+        'base_url': getattr(settings, 'CAMPUS_LOGBOOK_BASE_URL', ''),
+        'token': getattr(settings, 'CAMPUS_LOGBOOK_TOKEN', ''),
+    }
+    try:
+        from apps.logbook.models import CampusLogbookConfig
+        row = CampusLogbookConfig.objects.filter(pk=1).first()
+        if row is not None:
+            cfg['enabled'] = row.enabled
+            cfg['provider'] = row.provider or cfg['provider']
+            cfg['base_url'] = row.base_url or cfg['base_url']
+            token = row.get_token()
+            if token:
+                cfg['token'] = token
+    except Exception:
+        pass
+    return cfg
+
+
 def _enabled() -> bool:
-    return getattr(settings, 'CAMPUS_LOGBOOK_ENABLED', False)
+    return effective_config()['enabled']
 
 
 def _configured() -> bool:
-    return bool(
-        getattr(settings, 'CAMPUS_LOGBOOK_BASE_URL', '')
-        and getattr(settings, 'CAMPUS_LOGBOOK_TOKEN', '')
-    )
+    cfg = effective_config()
+    return bool(cfg['base_url'] and cfg['token'])
 
 
 def _log_error(message: str, context: dict):
@@ -132,8 +154,9 @@ class _HttpLogbookAdapter(LogbookAdapter):
     def sync(self, payload: dict) -> str:
         import requests  # lazy: only needed when a real sync actually fires
 
-        base = getattr(settings, 'CAMPUS_LOGBOOK_BASE_URL', '').rstrip('/')
-        token = getattr(settings, 'CAMPUS_LOGBOOK_TOKEN', '')
+        cfg = effective_config()
+        base = cfg['base_url'].rstrip('/')
+        token = cfg['token']
         timeout = getattr(settings, 'CAMPUS_LOGBOOK_TIMEOUT', 5)
 
         resp = requests.post(
@@ -163,7 +186,7 @@ _ADAPTERS = {'sekawan': SekawanAdapter, 'kpti': KPTIAdapter}
 
 def get_adapter() -> Optional[LogbookAdapter]:
     """Return the configured adapter, or None if the provider is unknown."""
-    provider = getattr(settings, 'CAMPUS_LOGBOOK_PROVIDER', 'sekawan')
+    provider = effective_config()['provider']
     cls = _ADAPTERS.get(provider)
     return cls() if cls else None
 

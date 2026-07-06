@@ -29,7 +29,39 @@ export interface AdminStats {
   integrations: {
     google_calendar: { enabled: boolean; connected_dosens: number };
     logbook: { enabled: boolean };
+    campus_logbook?: {
+      enabled: boolean;
+      configured: boolean;
+      provider: string;
+      pending_retry: number;
+      failed: number;
+      synced: number;
+    };
   };
+}
+
+export interface CampusLogbookConfig {
+  enabled: boolean;
+  provider: string;
+  base_url: string;
+  has_token: boolean;
+}
+
+export async function getCampusLogbookConfig(): Promise<CampusLogbookConfig> {
+  const r = await apiRequest('/api/logbook/admin/campus-config/');
+  if (!r.ok) throw new Error('Gagal memuat konfigurasi logbook kampus.');
+  return r.json();
+}
+
+export async function updateCampusLogbookConfig(
+  payload: { enabled?: boolean; provider?: string; base_url?: string; token?: string }
+): Promise<CampusLogbookConfig> {
+  const r = await apiRequest('/api/logbook/admin/campus-config/', {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+  if (!r.ok) { const b = await r.json().catch(() => ({})); throw new Error((b as {detail?:string}).detail ?? 'Gagal menyimpan konfigurasi.'); }
+  return r.json();
 }
 
 export type ReportPeriod = 'weekly' | 'monthly' | 'semester';
