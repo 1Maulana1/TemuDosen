@@ -9,6 +9,13 @@ function fmtTime(iso: string) {
   catch { return iso; }
 }
 
+function fmtRupiah(n: number) {
+  return `Rp ${Math.round(n).toLocaleString('id-ID')}`;
+}
+
+// D-10: set event_type yang sama dengan yang diagregasi AdminStatsView.stt_llm.failed_fallback
+const STT_LLM_EVENT_TYPES = new Set(['STT_FAILED', 'STT_NO_RECORDING', 'LLM_FAILED', 'LLM_SKIPPED']);
+
 // ── Emergency Cancel Modal (FR-AD02) ────────────────────────────────────────────
 
 interface EmergencyCancelModalProps {
@@ -177,6 +184,52 @@ export default function AdminDashboard() {
                 </div>
               </div>
             </div>
+          </section>
+
+          {/* Pemrosesan STT/AI (ADMIN-05, S-17) */}
+          <section>
+            <h2 className="font-headline font-bold text-lg text-slate-900 mb-3">Pemrosesan STT/AI</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { label: 'Transkripsi Berhasil', value: data.stt_llm.transcription_success, icon: 'graphic_eq', color: 'text-success' },
+                { label: 'Ringkasan Berhasil', value: data.stt_llm.summary_success, icon: 'auto_awesome', color: 'text-success' },
+                { label: 'Gagal / Fallback Manual', value: data.stt_llm.failed_fallback, icon: 'error_outline', color: 'text-error' },
+              ].map(c => (
+                <div key={c.label} className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+                  <span className={`material-symbols-outlined text-2xl ${c.color}`}>{c.icon}</span>
+                  <p className={`font-headline font-bold text-3xl mt-1 ${c.color}`}>{c.value}</p>
+                  <p className="text-[11px] text-neutral-gray mt-0.5">{c.label}</p>
+                </div>
+              ))}
+              <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+                <span className="material-symbols-outlined text-2xl text-primary">payments</span>
+                <p className="font-headline font-bold text-3xl mt-1 text-primary">
+                  {fmtRupiah(data.stt_llm.monthly_cost_idr)}
+                </p>
+                <p className="text-[11px] text-neutral-gray mt-0.5">Estimasi Biaya Bulan Ini</p>
+                <p className="text-[11px] text-neutral-gray">
+                  rata-rata ~{fmtRupiah(data.stt_llm.avg_cost_per_session_idr)}/sesi
+                </p>
+              </div>
+            </div>
+
+            {(() => {
+              const sttLlmErrors = data.recent_errors.filter((e) => STT_LLM_EVENT_TYPES.has(e.event_type));
+              return sttLlmErrors.length > 0 ? (
+                <div className="space-y-2 mt-3">
+                  {sttLlmErrors.map(e => (
+                    <div key={e.id} className="bg-white rounded-xl border border-error/10 p-3 flex items-start gap-3">
+                      <span className="material-symbols-outlined text-error text-base mt-0.5 flex-shrink-0">error</span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-bold text-slate-800 truncate">{e.event_type}</p>
+                        <p className="text-[11px] text-neutral-gray truncate">{e.message}</p>
+                        <p className="text-[11px] text-gray-400 mt-0.5">{fmtTime(e.created_at)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : null;
+            })()}
           </section>
 
           {/* Emergency Cancel (FR-AD02) */}

@@ -172,8 +172,8 @@ export interface SessionHistoryItem {
 // Ringkasan terstruktur hasil AI (schemas.SessionSummary). Untuk jalur manual,
 // backend mengisi { manual_notes } sebagai gantinya.
 export interface SessionSummaryContent {
-  advice_points?: { topic: string; detail: string }[];
-  improvement_notes?: { area: string; action: string }[];
+  advice_points?: { topic: string; detail: string; grounded?: boolean }[];
+  improvement_notes?: { area: string; action: string; grounded?: boolean }[];
   manual_notes?: string;
 }
 
@@ -242,6 +242,16 @@ export async function approveLogbook(
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error((body as { detail?: string }).detail ?? 'Gagal menyetujui ringkasan.');
+  }
+  return res.json();
+}
+
+/** Gate tambahan (STT-04): dosen menolak draf AI ready_for_review, dialihkan ke jalur manual. */
+export async function rejectLogbook(sessionId: number): Promise<LogbookDetail> {
+  const res = await apiRequest(`/api/logbook/${sessionId}/reject/`, { method: 'POST' });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error((body as { detail?: string }).detail ?? 'Gagal menolak ringkasan.');
   }
   return res.json();
 }

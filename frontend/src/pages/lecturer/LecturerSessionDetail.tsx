@@ -11,12 +11,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useParams, useRouteLoaderData } from 'react-router';
 import {
-  getLogbookDetail, approveLogbook, saveManualNotes, getSessionRecordingUrl,
+  getLogbookDetail, approveLogbook, rejectLogbook, saveManualNotes, getSessionRecordingUrl,
   type LogbookDetail, type SessionSummaryContent,
 } from '../../api/sessions';
 import { logout, type User } from '../../api/auth';
 import { AppNavbar, AppBottomNav, NAV_ITEMS } from '../../components/AppNav';
 import SummaryContent from '../../components/SummaryContent';
+import RejectLogbookModal from '../../components/RejectLogbookModal';
 
 function fmtIDR(v: string | null | undefined): string | null {
   const n = v == null ? NaN : Number(v);
@@ -53,6 +54,8 @@ export default function LecturerSessionDetail() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejecting, setRejecting] = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -85,6 +88,21 @@ export default function LecturerSessionDetail() {
       setMsg(e instanceof Error ? e.message : 'Gagal menyimpan.');
     } finally {
       setSaving(false);
+      setTimeout(() => setMsg(''), 5000);
+    }
+  }
+
+  async function handleReject() {
+    setRejecting(true);
+    try {
+      const updated = await rejectLogbook(sessionId);
+      setData(updated);
+      setSummaryDraft('');
+      setShowRejectModal(false);
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : 'Gagal menolak ringkasan.');
+    } finally {
+      setRejecting(false);
       setTimeout(() => setMsg(''), 5000);
     }
   }
@@ -188,6 +206,11 @@ export default function LecturerSessionDetail() {
                         ? 'Draf ringkasan otomatis siap ditinjau — perbaiki bila perlu, lalu setujui.'
                         : 'Transkripsi & ringkasan otomatis belum tersedia — tuliskan ringkasan hasil bimbingan secara manual di bawah ini.'}
                     </p>
+                    {data.status === 'ready_for_review' && (
+                      <div className="border border-gray-100 rounded-xl p-3 bg-gray-50/60">
+                        <SummaryContent content={data.summary_raw} showGroundedness />
+                      </div>
+                    )}
                     <textarea
                       value={summaryDraft}
                       onChange={(e) => setSummaryDraft(e.target.value)}
@@ -200,6 +223,12 @@ export default function LecturerSessionDetail() {
                       <span className="material-symbols-outlined text-base" aria-hidden="true">check_circle</span>
                       {saving ? 'Menyetujui…' : 'Setujui & Kirim ke Mahasiswa'}
                     </button>
+                    {data.status === 'ready_for_review' && (
+                      <button type="button" disabled={saving} onClick={() => setShowRejectModal(true)}
+                        className="w-full py-2 text-error text-sm font-bold text-center min-h-[44px] focus-visible:ring-2 focus-visible:ring-error focus-visible:outline-none rounded-xl">
+                        Tolak Draf AI & Isi Manual
+                      </button>
+                    )}
                   </>
                 )}
 
@@ -219,6 +248,14 @@ export default function LecturerSessionDetail() {
       </main>
 
       <AppBottomNav items={NAV_ITEMS.dosen} active="riwayat" />
+
+      {showRejectModal && (
+        <RejectLogbookModal
+          onConfirm={handleReject}
+          onClose={() => setShowRejectModal(false)}
+          loading={rejecting}
+        />
+      )}
     </div>
   );
 }

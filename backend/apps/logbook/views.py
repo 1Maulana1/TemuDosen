@@ -11,6 +11,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts.permissions import IsLecturer, IsStudent
+from apps.bimbingan.models import SystemLog
 from apps.bimbingan.services.notification import notify_student
 
 from .models import SessionLogbook
@@ -94,6 +95,41 @@ class ApproveLogbookView(APIView):
             'Ringkasan hasil bimbingan Anda sudah tersedia.',
             session=logbook.session,
             event_type='SUMMARY_APPROVED',
+        )
+        return Response(LogbookDetailSerializer(logbook).data)
+
+
+class RejectLogbookView(APIView):
+    """POST /api/logbook/<session_id>/reject/ — tolak draf AI, alihkan ke jalur manual.
+
+    Gate tambahan (STT-04): dosen bisa menolak ringkasan AI yang meragukan alih-alih
+    dipaksa menyetujuinya. Menandai FAILED sehingga ManualNotesView menerimanya
+    seperti pipeline yang gagal — tidak ada field/status baru yang perlu ditambahkan.
+    """
+    permission_classes = [IsLecturer]
+
+    def post(self, request, session_id):
+        logbook = _get_logbook_or_404(session_id)
+        if logbook is None:
+            return Response({'detail': 'Logbook tidak ditemukan.'},
+                            status=status.HTTP_404_NOT_FOUND)
+        if logbook.session.submission.student.adviser != request.user:
+            return Response({'detail': 'Hanya dosen pembimbing yang dapat menolak.'},
+                            status=status.HTTP_403_FORBIDDEN)
+        if logbook.status != SessionLogbook.Status.READY_FOR_REVIEW:
+            return Response(
+                {'detail': 'Hanya logbook berstatus "Menunggu Tinjauan" yang dapat ditolak.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        logbook.status = SessionLogbook.Status.FAILED
+        logbook.save(update_fields=['status', 'updated_at'])
+
+        SystemLog.objects.create(
+            level=SystemLog.Level.INFO,
+            event_type='LOGBOOK_REJECTED',
+            message=f'Dosen {request.user.email} menolak draf ringkasan AI logbook #{logbook.id}',
+            context={'logbook_id': logbook.id, 'session_id': session_id},
         )
         return Response(LogbookDetailSerializer(logbook).data)
 

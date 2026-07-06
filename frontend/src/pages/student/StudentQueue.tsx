@@ -14,6 +14,7 @@ import { getMyQueue, cancelMyQueue, type StudentQueueSession } from '../../api/s
 import { logout, type User } from '../../api/auth';
 import StatusBadge from '../../components/StatusBadge';
 import { AppNavbar, AppBottomNav, NAV_ITEMS } from '../../components/AppNav';
+import VideoProvider from '../../components/video/VideoProvider';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -77,10 +78,12 @@ function ConfirmDialog({ dosenName, onConfirm, onCancel, loading }: ConfirmDialo
 interface QueueInfoProps {
   session: StudentQueueSession;
   onCancelClick: () => void;
+  displayName: string;
 }
 
-function QueueInfo({ session, onCancelClick }: QueueInfoProps) {
+function QueueInfo({ session, onCancelClick, displayName }: QueueInfoProps) {
   const isWaiting = session.status === 'waiting';
+  const isOnlineCallLive = session.status === 'in_progress' && session.method === 'online';
 
   return (
     <div className="pt-6 md:pt-8 grid md:grid-cols-2 gap-6 md:gap-10 md:items-center">
@@ -136,7 +139,7 @@ function QueueInfo({ session, onCancelClick }: QueueInfoProps) {
             <p className="font-bold text-sm text-slate-900">
               {session.method === 'online' ? 'Online' : 'Offline (Tatap Muka)'}
             </p>
-            {session.method === 'online' && session.meeting_link && (
+            {!isOnlineCallLive && session.method === 'online' && session.meeting_link && (
               <a href={session.meeting_link} target="_blank" rel="noopener noreferrer"
                 className="mt-2 inline-flex items-center gap-2 px-4 py-2.5 bg-success text-white text-sm font-bold rounded-xl hover:bg-green-700 min-h-[44px] focus-visible:ring-2 focus-visible:ring-success focus-visible:outline-none">
                 <span className="material-symbols-outlined text-base" aria-hidden="true">videocam</span>
@@ -145,6 +148,13 @@ function QueueInfo({ session, onCancelClick }: QueueInfoProps) {
             )}
           </div>
         </div>
+
+        {/* Sesi online sedang berlangsung — panggilan video langsung */}
+        {isOnlineCallLive && (
+          <div className="w-full">
+            <VideoProvider roomName={`temudosen-session-${session.id}`} displayName={displayName} />
+          </div>
+        )}
 
         {/* Notification status */}
         {session.notification_sent && (
@@ -266,7 +276,11 @@ export default function StudentQueue() {
         )}
 
         {!loading && data?.hasActiveQueue && data.session && (
-          <QueueInfo session={data.session} onCancelClick={() => setShowConfirm(true)} />
+          <QueueInfo
+            session={data.session}
+            onCancelClick={() => setShowConfirm(true)}
+            displayName={user?.full_name ?? 'Mahasiswa'}
+          />
         )}
       </main>
 

@@ -35,6 +35,21 @@ def _enqueue(task, *args):
         task(*args)
 
 
+def _fail(lb, event_type, message=''):
+    """Tandai logbook FAILED + catat ke SystemLog (dipakai AdminStatsView.stt_llm
+    untuk menghitung `failed_fallback` — S-17/ADMIN-05)."""
+    from apps.bimbingan.models import SystemLog
+
+    lb.status = lb.Status.FAILED
+    lb.save(update_fields=['status', 'updated_at'])
+    SystemLog.objects.create(
+        level=SystemLog.Level.ERROR,
+        event_type=event_type,
+        message=message or f'Logbook #{lb.id}: {event_type}',
+        context={'logbook_id': lb.id},
+    )
+
+
 @shared_task(ignore_result=True, queue='stt')
 def transcribe_session(logbook_id):
     from .models import SessionLogbook
@@ -43,19 +58,16 @@ def transcribe_session(logbook_id):
     lb = SessionLogbook.objects.select_related('session__recording').get(id=logbook_id)
     recording = getattr(lb.session, 'recording', None)
     if recording is None:
-        lb.status = SessionLogbook.Status.FAILED
-        lb.save(update_fields=['status', 'updated_at'])
-        logger.warning('Logbook #%s: tidak ada rekaman untuk ditranskripsi', logbook_id)
+        _fail(lb, 'STT_NO_RECORDING', f'Logbook #{logbook_id}: tidak ada rekaman untuk ditranskripsi')
         return
 
     lb.status = SessionLogbook.Status.TRANSCRIBING
     lb.save(update_fields=['status', 'updated_at'])
     try:
         transcript, duration = transcribe_audio(recording.file_path)
-    except Exception:
+    except Exception as e:
         logger.exception('Logbook #%s: STT gagal', logbook_id)
-        lb.status = SessionLogbook.Status.FAILED
-        lb.save(update_fields=['status', 'updated_at'])
+        _fail(lb, 'STT_FAILED', f'Logbook #{logbook_id}: STT gagal — {e}')
         return
 
     lb.transcript = transcript
@@ -71,24 +83,22 @@ def transcribe_session(logbook_id):
 @shared_task(ignore_result=True, queue='llm')
 def summarize_session(logbook_id):
     from .models import SessionLogbook
-    from .services.summarizer import summarize_transcript, estimate_cost_idr
+    from .services.summarizer import summarize_transcript, estimate_cost_idr, flag_ungrounded
 
     lb = SessionLogbook.objects.get(id=logbook_id)
     try:
         summary, in_tok, out_tok = summarize_transcript(lb.transcript)
-    except Exception:
+    except Exception as e:
         logger.exception('Logbook #%s: ringkasan LLM gagal', logbook_id)
-        lb.status = SessionLogbook.Status.FAILED
-        lb.save(update_fields=['status', 'updated_at'])
+        _fail(lb, 'LLM_FAILED', f'Logbook #{logbook_id}: ringkasan LLM gagal — {e}')
         return
 
     if summary is None:
         # Pipeline nonaktif / transkrip kosong → serahkan ke jalur manual (STT-07).
-        lb.status = SessionLogbook.Status.FAILED
-        lb.save(update_fields=['status', 'updated_at'])
+        _fail(lb, 'LLM_SKIPPED', f'Logbook #{logbook_id}: pipeline nonaktif atau transkrip kosong')
         return
 
-    lb.summary_raw = summary
+    lb.summary_raw = flag_ungrounded(summary, lb.transcript)
     lb.llm_input_tokens = in_tok
     lb.llm_output_tokens = out_tok
     lb.llm_cost_estimate_idr = estimate_cost_idr(in_tok, out_tok)

@@ -45,6 +45,47 @@ class TestAdminStatsView:
         assert 'lecturers' in resp.data
         assert 'integrations' in resp.data
 
+    def test_stt_llm_block_present_with_expected_keys(self, authenticated_admin):
+        resp = authenticated_admin.get(self.url)
+        assert resp.status_code == 200
+        stt_llm = resp.data['stt_llm']
+        assert set(stt_llm.keys()) == {
+            'transcription_success', 'summary_success', 'failed_fallback',
+            'monthly_cost_idr', 'avg_cost_per_session_idr',
+        }
+
+    def test_stt_llm_counts_logbooks_by_status(
+        self, authenticated_admin, lecturer_user, pending_submission
+    ):
+        from apps.logbook.models import SessionLogbook
+
+        session = _approve(lecturer_user, pending_submission)
+        SessionLogbook.objects.create(
+            session=session, status=SessionLogbook.Status.READY_FOR_REVIEW,
+            llm_cost_estimate_idr=1500,
+        )
+
+        resp = authenticated_admin.get(self.url)
+        assert resp.status_code == 200
+        assert resp.data['stt_llm']['transcription_success'] == 1
+        assert resp.data['stt_llm']['summary_success'] == 1
+
+    def test_stt_llm_failed_fallback_counts_failure_events(self, authenticated_admin):
+        SystemLog.objects.create(
+            level=SystemLog.Level.ERROR, event_type='STT_FAILED', message='gagal',
+        )
+        SystemLog.objects.create(
+            level=SystemLog.Level.ERROR, event_type='LLM_SKIPPED', message='nonaktif',
+        )
+        # event tak relevan tidak boleh ikut terhitung
+        SystemLog.objects.create(
+            level=SystemLog.Level.ERROR, event_type='CALENDAR_ERROR', message='lain',
+        )
+
+        resp = authenticated_admin.get(self.url)
+        assert resp.status_code == 200
+        assert resp.data['stt_llm']['failed_fallback'] == 2
+
     def test_lecturers_list_includes_active_session_count(
         self, authenticated_admin, lecturer_user, pending_submission
     ):

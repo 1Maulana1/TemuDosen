@@ -9,6 +9,7 @@ Desain:
     SessionSummary (schemas.py) sehingga output selalu JSON terstruktur & tervalidasi.
 """
 import logging
+import re
 
 from django.conf import settings
 
@@ -66,6 +67,32 @@ def summarize_transcript(transcript):
         message.usage.input_tokens,
         message.usage.output_tokens,
     )
+
+
+def flag_ungrounded(summary, transcript):
+    """Tandai `grounded: False` pada item yang kata kuncinya tak muncul di transkrip.
+
+    Cek deterministik & murah (bukan panggilan LLM lagi) sebagai guardrail anti-
+    halusinasi (AI-SPEC.md): item dianggap "grounded" bila minimal satu kata
+    (>=4 huruf/angka) dari topic/detail (atau area/action) muncul verbatim di
+    transkrip. Tidak pernah memblokir penyimpanan — sekadar flag untuk UI review
+    dosen menampilkan chip "Perlu Verifikasi".
+    """
+    transcript_lower = transcript.lower()
+
+    def _is_grounded(*texts):
+        words = set()
+        for text in texts:
+            words.update(re.findall(r'[a-zA-Z0-9]{4,}', text.lower()))
+        if not words:
+            return True
+        return any(word in transcript_lower for word in words)
+
+    for item in summary.get('advice_points', []):
+        item['grounded'] = _is_grounded(item.get('topic', ''), item.get('detail', ''))
+    for item in summary.get('improvement_notes', []):
+        item['grounded'] = _is_grounded(item.get('area', ''), item.get('action', ''))
+    return summary
 
 
 def estimate_cost_idr(input_tokens, output_tokens):

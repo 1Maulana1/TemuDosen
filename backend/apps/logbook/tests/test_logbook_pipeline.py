@@ -11,7 +11,7 @@ import pytest
 from django.test import override_settings
 
 from apps.logbook.services.stt import transcribe_audio
-from apps.logbook.services.summarizer import summarize_transcript, estimate_cost_idr
+from apps.logbook.services.summarizer import summarize_transcript, estimate_cost_idr, flag_ungrounded
 from apps.logbook.tasks import dispatch_pipeline
 
 
@@ -36,6 +36,35 @@ class TestServicesGracefulDegradation:
         # 1M input @0.50 + 1M output @2.50 = 3.00 USD * 16000 = 48.000 IDR (default rate)
         assert estimate_cost_idr(1_000_000, 1_000_000) == pytest.approx(48000.0)
         assert estimate_cost_idr(0, 0) == 0.0
+
+
+class TestFlagUngrounded:
+    def test_item_grounded_when_keyword_appears_in_transcript(self):
+        summary = {
+            'advice_points': [{'topic': 'Metodologi', 'detail': 'Perbaiki bagian metodologi penelitian'}],
+            'improvement_notes': [],
+        }
+        result = flag_ungrounded(summary, 'Dosen membahas metodologi penelitian secara panjang lebar.')
+        assert result['advice_points'][0]['grounded'] is True
+
+    def test_item_flagged_ungrounded_when_no_keyword_matches(self):
+        summary = {
+            'advice_points': [],
+            'improvement_notes': [{'area': 'Statistika', 'action': 'Pelajari regresi linear'}],
+        }
+        result = flag_ungrounded(summary, 'Sesi ini hanya membahas jadwal ujian dan format cover.')
+        assert result['improvement_notes'][0]['grounded'] is False
+
+    def test_empty_text_defaults_to_grounded(self):
+        # Tidak ada kata kunci (>=4 huruf/angka) untuk dicocokkan -> anggap aman, jangan flag palsu.
+        summary = {'advice_points': [{'topic': 'ok', 'detail': ''}], 'improvement_notes': []}
+        result = flag_ungrounded(summary, 'transkrip apa saja')
+        assert result['advice_points'][0]['grounded'] is True
+
+    def test_matching_is_case_insensitive(self):
+        summary = {'advice_points': [{'topic': 'REGRESI', 'detail': ''}], 'improvement_notes': []}
+        result = flag_ungrounded(summary, 'kami membahas regresi linear berganda')
+        assert result['advice_points'][0]['grounded'] is True
 
 
 @pytest.mark.django_db

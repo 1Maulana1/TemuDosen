@@ -225,3 +225,64 @@ class TestSessionLogbookView:
             f'/api/logbook/{session.id}/manual-notes/', {'notes': 'mencoba'}, format='json'
         )
         assert resp.status_code == 403
+
+
+@pytest.mark.django_db
+class TestRejectLogbookView:
+    """Gate tambahan (STT-04): dosen menolak draf AI yang meragukan alih-alih
+    dipaksa menyetujuinya. _done_session() membuat logbook berstatus 'pending'
+    (STT/LLM mati di test) — di-set manual ke 'ready_for_review' untuk mensimulasikan
+    draf AI yang sudah jadi."""
+
+    def _ready_for_review(self, lecturer, submission):
+        from apps.logbook.models import SessionLogbook
+
+        session = _done_session(lecturer, submission)
+        logbook = SessionLogbook.objects.get(session=session)
+        logbook.transcript = 'dosen membahas metodologi penelitian'
+        logbook.summary_raw = {
+            'advice_points': [{'topic': 'Metodologi', 'detail': 'Perbaiki bab 3'}],
+            'improvement_notes': [],
+        }
+        logbook.status = SessionLogbook.Status.READY_FOR_REVIEW
+        logbook.save()
+        return session
+
+    def test_reject_falls_back_to_failed(self, lecturer_user, pending_submission):
+        session = self._ready_for_review(lecturer_user, pending_submission)
+        resp = client_for(lecturer_user).post(f'/api/logbook/{session.id}/reject/')
+        assert resp.status_code == 200
+        assert resp.data['status'] == 'failed'
+
+    def test_rejected_logbook_accepts_manual_notes(self, lecturer_user, pending_submission):
+        session = self._ready_for_review(lecturer_user, pending_submission)
+        client_for(lecturer_user).post(f'/api/logbook/{session.id}/reject/')
+
+        resp = client_for(lecturer_user).post(
+            f'/api/logbook/{session.id}/manual-notes/',
+            {'notes': 'Ditulis manual setelah menolak draf AI.'}, format='json',
+        )
+        assert resp.status_code == 200
+        assert resp.data['status'] == 'approved'
+        assert resp.data['is_manual'] is True
+
+    def test_cannot_reject_when_not_ready_for_review(self, lecturer_user, pending_submission):
+        session = _done_session(lecturer_user, pending_submission)  # status masih 'pending'
+        resp = client_for(lecturer_user).post(f'/api/logbook/{session.id}/reject/')
+        assert resp.status_code == 400
+
+    def test_unrelated_lecturer_cannot_reject(self, lecturer_user, pending_submission):
+        from apps.accounts.models import CustomUser
+
+        other_lecturer = CustomUser.objects.create_user(
+            email='other_lecturer2@test.com', password='pass12345', role='lecturer',
+            full_name='Dr. Lain Lagi', nidn='8888888888', is_approved=True,
+        )
+        session = self._ready_for_review(lecturer_user, pending_submission)
+        resp = client_for(other_lecturer).post(f'/api/logbook/{session.id}/reject/')
+        assert resp.status_code == 403
+
+    def test_student_cannot_reject(self, lecturer_user, advisee_student, pending_submission):
+        session = self._ready_for_review(lecturer_user, pending_submission)
+        resp = client_for(advisee_student).post(f'/api/logbook/{session.id}/reject/')
+        assert resp.status_code == 403

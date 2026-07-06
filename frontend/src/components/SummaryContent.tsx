@@ -10,7 +10,27 @@
  */
 import type { SessionSummaryContent } from '../api/sessions';
 
-export default function SummaryContent({ content }: { content: SessionSummaryContent | null | undefined }) {
+/** Chip peringatan: kata kunci item tidak ditemukan verbatim di transkrip (cek groundedness backend). */
+function GroundednessChip() {
+  return (
+    <p className="flex items-center gap-1 text-[11px] font-bold text-warning mt-1.5">
+      <span className="material-symbols-outlined text-sm" aria-hidden="true">warning</span>
+      Perlu Verifikasi — tidak ditemukan tepat di transkrip
+    </p>
+  );
+}
+
+/**
+ * @param showGroundedness Tampilkan chip "Perlu Verifikasi" untuk item yang `grounded === false`.
+ *   Hanya untuk tampilan dosen (draf sebelum approve) — jangan aktifkan di tampilan mahasiswa.
+ */
+export default function SummaryContent({
+  content,
+  showGroundedness = false,
+}: {
+  content: SessionSummaryContent | null | undefined;
+  showGroundedness?: boolean;
+}) {
   if (!content) return <p className="text-sm text-on-surface-variant">—</p>;
 
   // Jalur manual: satu blok teks bebas.
@@ -37,6 +57,7 @@ export default function SummaryContent({ content }: { content: SessionSummaryCon
               <li key={i} className="bg-primary/5 border border-primary/10 rounded-xl p-3">
                 <p className="text-xs font-bold text-slate-900 mb-0.5">{a.topic}</p>
                 <p className="text-sm text-slate-700">{a.detail}</p>
+                {showGroundedness && a.grounded === false && <GroundednessChip />}
               </li>
             ))}
           </ul>
@@ -54,6 +75,7 @@ export default function SummaryContent({ content }: { content: SessionSummaryCon
               <li key={i} className="bg-warning/5 border border-warning/10 rounded-xl p-3">
                 <p className="text-xs font-bold text-slate-900 mb-0.5">{n.area}</p>
                 <p className="text-sm text-slate-700">{n.action}</p>
+                {showGroundedness && n.grounded === false && <GroundednessChip />}
               </li>
             ))}
           </ul>

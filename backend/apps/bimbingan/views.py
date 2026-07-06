@@ -997,10 +997,47 @@ class AdminStatsView(APIView):
         from apps.accounts.permissions import IsAdmin
         return [IsAdmin()]
 
+    # D-10: SystemLog event_type yang diagregasi sebagai "Gagal / Fallback Manual" (S-17)
+    STT_LLM_FAILURE_EVENT_TYPES = [
+        'STT_FAILED', 'STT_NO_RECORDING', 'LLM_FAILED', 'LLM_SKIPPED',
+    ]
+
     def get(self, request):
+        from django.db.models import Sum
+
         from apps.accounts.models import CustomUser
+        from apps.logbook.models import SessionLogbook
         now = timezone.now()
         today = now.date()
+
+        month_logbooks = SessionLogbook.objects.filter(
+            created_at__year=now.year, created_at__month=now.month,
+        )
+        monthly_cost_idr = month_logbooks.aggregate(total=Sum('llm_cost_estimate_idr'))['total'] or 0
+        approved_this_month = month_logbooks.filter(status=SessionLogbook.Status.APPROVED).count()
+        avg_cost_per_session_idr = (monthly_cost_idr / approved_this_month) if approved_this_month else 0
+
+        stt_llm = {
+            # "Lolos transkripsi" = tahap STT sukses dan diteruskan ke ringkasan
+            # (state machine D-06: transcribe_session hanya mencapai status ini
+            # setelah transcript berhasil disimpan).
+            'transcription_success': SessionLogbook.objects.filter(
+                status__in=[
+                    SessionLogbook.Status.SUMMARIZING,
+                    SessionLogbook.Status.READY_FOR_REVIEW,
+                    SessionLogbook.Status.APPROVED,
+                ],
+            ).count(),
+            'summary_success': SessionLogbook.objects.filter(
+                status__in=[SessionLogbook.Status.READY_FOR_REVIEW, SessionLogbook.Status.APPROVED],
+                is_manual=False,
+            ).count(),
+            'failed_fallback': SystemLog.objects.filter(
+                event_type__in=self.STT_LLM_FAILURE_EVENT_TYPES,
+            ).count(),
+            'monthly_cost_idr': monthly_cost_idr,
+            'avg_cost_per_session_idr': avg_cost_per_session_idr,
+        }
 
         recent_errors = list(
             SystemLog.objects.filter(level=SystemLog.Level.ERROR)
@@ -1033,12 +1070,13 @@ class AdminStatsView(APIView):
             ).count(),
             'recent_errors': recent_errors,
             'lecturers': lecturers,
+            'stt_llm': stt_llm,
             'integrations': {
                 'google_calendar': {
                     'enabled': getattr(settings, 'GOOGLE_CALENDAR_ENABLED', False),
                     'connected_dosens': DosenCalendarToken.objects.count(),
                 },
-                'logbook': {'enabled': False},
+                'logbook': {'enabled': getattr(settings, 'STT_LLM_ENABLED', False)},
             },
         })
 
