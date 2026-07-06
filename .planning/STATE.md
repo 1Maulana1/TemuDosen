@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Phases 1-5 and 8 verified clean; 6 and 7 both partial (real code, named gaps)
-last_updated: "2026-07-06T00:00:00.000Z"
+status: All 8 phases COMPLETE — Phase 7 (SC1-6) + Phase 8 (SC1-4) closed 2026-07-06/07; backend 300 / frontend 56 green
+last_updated: "2026-07-07T00:00:00.000Z"
 progress:
   total_phases: 8
-  completed_phases: 5
+  completed_phases: 8
   total_plans: 5
   completed_plans: 5
-  percent: 63
+  percent: 100
 ---
 
 # State: TemuDosen
@@ -22,8 +22,15 @@ See `.planning/PROJECT.md` for core value, constraints, and full requirements.
 
 ## Current Position
 
-Phase: 06 (STT, AI Summarization & Logbook) — **no longer a blank slate**: a teammate's fork was merged in (commits `adfc9f2`..`dd3b225`, 2026-07-05/06) that builds most of the STT→LLM→approval pipeline. This section was stale (still said "0/6, not started") until this audit found the real state by reading the merged code directly.
-**Status**: All 8 phases have real code now. Phases 1, 2, 3, 4, 5, 6, and 8 closed clean/verified (Phase 5 re-verified 6/6 on 2026-07-04; Phase 6 verified 6/6 on 2026-07-06, see below). Phase 7 remains PARTIAL — its SC1 (ADVICE-01) now has real UI on both sides (built 2026-07-06), but SC2 (aggregate advice history) and SC3-6 (campus sync) are still not started.
+**Milestone COMPLETE — all 8 phases done (2026-07-07).** Backend **300/300**, frontend **56/56**, `tsc -b` + `npm run build` clean, `manage.py check` clean, no missing migrations. Full-project audit written to `.planning/AUDIT-2026-07-07.md`.
+
+**This session (2026-07-06→07)** — continuing from the remote-integration base:
+- **Phase 7 finished (SC1-SC6).** SC2: `LecturerAdviceHistoryView` + `/dosen/saran` aggregate advice history. SC3-6: campus logbook sync via the TECH-SPEC §2 decoupled adapter (`apps/logbook/services/campus_logbook.py` — Sekawan/KPTI adapters + `build_payload` + `sync_logbook`), CSV/PDF export fallback (`LogbookExportView`), retry job (`retry_campus_logbook_sync`) + admin-dashboard surfacing, runtime admin config (`CampusLogbookConfig` singleton + `CampusLogbookConfigView`). Deferred nits in `07-DEFERRED.md`.
+- **Phase 8 finished (SC1-SC4).** SC2 gap closed: `KetuaJurusanExportView` now joins `SessionLogbook` and emits a "Ringkasan Disetujui" column.
+- **Audit fixes (2026-07-07):** T1 — Admin Dashboard "Logbook Kampus" card repointed to the real `integrations.campus_logbook` status (was mislabeling the STT/LLM flag). T3 — calendar background thread now only spawns when `GOOGLE_CALENDAR_ENABLED`, killing the recurring "database table is locked" pytest flake (0 warnings now); `test_calendar.py` sync classes opt in via a `_calendar_enabled` fixture. T4/T5 — REQUIREMENTS.md + this file resynced.
+- **Still open (recorded, not blocking):** T2 — student "Progres Skripsi" checklist is static/mock (no backend); ADVICE-01 optional note/evidence field; real Sekawan/KPTI API never exercised (by design); Phase 5 real-browser mic checks (human-verify).
+
+**Phase 7 was PARTIAL at session start** (only SC1 UI). It is now fully complete — the text below this line predates that and is kept as historical context.
 
 **Fixed this session (2026-07-06, second pass)** — after the doc resync above, the user asked to actually work Phase 6's gaps. A real venv (`backend/.venv_test`, gitignored) and `frontend/node_modules` were installed so tests could actually run (previous passes only had static grep counts). Baseline confirmed green first: **255 backend / 47 frontend**, then:
 

@@ -48,27 +48,27 @@
 ### Advisory Continuity
 
 - [~] **ADVICE-01**: Student can mark individual advice items as "addressed" (with optional note/evidence) before or when submitting the next session request — the "mark as addressed" half is now complete end-to-end: UI built 2026-07-06 (`LecturerSessionDetail.tsx` adds advice, `StudentSessionDetail.tsx` views + "Tandai Selesai", fetched independently of logbook-approval status), both tested. Still missing: the optional note/evidence field — `CompleteActionItemView` only ever flips a boolean, no text/attachment capture was added
-- [ ] **ADVICE-02**: Lecturer can view the complete advice history and follow-up status for each advisee student — not satisfied; only an admin/ketua-jurusan aggregate view exists (`KetuaJurusanComplianceView`), no per-advisee lecturer view or UI
+- [x] **ADVICE-02**: Lecturer can view the complete advice history and follow-up status for each advisee student — done 2026-07-06: `LecturerAdviceHistoryView` (GET `/api/queue/lecturer/advice-history/`, IsLecturer) + `LecturerAdviceHistory` page (`/dosen/saran`), advice grouped per advisee with compliance rate; 6 backend + 2 frontend tests. Distinct from the ketua-jurusan-only `KetuaJurusanComplianceView`
 
 ### Campus Logbook Integration
 
-- [ ] **LOGBOOK-01**: System syncs approved summaries to the campus logbook API (Sekawan/KPTI) when the API is available — not started, no Sekawan/KPTI code anywhere
-- [ ] **LOGBOOK-02**: If campus API is unavailable, system provides CSV/PDF export of the summary as a manual-upload fallback — not started for summaries specifically (a related but distinct CSV/PDF export exists for guidance-history/workload data via `KetuaJurusanExportView`, FR-KP03)
-- [ ] **LOGBOOK-03**: If campus logbook API call fails or times out, summary remains saved internally, is queued for retry, and error is logged to Admin Dashboard (graceful degradation) — not started
+- [x] **LOGBOOK-01**: System syncs approved summaries to the campus logbook API (Sekawan/KPTI) when the API is available — done 2026-07-06: `apps/logbook/services/campus_logbook.py` decoupled `LogbookAdapter` (Sekawan/KPTI HTTP adapters per TECH-SPEC §2) + `build_payload`; `sync_logbook()` fired on approve, `campus_entry_id` stored on success. Real HTTP only when `CAMPUS_LOGBOOK_ENABLED`+configured (default off)
+- [x] **LOGBOOK-02**: If campus API is unavailable, system provides CSV/PDF export of the summary as a manual-upload fallback — done 2026-07-06: `LogbookExportView` (GET `/api/logbook/<id>/export/?format=csv|pdf`) exports the exact campus payload; download links + hint surfaced on `LecturerSessionDetail`
+- [x] **LOGBOOK-03**: If campus logbook API call fails or times out, summary remains saved internally, is queued for retry, and error is logged to Admin Dashboard (graceful degradation) — done 2026-07-06: failures mark `pending_retry`→`failed` + log `CAMPUS_LOGBOOK_ERROR`; `retry_campus_logbook_sync` scheduler job (10 min); `AdminStatsView.integrations.campus_logbook` reports synced/pending/failed counts
 
 ### Admin & Configuration
 
 - [x] **ADMIN-01**: Admin configures per-"Symptom" duration weights at the start of each semester
 - [x] **ADMIN-02**: Admin can trigger an Emergency Cancel that clears a lecturer's remaining queue for the day — Phase 8, verified `08-VERIFICATION.md`
 - [x] **ADMIN-03**: Admin can view integration error logs (Google Calendar failures) on an Admin Dashboard — Phase 4, verified
-- [ ] **ADMIN-04** *(new)*: Admin configures campus logbook API credentials and integration settings (Sekawan/KPTI) — not started
+- [x] **ADMIN-04** *(new)*: Admin configures campus logbook API credentials and integration settings (Sekawan/KPTI) — done 2026-07-06: `CampusLogbookConfig` singleton (encrypted token) + `CampusLogbookConfigView` (GET/PUT `/api/logbook/admin/campus-config/`, IsAdmin); `effective_config()` lets the DB row override `CAMPUS_LOGBOOK_*` settings at runtime; AdminDashboard config card
 - [x] **ADMIN-05** *(new)*: Admin can monitor STT/LLM service quota usage and review failure logs — Phase 6, implemented (`AdminStatsView.stt_llm`: monthly cost, transcription/summary success counts, failure-event log; surfaced in `AdminDashboard.tsx`)
 
 ### Reporting
 
-- [~] **REPORT-01**: Kaprodi can view digitized guidance history (timestamps, durations, symptoms, summaries) across all lecturers — timestamps/durations/symptoms present and tested (`KetuaJurusanStatsView`/`KetuaJurusanExportView`); the "summaries" column is still missing — `KetuaJurusanStatsView` was never updated to reference `SessionLogbook`, so this stayed unsatisfied even after Phase 6 landed
+- [x] **REPORT-01**: Kaprodi can view digitized guidance history (timestamps, durations, symptoms, summaries) across all lecturers — done 2026-07-07: `KetuaJurusanExportView` now joins `SessionLogbook` and emits a "Ringkasan Disetujui" column via `_approved_summary_text()` (approved summary as text; a status label when not yet approved). Timestamps/durations/symptoms already present. 2 new tests
 - [x] **REPORT-02**: Kaprodi can view each lecturer's workload summary (sessions completed, total time) for accreditation reporting — now fully satisfied: `sesi_selesai` correctly counts real `DONE` sessions once Phase 5's "Selesai" action closed (2026-07-04); `test_admin.py`'s regression guard was updated to assert a real completed session is counted. (ROADMAP.md's older "structurally always 0" note for this SC is stale — flagged for correction there too.)
-- [x] **REPORT-03** *(new)*: Kaprodi can view advice follow-up compliance rates per lecturer/student — mechanism verified (`KetuaJurusanComplianceView`, tested with real data); real-world usefulness still limited by the ADVICE-01/02 UI gap (nothing to show compliance on in practice)
+- [x] **REPORT-03** *(new)*: Kaprodi can view advice follow-up compliance rates per lecturer/student — mechanism verified (`KetuaJurusanComplianceView`, tested with real data); now backed by real data since Phase 7's advice UI (ADVICE-01/02) lets lecturers create and students complete advice items end-to-end
 
 ## v2 Requirements
 
