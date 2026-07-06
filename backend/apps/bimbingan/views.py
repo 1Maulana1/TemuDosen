@@ -989,6 +989,24 @@ class LecturerStatsView(APIView):
         })
 
 
+def _campus_logbook_integration_status():
+    """Phase 7 SC5/SC6: campus logbook integration health for the Admin Dashboard."""
+    from apps.logbook.models import SessionLogbook
+    base_url = getattr(settings, 'CAMPUS_LOGBOOK_BASE_URL', '')
+    token = getattr(settings, 'CAMPUS_LOGBOOK_TOKEN', '')
+    return {
+        'enabled': getattr(settings, 'CAMPUS_LOGBOOK_ENABLED', False),
+        'configured': bool(base_url and token),
+        'provider': getattr(settings, 'CAMPUS_LOGBOOK_PROVIDER', ''),
+        'pending_retry': SessionLogbook.objects.filter(
+            campus_sync_status=SessionLogbook.CampusSyncStatus.PENDING_RETRY).count(),
+        'failed': SessionLogbook.objects.filter(
+            campus_sync_status=SessionLogbook.CampusSyncStatus.FAILED).count(),
+        'synced': SessionLogbook.objects.filter(
+            campus_sync_status=SessionLogbook.CampusSyncStatus.SYNCED).count(),
+    }
+
+
 class AdminStatsView(APIView):
     """GET /api/stats/admin/ — statistik untuk admin dashboard."""
     permission_classes = [IsLecturer]  # overridden below
@@ -1077,6 +1095,7 @@ class AdminStatsView(APIView):
                     'connected_dosens': DosenCalendarToken.objects.count(),
                 },
                 'logbook': {'enabled': getattr(settings, 'STT_LLM_ENABLED', False)},
+                'campus_logbook': _campus_logbook_integration_status(),
             },
         })
 

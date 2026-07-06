@@ -214,3 +214,54 @@ class TestLogbookExportView:
     def test_missing_session_404(self, lecturer_user):
         resp = client_for(lecturer_user).get(self._url(999999, 'csv'))
         assert resp.status_code == 404
+
+
+@pytest.mark.django_db
+class TestCampusRetryJob:
+    """SC5 (LOGBOOK-03): the scheduler job re-drives pending_retry syncs."""
+
+    def _pending(self, submission):
+        lb = _logbook(submission)
+        lb.campus_sync_status = SessionLogbook.CampusSyncStatus.PENDING_RETRY
+        lb.save(update_fields=['campus_sync_status'])
+        return lb
+
+    @override_settings(**CONFIGURED)
+    def test_retry_resyncs_pending_when_api_recovers(self, pending_submission, monkeypatch):
+        from apps.bimbingan.scheduler import retry_campus_logbook_sync
+        monkeypatch.setattr(cl._HttpLogbookAdapter, 'sync', lambda self, payload: 'CAMPUS-R1')
+        lb = self._pending(pending_submission)
+
+        retry_campus_logbook_sync()
+
+        lb.refresh_from_db()
+        assert lb.campus_sync_status == SessionLogbook.CampusSyncStatus.SYNCED
+        assert lb.campus_entry_id == 'CAMPUS-R1'
+
+    @override_settings(CAMPUS_LOGBOOK_ENABLED=False)
+    def test_retry_is_noop_when_disabled(self, pending_submission):
+        from apps.bimbingan.scheduler import retry_campus_logbook_sync
+        lb = self._pending(pending_submission)
+
+        retry_campus_logbook_sync()
+
+        lb.refresh_from_db()
+        assert lb.campus_sync_status == SessionLogbook.CampusSyncStatus.PENDING_RETRY
+
+
+@pytest.mark.django_db
+class TestCampusIntegrationStatus:
+    """SC5/SC6: admin dashboard surfaces campus integration health + counts."""
+
+    @override_settings(**CONFIGURED)
+    def test_status_reports_config_and_counts(self, pending_submission):
+        from apps.bimbingan.views import _campus_logbook_integration_status
+        lb = _logbook(pending_submission)
+        lb.campus_sync_status = SessionLogbook.CampusSyncStatus.FAILED
+        lb.save(update_fields=['campus_sync_status'])
+
+        status_info = _campus_logbook_integration_status()
+        assert status_info['enabled'] is True
+        assert status_info['configured'] is True
+        assert status_info['provider'] == 'sekawan'
+        assert status_info['failed'] == 1

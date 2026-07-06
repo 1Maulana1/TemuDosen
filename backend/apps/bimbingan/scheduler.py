@@ -161,6 +161,27 @@ def _recalculate_queue(dosen):
         logger.exception('_recalculate_queue error: %s', e)
 
 
+def retry_campus_logbook_sync():
+    """Phase 7 SC5 (LOGBOOK-03): re-attempt logbooks whose campus sync is queued
+    for retry. sync_logbook() itself is graceful and flips the row to FAILED once
+    CAMPUS_LOGBOOK_MAX_RETRIES is hit, so this job simply re-drives it."""
+    try:
+        from django.conf import settings
+        from apps.logbook.models import SessionLogbook
+        from apps.logbook.services.campus_logbook import sync_logbook
+
+        if not getattr(settings, 'CAMPUS_LOGBOOK_ENABLED', False):
+            return
+
+        pending = SessionLogbook.objects.filter(
+            campus_sync_status=SessionLogbook.CampusSyncStatus.PENDING_RETRY,
+        )[:50]
+        for logbook in pending:
+            sync_logbook(logbook)
+    except Exception as e:
+        logger.exception('retry_campus_logbook_sync gagal: %s', e)
+
+
 def start_scheduler():
     """Start APScheduler background scheduler."""
     global _scheduler
@@ -184,8 +205,15 @@ def start_scheduler():
             replace_existing=True,
             misfire_grace_time=60,
         )
+        _scheduler.add_job(
+            retry_campus_logbook_sync,
+            IntervalTrigger(minutes=10),
+            id='campus_logbook_retry',
+            replace_existing=True,
+            misfire_grace_time=120,
+        )
         _scheduler.start()
         atexit.register(lambda: _scheduler.shutdown(wait=False))
-        logger.info('Background scheduler dimulai (H-15 & auto-cancel aktif)')
+        logger.info('Background scheduler dimulai (H-15, auto-cancel & campus-retry aktif)')
     except Exception as e:
         logger.exception('Gagal memulai APScheduler: %s', e)
