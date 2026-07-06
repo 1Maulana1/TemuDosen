@@ -5,6 +5,7 @@ from .views import (
     ApproveLogbookView,
     LecturerLogbookDetailView,
     LecturerLogbookListView,
+    LogbookExportView,
     ManualNotesView,
     RejectLogbookView,
     StudentLogbookListView,
@@ -19,4 +20,6 @@ logbook_urlpatterns = [
     path('<int:session_id>/approve/', ApproveLogbookView.as_view(), name='logbook-approve'),
     path('<int:session_id>/reject/', RejectLogbookView.as_view(), name='logbook-reject'),
     path('<int:session_id>/manual-notes/', ManualNotesView.as_view(), name='logbook-manual-notes'),
+    # SC4 (LOGBOOK-02): ekspor CSV/PDF ringkasan untuk upload manual ke logbook kampus
+    path('<int:session_id>/export/', LogbookExportView.as_view(), name='logbook-export'),
 ]

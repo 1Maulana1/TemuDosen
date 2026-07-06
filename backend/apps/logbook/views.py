@@ -255,3 +255,108 @@ class StudentLogbookView(APIView):
             return Response({'detail': 'Ringkasan belum tersedia.'},
                             status=status.HTTP_403_FORBIDDEN)
         return Response(StudentLogbookDetailSerializer(logbook).data)
+
+
+class LogbookExportView(APIView):
+    """GET /api/logbook/<session_id>/export/?format=csv|pdf — SC4 (LOGBOOK-02).
+
+    Fallback ekspor ringkasan yang disetujui untuk diunggah manual ke logbook
+    kampus ketika sinkron API tidak tersedia/gagal. Isinya sama persis dengan
+    payload yang akan dikirim ke API kampus (build_payload) — jadi yang diunggah
+    manual == yang mesin kirim. Hanya dosen pembimbing sesi.
+    """
+    permission_classes = [IsLecturer]
+
+    def perform_content_negotiation(self, request, force=False):
+        # `?format=csv|pdf` adalah query domain (format ekspor), bukan URL_FORMAT
+        # DRF; paksa negosiasi JSON agar DRF tak 404 pada 'csv'/'pdf'.
+        from rest_framework.renderers import JSONRenderer
+        return (JSONRenderer(), 'application/json')
+
+    def get(self, request, session_id):
+        logbook = _get_logbook_or_404(session_id)
+        if logbook is None:
+            return Response({'detail': 'Logbook tidak ditemukan.'},
+                            status=status.HTTP_404_NOT_FOUND)
+        if logbook.session.submission.student.adviser != request.user:
+            return Response({'detail': 'Hanya dosen pembimbing yang dapat mengekspor.'},
+                            status=status.HTTP_403_FORBIDDEN)
+        if logbook.status != SessionLogbook.Status.APPROVED:
+            return Response({'detail': 'Hanya ringkasan yang sudah disetujui yang dapat diekspor.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        from apps.logbook.services.campus_logbook import build_payload
+        payload = build_payload(logbook)
+        export_format = (request.query_params.get('format') or 'csv').lower()
+        filename_base = f'Logbook_Sesi_{session_id}'
+
+        if export_format == 'pdf':
+            return self._render_pdf(payload, filename_base)
+        return self._render_csv(payload, filename_base)
+
+    def _rows(self, payload):
+        return [
+            ('NIM', payload.get('nim') or '-'),
+            ('NIDN', payload.get('nidn') or '-'),
+            ('Tanggal', payload.get('tanggal') or '-'),
+            ('Topik', payload.get('topik') or '-'),
+            ('Durasi (menit)', str(payload.get('durasi_menit') or 0)),
+            ('Ringkasan', payload.get('ringkasan') or '-'),
+            ('Saran', '\n'.join(payload.get('saran') or []) or '-'),
+        ]
+
+    def _render_csv(self, payload, filename_base):
+        import csv
+        from django.http import HttpResponse
+
+        response = HttpResponse(content_type='text/csv; charset=utf-8')
+        response['Content-Disposition'] = f'attachment; filename="{filename_base}.csv"'
+        response.write('﻿')  # BOM UTF-8 untuk Excel
+        writer = csv.writer(response)
+        writer.writerow(['Field', 'Nilai'])
+        writer.writerows(self._rows(payload))
+        return response
+
+    def _render_pdf(self, payload, filename_base):
+        from django.http import HttpResponse
+        try:
+            from reportlab.lib import colors
+            from reportlab.lib.pagesizes import A4
+            from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
+            from reportlab.lib.styles import getSampleStyleSheet
+            import io
+
+            styles = getSampleStyleSheet()
+            buf = io.BytesIO()
+            doc = SimpleDocTemplate(buf, pagesize=A4)
+            title = Paragraph('Ringkasan Bimbingan — Logbook', styles['Title'])
+            table_data = [['Field', 'Nilai']] + [
+                [k, Paragraph(str(v).replace('\n', '<br/>'), styles['BodyText'])]
+                for k, v in self._rows(payload)
+            ]
+            table = Table(table_data, colWidths=[110, 370], repeatRows=1)
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1D4ED8')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                ('FONTSIZE', (0, 0), (-1, -1), 9),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ]))
+            doc.build([title, table])
+            pdf_bytes = buf.getvalue()
+            buf.close()
+
+            response = HttpResponse(pdf_bytes, content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="{filename_base}.pdf"'
+            return response
+        except Exception as e:
+            SystemLog.objects.create(
+                level=SystemLog.Level.ERROR,
+                event_type='CAMPUS_LOGBOOK_ERROR',
+                message=f'Gagal membuat ekspor PDF logbook: {e}',
+                context={'filename': filename_base},
+            )
+            return Response(
+                {'detail': 'Gagal membuat ekspor PDF. Coba gunakan format CSV.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )

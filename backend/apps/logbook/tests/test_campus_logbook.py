@@ -168,3 +168,49 @@ class TestApproveTriggersSync:
         lb = SessionLogbook.objects.get(session=session)
         assert lb.status == SessionLogbook.Status.APPROVED
         assert lb.campus_sync_status == SessionLogbook.CampusSyncStatus.PENDING_RETRY
+
+
+@pytest.mark.django_db
+class TestLogbookExportView:
+    """SC4 (LOGBOOK-02): CSV/PDF export of the approved summary for manual upload
+    when campus sync is unavailable. Owning lecturer only."""
+
+    def _url(self, session_id, fmt=None):
+        base = f'/api/logbook/{session_id}/export/'
+        return f'{base}?format={fmt}' if fmt else base
+
+    def test_csv_export_contains_summary_content(self, lecturer_user, advisee_student, pending_submission):
+        lb = _logbook(pending_submission)
+        resp = client_for(lecturer_user).get(self._url(lb.session_id, 'csv'))
+        assert resp.status_code == 200
+        assert resp['Content-Type'].startswith('text/csv')
+        body = resp.content.decode('utf-8')
+        assert advisee_student.nim in body
+        assert 'Perbaiki bab 3' in body  # advice detail lands in saran
+
+    def test_pdf_export_returns_pdf_bytes(self, lecturer_user, pending_submission):
+        lb = _logbook(pending_submission)
+        resp = client_for(lecturer_user).get(self._url(lb.session_id, 'pdf'))
+        assert resp.status_code == 200
+        assert resp['Content-Type'] == 'application/pdf'
+        assert resp.content[:5] == b'%PDF-'
+
+    def test_defaults_to_csv(self, lecturer_user, pending_submission):
+        lb = _logbook(pending_submission)
+        resp = client_for(lecturer_user).get(self._url(lb.session_id))
+        assert resp.status_code == 200
+        assert resp['Content-Type'].startswith('text/csv')
+
+    def test_other_lecturer_forbidden(self, approved_lecturer, pending_submission):
+        lb = _logbook(pending_submission)
+        resp = client_for(approved_lecturer).get(self._url(lb.session_id, 'csv'))
+        assert resp.status_code == 403
+
+    def test_unapproved_logbook_rejected(self, lecturer_user, pending_submission):
+        lb = _logbook(pending_submission, status=SessionLogbook.Status.READY_FOR_REVIEW)
+        resp = client_for(lecturer_user).get(self._url(lb.session_id, 'csv'))
+        assert resp.status_code == 400
+
+    def test_missing_session_404(self, lecturer_user):
+        resp = client_for(lecturer_user).get(self._url(999999, 'csv'))
+        assert resp.status_code == 404
