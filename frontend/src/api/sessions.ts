@@ -319,6 +319,40 @@ export async function completeActionItem(
   return res.json();
 }
 
+// ── ADVICE-02 (Phase 7 SC2): rekap saran agregat per mahasiswa bimbingan ──────
+
+export interface AdviceHistoryItem {
+  id: number;
+  session_id: number;
+  description: string;
+  is_completed: boolean;
+  created_at: string;
+  completed_at: string | null;
+}
+
+export interface AdviceHistoryStudent {
+  student_id: number;
+  nama: string;
+  nim: string;
+  total_saran: number;
+  saran_selesai: number;
+  items: AdviceHistoryItem[];
+}
+
+export interface LecturerAdviceHistory {
+  total_saran: number;
+  saran_selesai: number;
+  compliance_rate: number;
+  per_mahasiswa: AdviceHistoryStudent[];
+}
+
+/** Dosen: rekap saran lintas sesi & status tindak lanjut, dikelompokkan per mahasiswa bimbingan. */
+export async function getLecturerAdviceHistory(): Promise<LecturerAdviceHistory> {
+  const res = await apiRequest('/api/queue/lecturer/advice-history/');
+  if (!res.ok) throw new Error('Gagal memuat riwayat saran.');
+  return res.json();
+}
+
 // ── Calendar status ────────────────────────────────────────────────────────────
 
 export async function getCalendarStatus(): Promise<{ enabled: boolean; connected: boolean }> {

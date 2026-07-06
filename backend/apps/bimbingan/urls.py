@@ -8,7 +8,7 @@ from .views import (
     LecturerStatsView, AdminStatsView, AdminEmergencyCancelView,
     AdminLogsView, AdminLogsCleanupView,
     KetuaJurusanStatsView, KetuaJurusanExportView, KetuaJurusanComplianceView,
-    SessionActionItemsView, CompleteActionItemView,
+    SessionActionItemsView, CompleteActionItemView, LecturerAdviceHistoryView,
     LecturerSessionHistoryView, StudentSessionHistoryView,
     SessionRecordingFileView,
 )
@@ -23,6 +23,8 @@ queue_urlpatterns = [
     # Phase 6 merge: ringkasan pindah ke /api/logbook/ (lihat apps.logbook.urls)
     path('lecturer/', LecturerQueueView.as_view(), name='queue-lecturer'),
     path('lecturer/history/', LecturerSessionHistoryView.as_view(), name='queue-lecturer-history'),
+    # ADVICE-02 (Phase 7 SC2): rekap saran agregat lintas sesi per mahasiswa bimbingan
+    path('lecturer/advice-history/', LecturerAdviceHistoryView.as_view(), name='queue-lecturer-advice-history'),
     # FR-KP04: saran / tindak lanjut bimbingan, dilekatkan ke sebuah sesi
     path('<int:session_id>/action-items/', SessionActionItemsView.as_view(), name='queue-action-items'),
 ]

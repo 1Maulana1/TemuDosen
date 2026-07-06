@@ -42,6 +42,7 @@ export const NAV_ITEMS: Record<AppRole, NavItem[]> = {
     { key: 'permintaan', to: '/dosen/requests', icon: 'inbox', label: 'Permintaan' },
     { key: 'antrian', to: '/dosen/queue', icon: 'format_list_numbered', label: 'Antrian' },
     { key: 'riwayat', to: '/dosen/riwayat', icon: 'history', label: 'Riwayat' },
+    { key: 'saran', to: '/dosen/saran', icon: 'checklist', label: 'Saran' },
     { key: 'profil', to: '/dosen/pengaturan', icon: 'person', label: 'Profil' },
   ],
   admin: [

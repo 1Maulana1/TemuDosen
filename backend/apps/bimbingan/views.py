@@ -1523,3 +1523,64 @@ class CompleteActionItemView(APIView):
         item.completed_at = timezone.now()
         item.save(update_fields=['is_completed', 'completed_at'])
         return Response({'id': item.id, 'is_completed': True, 'completed_at': item.completed_at.isoformat()})
+
+
+class LecturerAdviceHistoryView(APIView):
+    """
+    GET /api/queue/lecturer/advice-history/ — ADVICE-02 (Phase 7 SC2).
+
+    Rekap seluruh saran/tindak-lanjut (ActionItem) lintas sesi untuk semua
+    mahasiswa bimbingan dosen yang login, dikelompokkan per mahasiswa beserta
+    status kepatuhannya. Berbeda dari SessionActionItemsView (per-sesi) dan
+    KetuaJurusanComplianceView (lintas-dosen, khusus ketua jurusan/admin).
+    """
+    permission_classes = [IsLecturer]
+
+    def get(self, request):
+        items = (
+            ActionItem.objects
+            .filter(session__submission__student__adviser=request.user)
+            .select_related('session__submission__student')
+            .order_by('-created_at')
+        )
+
+        total = len(items)
+        completed = sum(1 for i in items if i.is_completed)
+        compliance_rate = round(completed / total * 100) if total else 0
+
+        per_mahasiswa_map = {}
+        for item in items:
+            student = item.session.submission.student
+            key = student.id
+            if key not in per_mahasiswa_map:
+                per_mahasiswa_map[key] = {
+                    'student_id': student.id,
+                    'nama': student.full_name,
+                    'nim': student.nim or '-',
+                    'total_saran': 0,
+                    'saran_selesai': 0,
+                    'items': [],
+                }
+            bucket = per_mahasiswa_map[key]
+            bucket['total_saran'] += 1
+            if item.is_completed:
+                bucket['saran_selesai'] += 1
+            bucket['items'].append({
+                'id': item.id,
+                'session_id': item.session_id,
+                'description': item.description,
+                'is_completed': item.is_completed,
+                'created_at': item.created_at.isoformat(),
+                'completed_at': item.completed_at.isoformat() if item.completed_at else None,
+            })
+
+        per_mahasiswa = sorted(
+            per_mahasiswa_map.values(), key=lambda m: m['nama'].lower()
+        )
+
+        return Response({
+            'total_saran': total,
+            'saran_selesai': completed,
+            'compliance_rate': compliance_rate,
+            'per_mahasiswa': per_mahasiswa,
+        })
