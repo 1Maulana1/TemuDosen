@@ -86,8 +86,13 @@ class TestDispatchPipeline:
         assert lb.status == lb.Status.PENDING
 
     @override_settings(STT_LLM_ENABLED=True)
-    def test_dispatch_noop_when_celery_absent(self, lecturer_user, pending_submission):
+    def test_dispatch_noop_when_celery_absent(self, lecturer_user, pending_submission, monkeypatch):
         # Aktif tapi celery tak terpasang (celery_app None) → tetap no-op yang aman.
+        # Paksa kondisi "celery absen" secara eksplisit lewat monkeypatch agar test
+        # tidak bergantung pada apakah celery kebetulan terpasang di environment
+        # (mis. venv penuh yang punya celery vs .venv_test yang tidak).
+        import config
+        monkeypatch.setattr(config, "celery_app", None)
         lb = self._logbook(lecturer_user, pending_submission)
         assert dispatch_pipeline(lb) is False
         lb.refresh_from_db()
