@@ -12,8 +12,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useParams, useRouteLoaderData } from 'react-router';
 import {
   getLogbookDetail, approveLogbook, rejectLogbook, saveManualNotes, getSessionRecordingUrl,
-  getActionItems, addActionItem,
-  type LogbookDetail, type SessionSummaryContent, type ActionItem,
+  getActionItems, addActionItem, getLogbookExportUrl,
+  type LogbookDetail, type SessionSummaryContent, type ActionItem, type CampusSyncStatus,
 } from '../../api/sessions';
 import { logout, type User } from '../../api/auth';
 import { AppNavbar, AppBottomNav, NAV_ITEMS } from '../../components/AppNav';
@@ -73,6 +73,18 @@ function textToSummary(text: string): SessionSummaryContent {
     return { manual_notes: text };
   }
   return { advice_points, improvement_notes };
+}
+
+const CAMPUS_STATUS_META: Record<CampusSyncStatus, { label: string; cls: string }> = {
+  synced: { label: 'Tersinkron', cls: 'text-success bg-success/10' },
+  pending_retry: { label: 'Menunggu coba ulang', cls: 'text-warning bg-warning/10' },
+  failed: { label: 'Gagal disinkron', cls: 'text-error bg-error/10' },
+  not_synced: { label: 'Belum disinkron', cls: 'text-on-surface-variant bg-gray-100' },
+};
+
+function campusStatusChip(status: CampusSyncStatus | undefined) {
+  const meta = CAMPUS_STATUS_META[status ?? 'not_synced'];
+  return <span className={`text-[11px] font-bold rounded-full px-2 py-0.5 ${meta.cls}`}>{meta.label}</span>;
 }
 
 export default function LecturerSessionDetail() {
@@ -254,7 +266,38 @@ export default function LecturerSessionDetail() {
               </div>
               <div className="bg-surface rounded-2xl border border-gray-200 shadow-sm p-5 space-y-3">
                 {isApproved ? (
-                  <SummaryContent content={data.summary_edited ?? data.summary_raw} />
+                  <>
+                    <SummaryContent content={data.summary_edited ?? data.summary_raw} />
+
+                    {/* Phase 7 SC3-4: status sinkron logbook kampus + fallback ekspor manual */}
+                    <div className="border-t border-gray-100 pt-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="flex items-center gap-1.5 text-[11px]">
+                          <span className="material-symbols-outlined text-sm text-on-surface-variant" aria-hidden="true">cloud_sync</span>
+                          <span className="font-bold text-on-surface-variant">Logbook kampus:</span>
+                          {campusStatusChip(data.campus_sync_status)}
+                          {data.campus_sync_status === 'synced' && data.campus_entry_id && (
+                            <span className="text-[11px] text-on-surface-variant">#{data.campus_entry_id}</span>
+                          )}
+                        </span>
+                        <span className="flex items-center gap-2">
+                          <a href={getLogbookExportUrl(sessionId, 'csv')} download
+                            className="inline-flex items-center gap-1 text-[11px] font-bold text-primary underline focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none rounded">
+                            <span className="material-symbols-outlined text-sm" aria-hidden="true">download</span>CSV
+                          </a>
+                          <a href={getLogbookExportUrl(sessionId, 'pdf')} download
+                            className="inline-flex items-center gap-1 text-[11px] font-bold text-primary underline focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none rounded">
+                            <span className="material-symbols-outlined text-sm" aria-hidden="true">download</span>PDF
+                          </a>
+                        </span>
+                      </div>
+                      {data.campus_sync_status !== 'synced' && (
+                        <p className="text-[11px] text-on-surface-variant mt-1.5">
+                          Sinkron otomatis ke logbook kampus belum berhasil — unduh CSV/PDF di atas untuk mengunggah manual.
+                        </p>
+                      )}
+                    </div>
+                  </>
                 ) : (
                   <>
                     <p className="text-[11px] text-on-surface-variant">

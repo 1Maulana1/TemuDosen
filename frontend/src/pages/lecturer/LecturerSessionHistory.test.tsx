@@ -114,6 +114,30 @@ describe('LecturerSessionDetail', () => {
     await waitFor(() => expect(screen.getByText(/Disetujui \d/)).toBeInTheDocument());
   });
 
+  it('shows campus sync status + CSV/PDF export fallback on an approved logbook (SC3/SC4)', async () => {
+    server.use(
+      http.get('/api/logbook/7/', () =>
+        HttpResponse.json({
+          session_id: 7, mahasiswa_name: 'Budi Santoso', nim: '20230001', dosen_name: 'Dr. Rina Sari',
+          scheduled_at: '2026-07-04T09:00:00Z', ts1: null, ts2: '2026-07-04T10:00:00Z',
+          has_recording: false, status: 'approved', is_manual: false,
+          transcript: '', summary_raw: {}, summary_edited: { advice_points: [], improvement_notes: [] },
+          approved_at: '2026-07-04T10:05:00Z',
+          campus_sync_status: 'pending_retry', campus_entry_id: '', campus_synced_at: null,
+        })
+      )
+    );
+    renderDetail();
+    await waitFor(() => expect(screen.getByText('Menunggu coba ulang')).toBeInTheDocument());
+
+    // fallback export links point at the export endpoint
+    const csv = screen.getByRole('link', { name: /CSV/i });
+    const pdf = screen.getByRole('link', { name: /PDF/i });
+    expect(csv).toHaveAttribute('href', '/api/logbook/7/export/?format=csv');
+    expect(pdf).toHaveAttribute('href', '/api/logbook/7/export/?format=pdf');
+    expect(screen.getByText(/unduh CSV\/PDF/i)).toBeInTheDocument();
+  });
+
   it('approving an AI-generated draft sends structured advice/improvement items, not manual_notes', async () => {
     server.use(
       http.get('/api/logbook/7/', () =>

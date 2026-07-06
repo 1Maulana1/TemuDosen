@@ -196,6 +196,17 @@ export interface LogbookDetail {
   llm_input_tokens?: number | null;
   llm_output_tokens?: number | null;
   llm_cost_estimate_idr?: string | null;
+  // Phase 7 SC3-5: status sinkron ke logbook kampus (Sekawan/KPTI).
+  campus_sync_status?: CampusSyncStatus;
+  campus_entry_id?: string;
+  campus_synced_at?: string | null;
+}
+
+export type CampusSyncStatus = 'not_synced' | 'synced' | 'failed' | 'pending_retry';
+
+/** URL unduhan ekspor CSV/PDF ringkasan (SC4) — fallback upload manual ke logbook kampus. */
+export function getLogbookExportUrl(sessionId: number, format: 'csv' | 'pdf'): string {
+  return `/api/logbook/${sessionId}/export/?format=${format}`;
 }
 
 export async function getLecturerSessionHistory(): Promise<SessionHistoryItem[]> {
