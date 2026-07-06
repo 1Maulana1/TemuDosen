@@ -260,10 +260,14 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm flex items-center gap-3">
-                <span className={`material-symbols-outlined text-2xl ${data.integrations.logbook.enabled ? 'text-success' : 'text-gray-300'}`}>menu_book</span>
+                <span className={`material-symbols-outlined text-2xl ${data.integrations.campus_logbook?.enabled ? 'text-success' : 'text-gray-300'}`}>menu_book</span>
                 <div>
                   <p className="font-bold text-sm text-slate-800">Logbook Kampus</p>
-                  <p className="text-[11px] text-neutral-gray">{data.integrations.logbook.enabled ? 'Aktif' : 'Nonaktif'}</p>
+                  <p className="text-[11px] text-neutral-gray">
+                    {data.integrations.campus_logbook?.enabled
+                      ? (data.integrations.campus_logbook.configured ? 'Aktif' : 'Aktif · belum dikonfigurasi')
+                      : 'Nonaktif'}
+                  </p>
                 </div>
               </div>
             </div>

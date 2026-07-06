@@ -270,11 +270,16 @@ class ApproveSubmissionView(APIView):
             'attendee_emails': [dosen.email, student.email],
             'location': location,
         }
-        threading.Thread(
-            target=_create_calendar_event_async,
-            args=(dosen.id, session.id, event_data),
-            daemon=True,
-        ).start()
+        # Only spawn the background thread when Calendar is actually enabled — when
+        # it's off (default + all test settings) the thread would just open a DB
+        # connection, do nothing useful, and race pytest's teardown ("database table
+        # is locked"). Gating here keeps prod behavior identical and kills the flake.
+        if getattr(settings, 'GOOGLE_CALENDAR_ENABLED', False):
+            threading.Thread(
+                target=_create_calendar_event_async,
+                args=(dosen.id, session.id, event_data),
+                daemon=True,
+            ).start()
 
         # Notify student
         notify_student(
