@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts.permissions import IsLecturer, IsStudent
-from apps.bimbingan.models import SystemLog
+from apps.bimbingan.models import ActionItem, SystemLog
 from apps.bimbingan.services.notification import notify_student
 
 from .models import SessionLogbook
@@ -31,6 +31,44 @@ def _get_logbook_or_404(session_id):
         .filter(session_id=session_id)
         .first()
     )
+
+
+def _create_action_items_from_summary(session, summary):
+    """Phase 6->7 handoff (STT-05): split an approved summary's structured
+    advice/improvement items into ActionItem rows so Phase 7's advice-tracking
+    (student follow-up marking, KetuaJurusanComplianceView) has real data to
+    work with — previously nothing ever created an ActionItem from a logbook
+    approval, despite 06-BREAKDOWN.md calling for exactly this.
+
+    Defensive by design: `summary` is an arbitrary client-supplied JSON blob
+    (ApproveLogbookSerializer only requires it to be valid JSON, not a
+    specific shape), so a malformed/partial payload just yields fewer items —
+    it never raises and never blocks the approval itself.
+    """
+    if not isinstance(summary, dict):
+        return
+    for point in summary.get('advice_points') or []:
+        if not isinstance(point, dict):
+            continue
+        topic = (point.get('topic') or '').strip()
+        detail = (point.get('detail') or '').strip()
+        if not detail:
+            continue
+        ActionItem.objects.create(
+            session=session,
+            description=f'{topic}: {detail}' if topic else detail,
+        )
+    for note in summary.get('improvement_notes') or []:
+        if not isinstance(note, dict):
+            continue
+        area = (note.get('area') or '').strip()
+        action = (note.get('action') or '').strip()
+        if not action:
+            continue
+        ActionItem.objects.create(
+            session=session,
+            description=f'{area}: {action}' if area else action,
+        )
 
 
 class LecturerLogbookListView(APIView):
@@ -89,6 +127,7 @@ class ApproveLogbookView(APIView):
         logbook.approved_by = request.user
         logbook.save(update_fields=[
             'summary_edited', 'status', 'approved_at', 'approved_by', 'updated_at'])
+        _create_action_items_from_summary(logbook.session, logbook.summary_edited)
 
         notify_student(
             logbook.session.submission.student,

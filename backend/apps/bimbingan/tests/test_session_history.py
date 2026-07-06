@@ -286,3 +286,186 @@ class TestRejectLogbookView:
         session = self._ready_for_review(lecturer_user, pending_submission)
         resp = client_for(advisee_student).post(f'/api/logbook/{session.id}/reject/')
         assert resp.status_code == 403
+
+
+@pytest.mark.django_db
+class TestApproveLogbookView:
+    """STT-04 (approve AI-generated summary) + the Phase 6->7 handoff (STT-05):
+    approving must split the summary's advice_points/improvement_notes into
+    ActionItem rows so Phase 7's advice-tracking has real data. Previously
+    untested — the only tested approval path was the manual-notes fallback."""
+
+    def _ready_for_review(self, lecturer, submission):
+        from apps.logbook.models import SessionLogbook
+
+        session = _done_session(lecturer, submission)
+        logbook = SessionLogbook.objects.get(session=session)
+        logbook.transcript = 'dosen membahas metodologi penelitian'
+        logbook.summary_raw = {
+            'advice_points': [{'topic': 'Metodologi', 'detail': 'Perbaiki bab 3'}],
+            'improvement_notes': [{'area': 'Penulisan', 'action': 'Rapikan sitasi'}],
+        }
+        logbook.status = SessionLogbook.Status.READY_FOR_REVIEW
+        logbook.save()
+        return session
+
+    def _payload(self):
+        return {
+            'summary_edited': {
+                'advice_points': [{'topic': 'Metodologi', 'detail': 'Perbaiki bab 3'}],
+                'improvement_notes': [{'area': 'Penulisan', 'action': 'Rapikan sitasi'}],
+            }
+        }
+
+    def test_lecturer_can_approve_ready_for_review_logbook(self, lecturer_user, pending_submission):
+        session = self._ready_for_review(lecturer_user, pending_submission)
+        resp = client_for(lecturer_user).post(
+            f'/api/logbook/{session.id}/approve/', self._payload(), format='json',
+        )
+        assert resp.status_code == 200
+        assert resp.data['status'] == 'approved'
+        assert resp.data['approved_at'] is not None
+
+    def test_approve_creates_action_items_from_advice_and_improvement(
+        self, lecturer_user, pending_submission
+    ):
+        from apps.bimbingan.models import ActionItem
+
+        session = self._ready_for_review(lecturer_user, pending_submission)
+        client_for(lecturer_user).post(
+            f'/api/logbook/{session.id}/approve/', self._payload(), format='json',
+        )
+        descriptions = set(
+            ActionItem.objects.filter(session=session).values_list('description', flat=True)
+        )
+        assert descriptions == {'Metodologi: Perbaiki bab 3', 'Penulisan: Rapikan sitasi'}
+
+    def test_approve_with_empty_lists_creates_no_action_items(self, lecturer_user, pending_submission):
+        from apps.bimbingan.models import ActionItem
+
+        session = self._ready_for_review(lecturer_user, pending_submission)
+        resp = client_for(lecturer_user).post(
+            f'/api/logbook/{session.id}/approve/',
+            {'summary_edited': {'advice_points': [], 'improvement_notes': []}}, format='json',
+        )
+        assert resp.status_code == 200
+        assert ActionItem.objects.filter(session=session).count() == 0
+
+    def test_approve_malformed_summary_does_not_crash(self, lecturer_user, pending_submission):
+        """summary_edited is an arbitrary JSONField (ApproveLogbookSerializer only
+        checks it's valid JSON) — an unexpected shape must degrade gracefully,
+        never 500 and never create garbage ActionItems."""
+        from apps.bimbingan.models import ActionItem
+
+        session = self._ready_for_review(lecturer_user, pending_submission)
+        resp = client_for(lecturer_user).post(
+            f'/api/logbook/{session.id}/approve/',
+            {'summary_edited': {'unexpected': 'shape'}}, format='json',
+        )
+        assert resp.status_code == 200
+        assert ActionItem.objects.filter(session=session).count() == 0
+
+    def test_student_sees_approved_summary_matching_action_items(
+        self, lecturer_user, advisee_student, pending_submission
+    ):
+        session = self._ready_for_review(lecturer_user, pending_submission)
+        client_for(lecturer_user).post(
+            f'/api/logbook/{session.id}/approve/', self._payload(), format='json',
+        )
+        resp = client_for(advisee_student).get(f'/api/logbook/student/{session.id}/')
+        assert resp.status_code == 200
+        assert resp.data['summary_edited']['advice_points'][0]['detail'] == 'Perbaiki bab 3'
+
+    def test_cannot_approve_when_not_ready_for_review(self, lecturer_user, pending_submission):
+        session = _done_session(lecturer_user, pending_submission)  # status stays 'pending'
+        resp = client_for(lecturer_user).post(
+            f'/api/logbook/{session.id}/approve/', self._payload(), format='json',
+        )
+        assert resp.status_code == 400
+
+    def test_unrelated_lecturer_cannot_approve(self, lecturer_user, pending_submission):
+        from apps.accounts.models import CustomUser
+
+        other_lecturer = CustomUser.objects.create_user(
+            email='other_lecturer3@test.com', password='pass12345', role='lecturer',
+            full_name='Dr. Lain Tiga', nidn='7777777777', is_approved=True,
+        )
+        session = self._ready_for_review(lecturer_user, pending_submission)
+        resp = client_for(other_lecturer).post(
+            f'/api/logbook/{session.id}/approve/', self._payload(), format='json',
+        )
+        assert resp.status_code == 403
+
+    def test_student_cannot_approve(self, lecturer_user, advisee_student, pending_submission):
+        session = self._ready_for_review(lecturer_user, pending_submission)
+        resp = client_for(advisee_student).post(
+            f'/api/logbook/{session.id}/approve/', self._payload(), format='json',
+        )
+        assert resp.status_code == 403
+
+    def test_approve_nonexistent_logbook_404(self, lecturer_user):
+        resp = client_for(lecturer_user).post(
+            '/api/logbook/999999/approve/', self._payload(), format='json',
+        )
+        assert resp.status_code == 404
+
+
+@pytest.mark.django_db
+class TestLogbookListViews:
+    """GET /api/logbook/lecturer/ and GET /api/logbook/student/ — previously untested."""
+
+    def test_lecturer_list_scoped_to_own_advisees(
+        self, lecturer_user, pending_submission, symptom_category, submission_for
+    ):
+        from apps.accounts.models import CustomUser
+
+        session = _done_session(lecturer_user, pending_submission)
+
+        other_lecturer = CustomUser.objects.create_user(
+            email='other_lecturer_list@test.com', password='pass12345', role='lecturer',
+            full_name='Dr. Lain List', nidn='6666666666', is_approved=True,
+        )
+        other_student = CustomUser.objects.create_user(
+            email='other_student_list@test.com', password='pass12345', role='student',
+            full_name='Mhs Lain', nim='20239999', is_approved=True, adviser=other_lecturer,
+        )
+        other_sub = submission_for(other_student, [symptom_category])
+        _done_session(other_lecturer, other_sub)
+
+        resp = client_for(lecturer_user).get('/api/logbook/lecturer/')
+        assert resp.status_code == 200
+        assert [row['session_id'] for row in resp.data] == [session.id]
+
+    def test_student_list_only_shows_own_approved_logbooks(
+        self, lecturer_user, advisee_student, second_advisee_student, pending_submission,
+        symptom_category, submission_for,
+    ):
+        session = _done_session(lecturer_user, pending_submission)
+        client_for(lecturer_user).post(
+            f'/api/logbook/{session.id}/manual-notes/', {'notes': 'Selesai.'}, format='json',
+        )
+
+        # A second advisee's logbook, left unapproved, must never leak into this
+        # student's own list even though it shares the same lecturer.
+        other_sub = submission_for(second_advisee_student, [symptom_category])
+        _done_session(lecturer_user, other_sub)
+
+        resp = client_for(advisee_student).get('/api/logbook/student/')
+        assert resp.status_code == 200
+        assert len(resp.data) == 1
+        assert resp.data[0]['session_id'] == session.id
+
+    def test_student_list_excludes_unapproved(self, lecturer_user, advisee_student, pending_submission):
+        _done_session(lecturer_user, pending_submission)  # status stays 'pending'
+
+        resp = client_for(advisee_student).get('/api/logbook/student/')
+        assert resp.status_code == 200
+        assert resp.data == []
+
+    def test_lecturer_list_requires_lecturer_role(self, advisee_student):
+        resp = client_for(advisee_student).get('/api/logbook/lecturer/')
+        assert resp.status_code == 403
+
+    def test_student_list_requires_student_role(self, lecturer_user):
+        resp = client_for(lecturer_user).get('/api/logbook/student/')
+        assert resp.status_code == 403

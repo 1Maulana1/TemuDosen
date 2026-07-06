@@ -71,7 +71,8 @@ describe('LecturerSessionDetail', () => {
           has_recording: true, status: 'pending', is_manual: false,
           transcript: '', summary_raw: {}, summary_edited: null, approved_at: null,
         })
-      )
+      ),
+      http.get('/api/queue/7/action-items/', () => HttpResponse.json([]))
     );
   });
 
@@ -111,5 +112,77 @@ describe('LecturerSessionDetail', () => {
 
     await waitFor(() => expect(capturedBody).toEqual({ notes: 'Sudah bagus.' }));
     await waitFor(() => expect(screen.getByText(/Disetujui \d/)).toBeInTheDocument());
+  });
+
+  it('approving an AI-generated draft sends structured advice/improvement items, not manual_notes', async () => {
+    server.use(
+      http.get('/api/logbook/7/', () =>
+        HttpResponse.json({
+          session_id: 7, mahasiswa_name: 'Budi Santoso', nim: '20230001', dosen_name: 'Dr. Rina Sari',
+          scheduled_at: '2026-07-04T09:00:00Z', ts1: '2026-07-04T09:05:00Z', ts2: '2026-07-04T10:00:00Z',
+          has_recording: true, status: 'ready_for_review', is_manual: false,
+          transcript: 'dosen membahas metodologi', approved_at: null,
+          summary_raw: {
+            advice_points: [{ topic: 'Metodologi', detail: 'Perbaiki bab 3' }],
+            improvement_notes: [{ area: 'Penulisan', action: 'Rapikan sitasi' }],
+          },
+          summary_edited: null,
+        })
+      )
+    );
+    let capturedBody: unknown = null;
+    server.use(
+      http.post('/api/logbook/7/approve/', async ({ request }) => {
+        capturedBody = await request.json();
+        return HttpResponse.json({
+          session_id: 7, mahasiswa_name: 'Budi Santoso', nim: '20230001', dosen_name: 'Dr. Rina Sari',
+          scheduled_at: '2026-07-04T09:00:00Z', ts1: null, ts2: '2026-07-04T10:00:00Z',
+          has_recording: true, status: 'approved', is_manual: false,
+          transcript: '', summary_raw: {},
+          summary_edited: (capturedBody as { summary_edited: unknown })?.summary_edited ?? null,
+          approved_at: '2026-07-04T10:05:00Z',
+        });
+      })
+    );
+
+    renderDetail();
+    await waitFor(() => expect(screen.getByText('Budi Santoso')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /Setujui & Kirim/i }));
+
+    await waitFor(() => expect(capturedBody).toEqual({
+      summary_edited: {
+        advice_points: [{ topic: 'Metodologi', detail: 'Perbaiki bab 3' }],
+        improvement_notes: [{ area: 'Penulisan', action: 'Rapikan sitasi' }],
+      },
+    }));
+  });
+
+  it('lists existing advice items and lets the lecturer add a new one (ADVICE-01)', async () => {
+    server.use(
+      http.get('/api/queue/7/action-items/', () =>
+        HttpResponse.json([
+          { id: 1, description: 'Perbaiki bab metodologi', is_completed: false, created_at: '2026-07-04T10:00:00Z', completed_at: null },
+        ])
+      )
+    );
+    let capturedBody: unknown = null;
+    server.use(
+      http.post('/api/queue/7/action-items/', async ({ request }) => {
+        capturedBody = await request.json();
+        return HttpResponse.json(
+          { id: 2, description: (capturedBody as { description: string }).description, is_completed: false, created_at: '2026-07-05T09:00:00Z', completed_at: null },
+          { status: 201 }
+        );
+      })
+    );
+
+    renderDetail();
+    await waitFor(() => expect(screen.getByText('Perbaiki bab metodologi')).toBeInTheDocument());
+
+    fireEvent.change(screen.getByPlaceholderText(/Tambahkan saran baru/i), { target: { value: 'Perbanyak kutipan jurnal terbaru' } });
+    fireEvent.click(screen.getByRole('button', { name: /^Tambah$/i }));
+
+    await waitFor(() => expect(capturedBody).toEqual({ description: 'Perbanyak kutipan jurnal terbaru' }));
+    await waitFor(() => expect(screen.getByText('Perbanyak kutipan jurnal terbaru')).toBeInTheDocument());
   });
 });

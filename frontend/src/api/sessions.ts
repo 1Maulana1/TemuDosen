@@ -277,6 +277,48 @@ export function getSessionRecordingUrl(sessionId: number): string {
   return `/api/queue/${sessionId}/recording/`;
 }
 
+// ── Advice items (Phase 7, ADVICE-01/02) ────────────────────────────────────────
+
+export interface ActionItem {
+  id: number;
+  description: string;
+  is_completed: boolean;
+  created_at: string;
+  completed_at: string | null;
+}
+
+/** Dosen & mahasiswa (pemilik sesi): daftar saran untuk satu sesi. */
+export async function getActionItems(sessionId: number): Promise<ActionItem[]> {
+  const res = await apiRequest(`/api/queue/${sessionId}/action-items/`);
+  if (!res.ok) throw new Error('Gagal memuat daftar saran.');
+  return res.json();
+}
+
+/** Dosen: menambah satu saran untuk sesi ini. */
+export async function addActionItem(sessionId: number, description: string): Promise<ActionItem> {
+  const res = await apiRequest(`/api/queue/${sessionId}/action-items/`, {
+    method: 'POST',
+    body: JSON.stringify({ description }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error((body as { detail?: string }).detail ?? 'Gagal menambah saran.');
+  }
+  return res.json();
+}
+
+/** Mahasiswa: menandai satu saran sebagai sudah ditindaklanjuti. */
+export async function completeActionItem(
+  id: number
+): Promise<{ id: number; is_completed: true; completed_at: string }> {
+  const res = await apiRequest(`/api/action-items/${id}/complete/`, { method: 'POST' });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error((body as { detail?: string }).detail ?? 'Gagal menandai saran selesai.');
+  }
+  return res.json();
+}
+
 // ── Calendar status ────────────────────────────────────────────────────────────
 
 export async function getCalendarStatus(): Promise<{ enabled: boolean; connected: boolean }> {

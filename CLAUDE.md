@@ -16,9 +16,11 @@ If a task or workflow file already points to a different instruction file, treat
 
 ---
 
-## STATUS AUDIT PHASE 2 (per 2026-07-01)
+## STATUS AUDIT PHASE 2 (per 2026-07-01) — SUPERSEDED, kept for history only
 
-### ✅ FR SELESAI (IMPLEMENTED)
+> **2026-07-06: this entire FR-status audit is stale and no longer maintained.** It was a Phase-2-era snapshot (before Phase 2 itself was even formally verified) using an `FR-M*/FR-D*/FR-S*/FR-AD*/FR-KP*/NFR-*` ID scheme that was later replaced by `.planning/REQUIREMENTS.md`'s `TRIAGE-*/REVIEW-*/QUEUE-*/SESSION-*/STT-*/ADVICE-*/LOGBOOK-*/ADMIN-*/REPORT-*` scheme. Several rows below are now flatly wrong — e.g. FR-M04 (recording consent) and FR-KP04 (advice-compliance report) are both listed "❌ MISSING" here but have been implemented and verified since (see SESSION-02 and REPORT-03 in `.planning/REQUIREMENTS.md`). **For current status, always check `.planning/STATE.md` (Code-Ahead-of-Process Audit table) and `.planning/REQUIREMENTS.md` (Traceability table) instead of this section.** Left in place below as a historical snapshot of Phase 2's file/schema footprint, not as a live status source.
+
+### ✅ FR SELESAI (IMPLEMENTED) — as of 2026-07-01, do not trust for current status
 
 | FR | Deskripsi | Backend File | Frontend File |
 |----|-----------|-------------|---------------|

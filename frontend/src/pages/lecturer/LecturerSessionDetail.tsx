@@ -12,7 +12,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useParams, useRouteLoaderData } from 'react-router';
 import {
   getLogbookDetail, approveLogbook, rejectLogbook, saveManualNotes, getSessionRecordingUrl,
-  type LogbookDetail, type SessionSummaryContent,
+  getActionItems, addActionItem,
+  type LogbookDetail, type SessionSummaryContent, type ActionItem,
 } from '../../api/sessions';
 import { logout, type User } from '../../api/auth';
 import { AppNavbar, AppBottomNav, NAV_ITEMS } from '../../components/AppNav';
@@ -42,6 +43,38 @@ function summaryToText(c: SessionSummaryContent | null | undefined): string {
   return lines.join('\n');
 }
 
+/**
+ * Inverse of summaryToText — reconstructs advice_points/improvement_notes from
+ * the edited textarea using the same '•'/'→' line markers, so approving an
+ * AI-generated draft preserves structure (backend splits advice_points into
+ * ActionItem rows for Phase 7 on approve). If the lecturer rewrote the text
+ * as free prose and dropped the markers, falls back to a manual_notes blob
+ * instead of losing the edit or crashing — same graceful-degradation pattern
+ * used throughout the STT/LLM pipeline (STT-07).
+ */
+function textToSummary(text: string): SessionSummaryContent {
+  const advice_points: { topic: string; detail: string }[] = [];
+  const improvement_notes: { area: string; action: string }[] = [];
+  for (const rawLine of text.split('\n')) {
+    const line = rawLine.trim();
+    const isAdvice = line.startsWith('•');
+    const isImprovement = line.startsWith('→');
+    if (!isAdvice && !isImprovement) continue;
+    const rest = line.slice(1).trim();
+    const sep = rest.indexOf(':');
+    if (sep === -1) continue;
+    const key = rest.slice(0, sep).trim();
+    const value = rest.slice(sep + 1).trim();
+    if (!key || !value) continue;
+    if (isAdvice) advice_points.push({ topic: key, detail: value });
+    else improvement_notes.push({ area: key, action: value });
+  }
+  if (advice_points.length === 0 && improvement_notes.length === 0) {
+    return { manual_notes: text };
+  }
+  return { advice_points, improvement_notes };
+}
+
 export default function LecturerSessionDetail() {
   const user = useRouteLoaderData('dosen') as User;
   const navigate = useNavigate();
@@ -57,6 +90,11 @@ export default function LecturerSessionDetail() {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejecting, setRejecting] = useState(false);
 
+  const [actionItems, setActionItems] = useState<ActionItem[]>([]);
+  const [newItemText, setNewItemText] = useState('');
+  const [addingItem, setAddingItem] = useState(false);
+  const [itemsMsg, setItemsMsg] = useState('');
+
   const load = useCallback(() => {
     setLoading(true);
     setError(null);
@@ -64,9 +102,26 @@ export default function LecturerSessionDetail() {
       .then((d) => { setData(d); setSummaryDraft(summaryToText(d.summary_edited ?? d.summary_raw)); })
       .catch((e) => setError(e instanceof Error ? e.message : 'Gagal memuat sesi.'))
       .finally(() => setLoading(false));
+    getActionItems(sessionId).then(setActionItems).catch(() => {});
   }, [sessionId]);
 
   useEffect(() => { load(); }, [load]);
+
+  async function handleAddItem() {
+    const description = newItemText.trim();
+    if (!description) return;
+    setAddingItem(true);
+    setItemsMsg('');
+    try {
+      const item = await addActionItem(sessionId, description);
+      setActionItems((prev) => [item, ...prev]);
+      setNewItemText('');
+    } catch (e) {
+      setItemsMsg(e instanceof Error ? e.message : 'Gagal menambah saran.');
+    } finally {
+      setAddingItem(false);
+    }
+  }
 
   async function handleLogout() {
     await logout();
@@ -78,9 +133,10 @@ export default function LecturerSessionDetail() {
     setSaving(true);
     setMsg('');
     try {
-      // AI menghasilkan draf → approve dengan ringkasan editan; selain itu jalur manual (STT-07).
+      // AI menghasilkan draf → approve dengan ringkasan editan (terstruktur bila
+      // format bullet dipertahankan); selain itu jalur manual (STT-07).
       const updated = data.status === 'ready_for_review'
-        ? await approveLogbook(sessionId, { manual_notes: summaryDraft })
+        ? await approveLogbook(sessionId, textToSummary(summaryDraft))
         : await saveManualNotes(sessionId, summaryDraft);
       setData(updated);
       setMsg('Ringkasan disetujui — mahasiswa sekarang bisa melihatnya.');
@@ -241,6 +297,58 @@ export default function LecturerSessionDetail() {
                     {fmtIDR(data.llm_cost_estimate_idr) && <> · estimasi biaya {fmtIDR(data.llm_cost_estimate_idr)}</>}
                   </p>
                 )}
+              </div>
+            </section>
+
+            {/* Saran & Tindak Lanjut (Phase 7, ADVICE-01) */}
+            <section>
+              <h2 className="font-headline font-bold text-lg text-slate-900 mb-3">Saran &amp; Tindak Lanjut</h2>
+              <div className="bg-surface rounded-2xl border border-gray-200 shadow-sm p-5 space-y-3">
+                {actionItems.length === 0 ? (
+                  <p className="text-sm text-on-surface-variant">Belum ada saran untuk sesi ini.</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {actionItems.map((item) => (
+                      <li key={item.id} className="flex items-start gap-2 border border-gray-100 rounded-xl p-3">
+                        <span
+                          className={`material-symbols-outlined text-base flex-shrink-0 ${item.is_completed ? 'text-success' : 'text-gray-300'}`}
+                          aria-hidden="true"
+                        >
+                          {item.is_completed ? 'check_circle' : 'radio_button_unchecked'}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="text-sm text-slate-700">{item.description}</p>
+                          <p className="text-[11px] text-on-surface-variant mt-0.5">
+                            {item.is_completed
+                              ? `Ditindaklanjuti mahasiswa ${fmtDateTime(item.completed_at)}`
+                              : 'Belum ditindaklanjuti mahasiswa'}
+                          </p>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                {itemsMsg && <p className="text-sm text-error">{itemsMsg}</p>}
+
+                <div className="flex items-start gap-2 border-t border-gray-100 pt-3">
+                  <input
+                    type="text"
+                    value={newItemText}
+                    onChange={(e) => setNewItemText(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleAddItem(); }}
+                    placeholder="Tambahkan saran baru untuk mahasiswa…"
+                    className="flex-1 text-sm border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary min-w-0"
+                  />
+                  <button
+                    type="button"
+                    disabled={addingItem || !newItemText.trim()}
+                    onClick={handleAddItem}
+                    className="px-4 py-2 rounded-xl bg-primary text-on-primary text-sm font-bold hover:bg-primary-hover disabled:opacity-60 min-h-[40px] flex-shrink-0 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+                  >
+                    Tambah
+                  </button>
+                </div>
               </div>
             </section>
           </>
