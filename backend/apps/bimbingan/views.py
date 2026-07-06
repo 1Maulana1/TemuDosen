@@ -1281,6 +1281,40 @@ class KetuaJurusanStatsView(APIView):
         })
 
 
+def _approved_summary_text(session):
+    """Phase 8 SC2 (REPORT-01): render a session's approved logbook summary as text
+    for the ketua-jurusan guidance-history export. Falls back to a status label when
+    the summary isn't approved yet, or '-' when there's no logbook at all."""
+    logbook = getattr(session, 'logbook', None)  # reverse O2O → None if absent
+    if logbook is None:
+        return '-'
+
+    from apps.logbook.models import SessionLogbook
+    if logbook.status != SessionLogbook.Status.APPROVED:
+        return {
+            SessionLogbook.Status.PENDING: 'Belum diringkas',
+            SessionLogbook.Status.TRANSCRIBING: 'Transkripsi berjalan',
+            SessionLogbook.Status.SUMMARIZING: 'Merangkum',
+            SessionLogbook.Status.READY_FOR_REVIEW: 'Menunggu tinjauan dosen',
+            SessionLogbook.Status.FAILED: 'Gagal diringkas',
+        }.get(logbook.status, '-')
+
+    summary = logbook.summary_edited or {}
+    if 'manual_notes' in summary:
+        return (summary.get('manual_notes') or '').strip() or '-'
+
+    parts = []
+    for a in (summary.get('advice_points') or []):
+        detail = (a.get('detail') or '').strip()
+        if detail:
+            parts.append(detail)
+    for i in (summary.get('improvement_notes') or []):
+        action = (i.get('action') or '').strip()
+        if action:
+            parts.append(action)
+    return ' • '.join(parts) or '-'
+
+
 class KetuaJurusanExportView(APIView):
     """GET /api/ketua-jurusan/export/?format=csv|pdf&period=weekly|monthly|semester — FR-KP03."""
 
@@ -1308,7 +1342,7 @@ class KetuaJurusanExportView(APIView):
         sessions = Session.objects.filter(
             created_at__gte=since,
         ).select_related(
-            'submission__student', 'submission__student__adviser',
+            'submission__student', 'submission__student__adviser', 'logbook',
         ).prefetch_related('submission__symptoms').order_by('-created_at')
 
         period_label = _PERIOD_LABELS.get(period, period).replace(' ', '')
@@ -1326,10 +1360,11 @@ class KetuaJurusanExportView(APIView):
                 s.estimated_minutes,
                 s.get_status_display(),
                 s.submission.description or '-',
+                _approved_summary_text(s),
             ])
 
         columns = ['NIM', 'Nama Mahasiswa', 'Nama Dosen', 'Tanggal', 'Topik',
-                   'Durasi (menit)', 'Status', 'Ringkasan']
+                   'Durasi (menit)', 'Status', 'Keluhan Awal', 'Ringkasan Disetujui']
 
         if export_format == 'pdf':
             return self._render_pdf(columns, rows, filename_base, period)
