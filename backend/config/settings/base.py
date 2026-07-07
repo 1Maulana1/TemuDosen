@@ -99,6 +99,15 @@ REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend',
     ],
+    # Brute-force protection (audit S4): ScopedRateThrottle only applies to views
+    # that set `throttle_scope` (currently just LoginView), so other endpoints are
+    # unaffected. Keyed by IP for anonymous requests.
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.ScopedRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'login': env('LOGIN_THROTTLE_RATE', default='10/min'),
+    },
 }
 
 # Session settings (server-side, D-21)

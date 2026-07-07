@@ -110,6 +110,11 @@ StudentDashboard footer "Tentang / Panduan / Kontak" and some nav items are iner
 
 ## Security & robustness gaps (deeper audit 2026-07-07)
 
+> **✅ RESOLVED 2026-07-07: S1 + S4 built + tested** (backend 339). S1 CSV-injection
+> guard (`_csv_safe` applied to both CSV exports) · S4 login rate-limiting (DRF
+> ScopedRateThrottle `login` scope, 10/min, + cache-clear test fixture). Remaining:
+> S2 (pagination), S3 (concurrency lock, low).
+
 ### S1 — 🔧 CSV injection in exports (security)
 `KetuaJurusanExportView` and `LogbookExportView` write user-controlled text (student
 names, descriptions, summary/advice text) into CSV cells with no formula-injection

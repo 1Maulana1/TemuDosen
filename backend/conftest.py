@@ -20,6 +20,15 @@ from rest_framework.test import APIClient
 from apps.accounts.models import CustomUser, UserRole
 
 
+@pytest.fixture(autouse=True)
+def _clear_throttle_cache():
+    """Reset the DRF throttle cache between tests so login rate-limit state (S4)
+    doesn't leak across tests and cause spurious 429s."""
+    from django.core.cache import cache
+    cache.clear()
+    yield
+
+
 @pytest.fixture
 def api_client():
     """Unauthenticated DRF APIClient."""

@@ -312,9 +312,10 @@ class LogbookExportView(APIView):
         response = HttpResponse(content_type='text/csv; charset=utf-8')
         response['Content-Disposition'] = f'attachment; filename="{filename_base}.csv"'
         response.write('﻿')  # BOM UTF-8 untuk Excel
+        from apps.bimbingan.views import _csv_safe  # neutralize CSV injection (S1)
         writer = csv.writer(response)
         writer.writerow(['Field', 'Nilai'])
-        writer.writerows(self._rows(payload))
+        writer.writerows([[_csv_safe(c) for c in row] for row in self._rows(payload)])
         return response
 
     def _render_pdf(self, payload, filename_base):

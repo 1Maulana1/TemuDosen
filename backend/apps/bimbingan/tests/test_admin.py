@@ -301,6 +301,18 @@ class TestKetuaJurusanExportView:
         assert 'Ringkasan Disetujui' in body   # new column header
         assert 'Perbaiki bab 3' in body        # the approved summary content
 
+    def test_csv_neutralizes_formula_injection(self, ketua_jurusan_user, lecturer_user, advisee_student, pending_submission):
+        """Audit S1: a cell starting with a formula trigger is prefixed with a quote
+        so Excel/LibreOffice treats it as text, not an executable formula."""
+        advisee_student.full_name = '=HYPERLINK("http://evil")'
+        advisee_student.save(update_fields=['full_name'])
+        _approve(lecturer_user, pending_submission)
+
+        resp = client_for(ketua_jurusan_user).get(self.url)
+        body = resp.content.decode('utf-8-sig')
+        assert "'=HYPERLINK" in body          # neutralized
+        assert '\n=HYPERLINK' not in body     # never a bare formula cell
+
     def test_csv_shows_status_label_when_summary_not_approved(self, ketua_jurusan_user, lecturer_user, pending_submission):
         from apps.logbook.models import SessionLogbook
         session = _approve(lecturer_user, pending_submission)

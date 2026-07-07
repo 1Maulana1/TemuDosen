@@ -1286,6 +1286,16 @@ class KetuaJurusanStatsView(APIView):
         })
 
 
+def _csv_safe(value):
+    """Neutralize CSV formula injection (audit S1): a cell whose first char is a
+    formula trigger (= + - @, tab, CR) is prefixed with a single quote so Excel/
+    LibreOffice treats it as text, not a formula."""
+    s = '' if value is None else str(value)
+    if s[:1] in ('=', '+', '-', '@', '\t', '\r'):
+        return "'" + s
+    return s
+
+
 def _approved_summary_text(session):
     """Phase 8 SC2 (REPORT-01): render a session's approved logbook summary as text
     for the ketua-jurusan guidance-history export. Falls back to a status label when
@@ -1385,7 +1395,7 @@ class KetuaJurusanExportView(APIView):
 
         writer = csv.writer(response)
         writer.writerow(columns)
-        writer.writerows(rows)
+        writer.writerows([[_csv_safe(c) for c in row] for row in rows])
         return response
 
     def _render_pdf(self, columns, rows, filename_base, period):
