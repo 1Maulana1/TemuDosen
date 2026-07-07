@@ -2,7 +2,7 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: All 8 phases COMPLETE — Phase 7 (SC1-6) + Phase 8 (SC1-4) closed 2026-07-06/07; audit T1-T5 addressed (T2 thesis-progress backend built); backend 309 / frontend 58 green
+status: All 8 phases COMPLETE — Phase 7 (SC1-6) + Phase 8 (SC1-4) closed 2026-07-06/07; audit T1-T5 addressed (T2 thesis-progress backend built); backend 315 / frontend 61 green
 last_updated: "2026-07-07T00:00:00.000Z"
 progress:
   total_phases: 8
@@ -22,14 +22,15 @@ See `.planning/PROJECT.md` for core value, constraints, and full requirements.
 
 ## Current Position
 
-**Milestone COMPLETE — all 8 phases done (2026-07-07).** Backend **309/309**, frontend **58/58**, `tsc -b` + `npm run build` clean, `manage.py check` clean, no missing migrations. Full-project audit + resolutions in `.planning/AUDIT-2026-07-07.md`.
+**Milestone COMPLETE — all 8 phases done (2026-07-07).** Backend **315/315**, frontend **61/61**, `tsc -b` + `npm run build` clean, `manage.py check` clean, no missing migrations. Full-project audit + resolutions in `.planning/AUDIT-2026-07-07.md`.
 
 **This session (2026-07-06→07)** — continuing from the remote-integration base:
 - **Phase 7 finished (SC1-SC6).** SC2: `LecturerAdviceHistoryView` + `/dosen/saran` aggregate advice history. SC3-6: campus logbook sync via the TECH-SPEC §2 decoupled adapter (`apps/logbook/services/campus_logbook.py` — Sekawan/KPTI adapters + `build_payload` + `sync_logbook`), CSV/PDF export fallback (`LogbookExportView`), retry job (`retry_campus_logbook_sync`) + admin-dashboard surfacing, runtime admin config (`CampusLogbookConfig` singleton + `CampusLogbookConfigView`). Deferred nits in `07-DEFERRED.md`.
 - **Phase 8 finished (SC1-SC4).** SC2 gap closed: `KetuaJurusanExportView` now joins `SessionLogbook` and emits a "Ringkasan Disetujui" column.
 - **Audit fixes (2026-07-07):** T1 — Admin Dashboard "Logbook Kampus" card repointed to the real `integrations.campus_logbook` status (was mislabeling the STT/LLM flag). T3 — calendar background thread now only spawns when `GOOGLE_CALENDAR_ENABLED`, killing the recurring "database table is locked" pytest flake (0 warnings now); `test_calendar.py` sync classes opt in via a `_calendar_enabled` fixture. T4/T5 — REQUIREMENTS.md + this file resynced.
 - **T2 fixed (2026-07-07):** student "Progres Skripsi" is now a real self-tracked checklist — `ThesisChapter` model + `GET/PATCH /api/thesis-progress/` + wired StudentDashboard (9 backend + 2 frontend tests). Backend now **309**, frontend **58**.
-- **Still open (recorded, not blocking):** ADVICE-01 optional note/evidence field; real Sekawan/KPTI API never exercised (by design); Phase 5 real-browser mic checks (human-verify).
+- **Post-audit enhancements (2026-07-07):** #1 submission→session/logbook linkage in `SubmissionListSerializer` + `SessionTable` open-session action; #3 accurate dashboard status ("Sesi Selesai" from real Session status); #2 ADVICE-01 optional completion note (`ActionItem.completion_note`, migration 0009) end-to-end. All tested.
+- **Still open (recorded, not blocking):** real Sekawan/KPTI API never exercised (by design — no external endpoint); evidence *file* attachments on advice completion (free-text note is done). Phase 5 real-browser mic checks confirmed working by user 2026-07-07.
 
 **Phase 7 was PARTIAL at session start** (only SC1 UI). It is now fully complete — the text below this line predates that and is kept as historical context.
 

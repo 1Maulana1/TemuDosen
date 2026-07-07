@@ -47,7 +47,7 @@
 
 ### Advisory Continuity
 
-- [~] **ADVICE-01**: Student can mark individual advice items as "addressed" (with optional note/evidence) before or when submitting the next session request — the "mark as addressed" half is now complete end-to-end: UI built 2026-07-06 (`LecturerSessionDetail.tsx` adds advice, `StudentSessionDetail.tsx` views + "Tandai Selesai", fetched independently of logbook-approval status), both tested. Still missing: the optional note/evidence field — `CompleteActionItemView` only ever flips a boolean, no text/attachment capture was added
+- [x] **ADVICE-01**: Student can mark individual advice items as "addressed" (with optional note/evidence) — done: UI built 2026-07-06 (`LecturerSessionDetail.tsx` adds advice, `StudentSessionDetail.tsx` views + "Tandai Selesai", fetched independently of logbook-approval status). Optional note/evidence field added 2026-07-07: `ActionItem.completion_note` (migration 0009), `CompleteActionItemView` accepts an optional `note`, surfaced in the student's mark-done UI + shown to the lecturer (session detail + advice history). 3 backend + 1 frontend tests
 - [x] **ADVICE-02**: Lecturer can view the complete advice history and follow-up status for each advisee student — done 2026-07-06: `LecturerAdviceHistoryView` (GET `/api/queue/lecturer/advice-history/`, IsLecturer) + `LecturerAdviceHistory` page (`/dosen/saran`), advice grouped per advisee with compliance rate; 6 backend + 2 frontend tests. Distinct from the ketua-jurusan-only `KetuaJurusanComplianceView`
 
 ### Campus Logbook Integration

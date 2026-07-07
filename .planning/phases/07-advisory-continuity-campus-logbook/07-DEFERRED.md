@@ -6,18 +6,13 @@ Backend 298/298, frontend 56/56, tsc clean, pushed to `origin/master` (`9ab505a`
 The items below are **non-blocking** follow-ups carried forward explicitly — they do
 not invalidate Phase 7 completion, but are recorded so they are not silently dropped.
 
-## 1. SC1 — optional note/evidence on advice completion (minor)
+## 1. SC1 — optional note/evidence on advice completion — ✅ RESOLVED 2026-07-07
 
-**What:** SC1's wording is "student can mark advice items as addressed **with an optional
-note/evidence**." The mark-done flow (`CompleteActionItemView`) only flips a boolean
-(`is_completed` / `completed_at`) — there is no free-text note or evidence field.
-
-**Impact:** low. The core "mark addressed" capability works end-to-end; only the optional
-annotation is missing.
-
-**To close:** add a nullable `completion_note` (TextField) to `ActionItem`, accept it in
-`CompleteActionItemView`, and add an optional input to the student "Tandai Selesai" UI in
-`StudentSessionDetail.tsx`. Surface it in the lecturer advice-history view (`/dosen/saran`).
+Added `ActionItem.completion_note` (TextField, migration 0009); `CompleteActionItemView`
+accepts an optional `note`; the student "Tandai Selesai" UI in `StudentSessionDetail.tsx`
+has an optional note textarea, and the note is shown to the lecturer (`LecturerSessionDetail`
++ `/dosen/saran`). 3 backend + 1 frontend tests. (Evidence *attachments* — files — remain a
+possible future enhancement; free-text note/evidence is covered.)
 
 ## 2. SC3 — real Sekawan/KPTI API never exercised (by design)
 
