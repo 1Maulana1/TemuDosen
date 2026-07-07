@@ -26,7 +26,8 @@
  *     (StudentQueueSession tidak mengekspos symptom/topik maupun submission id).
  *   - "Total bimbingan" di kartu dosen = jumlah submission approved (bukan dari
  *     endpoint hitung khusus).
- *   - "Progres Skripsi" — TODO(backend): statis/mock, belum ada model/endpoint.
+ *   - "Progres Skripsi" — data nyata via GET/PATCH /api/thesis-progress/ (audit T2);
+ *     mahasiswa menandai sendiri tiap bab (Bab I–V, di-seed saat akses pertama).
  */
 import { useEffect, useState } from 'react';
 import { useRouteLoaderData, useLocation, useNavigate, Link } from 'react-router';
@@ -34,6 +35,7 @@ import type { User } from '../../api/auth';
 import { logout } from '../../api/auth';
 import { fetchMySubmissions, type SubmissionSummary } from '../../api/submissions';
 import { getMyQueue, cancelMyQueue, type StudentQueueSession } from '../../api/sessions';
+import { getThesisProgress, updateThesisChapter, type ThesisProgress } from '../../api/thesis';
 import StatusBadge from '../../components/StatusBadge';
 import StatCard from '../../components/StatCard';
 import SessionTable, { type SessionTableRow } from '../../components/SessionTable';
@@ -57,15 +59,6 @@ const QUEUE_STATUS_BADGE: Record<string, BadgeStatus> = {
   in_progress: 'BERLANGSUNG',
   done: 'SELESAI',
 };
-
-// TODO(backend): checklist bab masih statis — belum ada model/endpoint progres skripsi.
-const THESIS_CHAPTERS: { label: string; done: boolean; active?: boolean }[] = [
-  { label: 'Bab I — Pendahuluan', done: true },
-  { label: 'Bab II — Tinjauan Pustaka', done: true },
-  { label: 'Bab III — Metodologi Penelitian', done: false, active: true },
-  { label: 'Bab IV — Hasil & Pembahasan', done: false },
-  { label: 'Bab V — Kesimpulan & Saran', done: false },
-];
 
 function getInitials(name: string): string {
   return name.split(' ').slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('');
@@ -139,12 +132,36 @@ export default function StudentDashboard() {
     (location.state as { toast?: string } | null)?.toast ?? null
   );
 
+  const [thesis, setThesis] = useState<ThesisProgress | null>(null);
+  const [thesisError, setThesisError] = useState<string | null>(null);
+
   useEffect(() => {
     fetchMySubmissions()
       .then(setSubs)
       .catch(() => setSubsError('Gagal memuat riwayat sesi. Coba muat ulang halaman.'))
       .finally(() => setSubsLoading(false));
   }, []);
+
+  useEffect(() => {
+    getThesisProgress()
+      .then(setThesis)
+      .catch(() => setThesisError('Gagal memuat progres skripsi.'));
+  }, []);
+
+  async function handleToggleChapter(id: number, next: boolean) {
+    if (!thesis) return;
+    // optimistic update
+    const prev = thesis;
+    const chapters = thesis.chapters.map((c) => (c.id === id ? { ...c, is_completed: next } : c));
+    const completed = chapters.filter((c) => c.is_completed).length;
+    setThesis({ ...thesis, chapters, completed, percent: chapters.length ? Math.round((completed / chapters.length) * 100) : 0 });
+    try {
+      await updateThesisChapter(id, next);
+    } catch {
+      setThesis(prev);  // rollback
+      setToast('Gagal memperbarui progres skripsi.');
+    }
+  }
 
   useEffect(() => {
     getMyQueue()
@@ -380,49 +397,55 @@ export default function StudentDashboard() {
               )}
             </section>
 
-            {/* Progres Skripsi (mock/static — lihat TODO di header file) */}
+            {/* Progres Skripsi — checklist bab yang bisa ditandai sendiri (audit T2) */}
             <section className="lg:col-start-3 lg:row-start-2 bg-surface rounded-2xl border border-gray-200 shadow-sm p-6">
               <div className="flex items-center justify-between mb-1">
                 <h2 className="font-headline font-bold text-lg text-on-surface">Progres Skripsi</h2>
-                <span className="text-sm font-bold text-primary">
-                  {Math.round((THESIS_CHAPTERS.filter((c) => c.done).length / THESIS_CHAPTERS.length) * 100)}%
-                </span>
+                {thesis && <span className="text-sm font-bold text-primary">{thesis.percent}%</span>}
               </div>
-              <p className="text-xs text-on-surface-variant mb-4">Data contoh — belum terhubung ke backend</p>
-              <div className="w-full h-2 rounded-full bg-gray-100 mb-5 overflow-hidden">
-                <div
-                  className="h-full bg-primary rounded-full transition-all"
-                  style={{
-                    width: `${Math.round((THESIS_CHAPTERS.filter((c) => c.done).length / THESIS_CHAPTERS.length) * 100)}%`,
-                  }}
-                />
-              </div>
-              <ul className="space-y-3">
-                {THESIS_CHAPTERS.map((c) => (
-                  <li key={c.label} className="flex items-center gap-3">
-                    {c.done ? (
-                      <span className="material-symbols-outlined text-success text-xl flex-shrink-0" aria-hidden="true">
-                        check_circle
-                      </span>
-                    ) : (
-                      <span
-                        className={`material-symbols-outlined text-xl flex-shrink-0 ${c.active ? 'text-primary' : 'text-gray-300'}`}
-                        aria-hidden="true"
-                      >
-                        {c.active ? 'radio_button_checked' : 'radio_button_unchecked'}
-                      </span>
-                    )}
-                    <span
-                      className={[
-                        'text-sm',
-                        c.done ? 'line-through text-on-surface-variant' : c.active ? 'text-slate-900 font-bold' : 'text-on-surface-variant',
-                      ].join(' ')}
-                    >
-                      {c.label}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              {thesisError ? (
+                <p className="text-xs text-error mb-2">{thesisError}</p>
+              ) : !thesis ? (
+                <p className="text-xs text-on-surface-variant mb-4">Memuat…</p>
+              ) : (
+                <>
+                  <p className="text-xs text-on-surface-variant mb-4">Tandai setiap bab yang sudah selesai.</p>
+                  <div className="w-full h-2 rounded-full bg-gray-100 mb-5 overflow-hidden">
+                    <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${thesis.percent}%` }} />
+                  </div>
+                  <ul className="space-y-1">
+                    {thesis.chapters.map((c) => {
+                      const isActive = !c.is_completed && c.id === thesis.chapters.find((x) => !x.is_completed)?.id;
+                      return (
+                        <li key={c.id}>
+                          <button
+                            type="button"
+                            onClick={() => handleToggleChapter(c.id, !c.is_completed)}
+                            aria-pressed={c.is_completed}
+                            className="w-full flex items-center gap-3 py-2 text-left rounded-lg hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+                          >
+                            <span
+                              className={`material-symbols-outlined text-xl flex-shrink-0 ${c.is_completed ? 'text-success' : isActive ? 'text-primary' : 'text-gray-300'}`}
+                              style={c.is_completed ? { fontVariationSettings: "'FILL' 1" } : undefined}
+                              aria-hidden="true"
+                            >
+                              {c.is_completed ? 'check_circle' : isActive ? 'radio_button_checked' : 'radio_button_unchecked'}
+                            </span>
+                            <span
+                              className={[
+                                'text-sm',
+                                c.is_completed ? 'line-through text-on-surface-variant' : isActive ? 'text-slate-900 font-bold' : 'text-on-surface-variant',
+                              ].join(' ')}
+                            >
+                              {c.title}
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </>
+              )}
             </section>
         </div>
       </main>

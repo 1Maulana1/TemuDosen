@@ -22,7 +22,7 @@ Phase 3 (Admin/Ketua Jurusan):
 from django.contrib import admin
 from django.urls import path, include
 
-from apps.submissions.urls import file_urlpatterns
+from apps.submissions.urls import file_urlpatterns, thesis_urlpatterns
 from apps.bimbingan.urls import (
     queue_urlpatterns, calendar_urlpatterns, stats_urlpatterns,
     admin_urlpatterns, ketua_jurusan_urlpatterns, action_item_urlpatterns,
@@ -42,6 +42,8 @@ urlpatterns = [
     path('api/submissions/', include('apps.submissions.urls')),
     # Protected file serving (D-29)
     path('api/files/', include((file_urlpatterns, 'submission-files'))),
+    # Thesis progress checklist (audit T2)
+    path('api/thesis-progress/', include((thesis_urlpatterns, 'thesis-progress'))),
     # User registration + approval
     path('api/users/', include('apps.accounts.user_urls')),
     # Phase 2: Queue

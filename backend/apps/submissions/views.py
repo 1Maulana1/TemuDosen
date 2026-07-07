@@ -33,7 +33,7 @@ from rest_framework.views import APIView
 from apps.accounts.permissions import IsLecturer, IsStudent
 
 from .filters import SubmissionFilter
-from .models import Submission, SubmissionFile
+from .models import Submission, SubmissionFile, ThesisChapter
 from .serializers import (
     LecturerSubmissionSerializer,
     SubmissionCreateSerializer,
@@ -206,3 +206,47 @@ def serve_submission_file(request, file_uuid):
         f'inline; filename="{submission_file.original_filename}"'
     )
     return response
+
+
+# ── Thesis progress (audit T2) ─────────────────────────────────────────────────
+
+def _serialize_chapter(c):
+    return {'id': c.id, 'order': c.order, 'title': c.title, 'is_completed': c.is_completed}
+
+
+class ThesisProgressView(APIView):
+    """GET /api/thesis-progress/ — the logged-in student's skripsi chapter checklist
+    (seeded Bab I–V on first access) plus an overall completion percent."""
+    permission_classes = [IsStudent]
+
+    def get(self, request):
+        chapters = [_serialize_chapter(c) for c in ThesisChapter.ensure_for(request.user)]
+        total = len(chapters)
+        completed = sum(1 for c in chapters if c['is_completed'])
+        return Response({
+            'chapters': chapters,
+            'total': total,
+            'completed': completed,
+            'percent': round(completed / total * 100) if total else 0,
+        })
+
+
+class ThesisChapterUpdateView(APIView):
+    """PATCH /api/thesis-progress/<id>/ — student toggles one of their own chapters."""
+    permission_classes = [IsStudent]
+
+    def patch(self, request, pk):
+        try:
+            chapter = ThesisChapter.objects.get(pk=pk, student=request.user)
+        except ThesisChapter.DoesNotExist:
+            return Response({'detail': 'Bab tidak ditemukan.'}, status=status.HTTP_404_NOT_FOUND)
+
+        is_completed = request.data.get('is_completed')
+        if not isinstance(is_completed, bool):
+            return Response(
+                {'detail': "Field 'is_completed' (boolean) wajib diisi."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        chapter.is_completed = is_completed
+        chapter.save(update_fields=['is_completed', 'updated_at'])
+        return Response(_serialize_chapter(chapter))
