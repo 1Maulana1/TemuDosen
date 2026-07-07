@@ -7,6 +7,12 @@ nothing is lost. Status legend: 💡 idea · 🔧 small fix · 🧱 large featur
 
 ## Recorded programs (per user request 2026-07-07)
 
+> **P1 ✅ RESOLVED 2026-07-07** — CompleteSessionView now calls _recalculate_queue
+> on finish, so early-ending sessions pull the waiting queue forward (1 test).
+> **G8/U6 + S2 also resolved same day** (dead footer links removed; unbounded lists
+> capped [:100]/[:500]). Actionable backlog now empty except: U7 (low), N-04 (low),
+> S3 select_for_update (low), P2 + v2 features (new milestone scope).
+
 ### P1 — 🔧 Recalculate queue when a session finishes early (v1 gap)
 **Problem:** `CompleteSessionView` (dosen klik "Selesai") only sets `ts2` + status
 `DONE` — it does NOT call `_recalculate_queue(dosen)`. So if a session estimated at
