@@ -47,10 +47,12 @@ describe('StudentDashboard — Progres Skripsi (T2)', () => {
   });
 
   it('toggling a chapter PATCHes it and updates the percent optimistically', async () => {
-    let patched: { id: string; body: unknown } | null = null;
+    let patchedId: string | undefined;
+    let patchedBody: unknown;
     server.use(
       http.patch('/api/thesis-progress/:id/', async ({ params, request }) => {
-        patched = { id: params.id as string, body: await request.json() };
+        patchedId = params.id as string;
+        patchedBody = await request.json();
         return HttpResponse.json({ id: 2, order: 2, title: 'Bab II — Tinjauan Pustaka', is_completed: true });
       })
     );
@@ -61,7 +63,7 @@ describe('StudentDashboard — Progres Skripsi (T2)', () => {
     fireEvent.click(screen.getByText('Bab II — Tinjauan Pustaka'));
 
     await waitFor(() => expect(screen.getByText('67%')).toBeInTheDocument());  // 2 of 3
-    expect(patched?.id).toBe('2');
-    expect(patched?.body).toEqual({ is_completed: true });
+    expect(patchedId).toBe('2');
+    expect(patchedBody).toEqual({ is_completed: true });
   });
 });

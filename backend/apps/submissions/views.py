@@ -100,6 +100,7 @@ class SubmissionListCreateView(APIView):
         submissions = (
             Submission.objects
             .filter(student=request.user)
+            .select_related('session', 'session__logbook')
             .prefetch_related('symptoms', 'file')
             .order_by('-created_at')
         )

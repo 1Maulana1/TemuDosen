@@ -207,14 +207,35 @@ class SubmissionListSerializer(serializers.ModelSerializer):
     symptoms = serializers.SerializerMethodField()
     file_uuid = serializers.SerializerMethodField()
     file_name = serializers.SerializerMethodField()
+    # Linkage to the approved Session + its logbook so the dashboard can show an
+    # accurate session status and open the logbook/session detail (audit #1).
+    session_id = serializers.SerializerMethodField()
+    session_status = serializers.SerializerMethodField()
+    logbook_status = serializers.SerializerMethodField()
 
     class Meta:
         model = Submission
         fields = [
             'id', 'status', 'description', 'rejection_reason', 'previous_submission',
             'symptoms', 'file_uuid', 'file_name',
+            'session_id', 'session_status', 'logbook_status',
             'created_at', 'updated_at',
         ]
+
+    def get_session_id(self, obj):
+        session = getattr(obj, 'session', None)
+        return session.id if session else None
+
+    def get_session_status(self, obj):
+        session = getattr(obj, 'session', None)
+        return session.status if session else None
+
+    def get_logbook_status(self, obj):
+        session = getattr(obj, 'session', None)
+        if session is None:
+            return None
+        logbook = getattr(session, 'logbook', None)
+        return logbook.status if logbook else None
 
     def get_symptoms(self, obj):
         return [

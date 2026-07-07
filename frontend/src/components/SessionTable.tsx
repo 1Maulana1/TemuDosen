@@ -1,9 +1,8 @@
 /**
  * SessionTable — riwayat sesi bimbingan (No/Tanggal/Topik/Dosen/Status/Aksi).
  *
- * FR-M05 note: "Aksi" hanya membuka pratinjau berkas draft yang diunggah (data nyata,
- * via file_uuid). Transkrip & ringkasan sesi belum didukung backend (tidak ada field
- * transcript/summary di model Session) — lihat TODO di StudentDashboard.tsx.
+ * "Aksi": (1) pratinjau berkas draft (via file_uuid), dan (2) — untuk baris yang
+ * sesinya sudah dibuat — buka detail sesi/logbook (via sessionId, audit #1).
  */
 import StatusBadge from './StatusBadge';
 
@@ -17,15 +16,20 @@ export interface SessionTableRow {
   status: BadgeStatus;
   fileUuid: string | null;
   fileName: string | null;
+  // Linkage to the approved session + logbook (audit #1)
+  sessionId: number | null;
+  logbookStatus: string | null;
 }
 
 interface SessionTableProps {
   rows: SessionTableRow[];
   onView: (row: SessionTableRow) => void;
+  /** Open the session/logbook detail. Only invoked for rows that have a sessionId. */
+  onOpenSession?: (row: SessionTableRow) => void;
   fmtDate: (iso: string) => string;
 }
 
-export default function SessionTable({ rows, onView, fmtDate }: SessionTableProps) {
+export default function SessionTable({ rows, onView, onOpenSession, fmtDate }: SessionTableProps) {
   if (rows.length === 0) {
     return (
       <div className="py-10 flex flex-col items-center text-center">
@@ -60,19 +64,34 @@ export default function SessionTable({ rows, onView, fmtDate }: SessionTableProp
               <td className="px-2 py-3 text-slate-700">{row.dosen}</td>
               <td className="px-2 py-3"><StatusBadge status={row.status} /></td>
               <td className="px-2 py-3 text-right">
-                <button
-                  type="button"
-                  onClick={() => onView(row)}
-                  disabled={!row.fileUuid}
-                  aria-label={`Lihat detail sesi ${row.topic}`}
-                  title={row.fileUuid ? 'Lihat detail' : 'Tidak ada berkas untuk sesi ini'}
-                  className="inline-flex items-center justify-center w-9 h-9 rounded-lg text-on-surface-variant
-                             hover:bg-primary/10 hover:text-accent-link transition-colors
-                             disabled:opacity-30 disabled:cursor-not-allowed
-                             focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
-                >
-                  <span className="material-symbols-outlined text-xl" aria-hidden="true">visibility</span>
-                </button>
+                <div className="inline-flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => onView(row)}
+                    disabled={!row.fileUuid}
+                    aria-label={`Lihat berkas draft ${row.topic}`}
+                    title={row.fileUuid ? 'Lihat berkas draft' : 'Tidak ada berkas untuk sesi ini'}
+                    className="inline-flex items-center justify-center w-9 h-9 rounded-lg text-on-surface-variant
+                               hover:bg-primary/10 hover:text-accent-link transition-colors
+                               disabled:opacity-30 disabled:cursor-not-allowed
+                               focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+                  >
+                    <span className="material-symbols-outlined text-xl" aria-hidden="true">visibility</span>
+                  </button>
+                  {row.sessionId && onOpenSession && (
+                    <button
+                      type="button"
+                      onClick={() => onOpenSession(row)}
+                      aria-label={`Buka sesi & logbook ${row.topic}`}
+                      title={row.logbookStatus === 'approved' ? 'Lihat logbook' : 'Lihat detail sesi'}
+                      className="inline-flex items-center justify-center w-9 h-9 rounded-lg text-on-surface-variant
+                                 hover:bg-primary/10 hover:text-accent-link transition-colors
+                                 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+                    >
+                      <span className="material-symbols-outlined text-xl" aria-hidden="true">menu_book</span>
+                    </button>
+                  )}
+                </div>
               </td>
             </tr>
           ))}

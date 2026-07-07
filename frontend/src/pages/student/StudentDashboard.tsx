@@ -8,20 +8,17 @@
  *   FR-M02 — "Antrean Aktif Saya" pakai data real-time dari GET /api/queue/my/.
  *   FR-M03 — Tombol "Batalkan" hanya tampil saat status sesi 'waiting' (bukan
  *            giliran/berlangsung), dengan modal konfirmasi sebelum POST cancel.
- *   FR-M05 — "Aksi" di tabel riwayat membuka pratinjau berkas draft (data nyata).
- *            Transkrip & ringkasan sesi BELUM didukung backend (tidak ada field
- *            transcript/summary di model Session) — lihat TODO di bawah.
+ *   FR-M05 — "Aksi" di tabel riwayat: pratinjau berkas draft + (baris ber-sesi)
+ *            buka detail sesi/logbook via session_id (audit #1).
  *   FR-M06 — Tidak diimplementasikan di layar ini: menandai action-item selesai
  *            butuh session_id yang tidak diekspos oleh SubmissionSummary. Perlu
  *            perubahan backend terpisah (di luar scope task ini, sudah dilaporkan).
  *
+ * Akurat sejak audit #1/#3: kolom "Status" riwayat memakai status Session
+ * (waiting/in_progress/done/cancelled) bila sesinya sudah dibuat, dan stat
+ * "Sesi Selesai" = jumlah submission yang session_status-nya 'done'.
+ *
  * Data yang MASIH PENDEKATAN (bukan endpoint dedicated), didokumentasikan inline:
- *   - Kolom "Status" riwayat pakai status Submission (pending/approved/rejected/
- *     revision/cancelled), BUKAN status Session (waiting/in_progress/done/cancelled).
- *     Setelah 'approved', tidak ada cara membedakan "masih berjalan" vs "selesai"
- *     dari endpoint yang ada.
- *   - Stat "Sesi Selesai" = jumlah submission approved dikurangi 1 jika sedang ada
- *     antrean aktif (pendekatan, bisa sedikit meleset jika ada cancel pasca-approval).
  *   - "Topik" pada kartu Antrean Aktif diambil dari submission berstatus 'approved'
  *     (StudentQueueSession tidak mengekspos symptom/topik maupun submission id).
  *   - "Total bimbingan" di kartu dosen = jumlah submission approved (bukan dari
@@ -58,6 +55,14 @@ const QUEUE_STATUS_BADGE: Record<string, BadgeStatus> = {
   waiting: 'MENUNGGU',
   in_progress: 'BERLANGSUNG',
   done: 'SELESAI',
+};
+
+// Session.status → badge, untuk baris riwayat yang sesinya sudah dibuat (audit #3).
+const SESSION_STATUS_BADGE: Record<string, BadgeStatus> = {
+  waiting: 'MENUNGGU',
+  in_progress: 'BERLANGSUNG',
+  done: 'SELESAI',
+  cancelled: 'DIBATALKAN',
 };
 
 function getInitials(name: string): string {
@@ -194,6 +199,10 @@ export default function StudentDashboard() {
     setPreview({ uuid: row.fileUuid, name: row.fileName ?? 'draft.pdf' });
   }
 
+  function handleOpenSession(row: SessionTableRow) {
+    if (row.sessionId) navigate(`/mahasiswa/sesi/${row.sessionId}`);
+  }
+
   const firstName = user?.full_name?.split(' ')?.[0] ?? 'Mahasiswa';
 
   // FR-M01: blokir CTA jika ada submission menunggu keputusan dosen ATAU antrean aktif berjalan
@@ -203,8 +212,8 @@ export default function StudentDashboard() {
   const totalSesi = subs.length;
   const menungguKonfirmasi = subs.filter((s) => s.status === 'pending').length;
   const approvedSubs = subs.filter((s) => s.status === 'approved');
-  // Pendekatan: submission approved yang bukan sesi aktif saat ini dianggap "selesai".
-  const sesiSelesai = Math.max(0, approvedSubs.length - (queue ? 1 : 0));
+  // Akurat (audit #3): sesi selesai = submission yang sesinya berstatus DONE.
+  const sesiSelesai = subs.filter((s) => s.session_status === 'done').length;
 
   // Topik antrean aktif: correlate dari submission approved (lihat catatan di header file).
   const activeSubmission = approvedSubs[0];
@@ -215,9 +224,13 @@ export default function StudentDashboard() {
     date: s.created_at,
     topic: s.symptoms.map((x) => x.name).join(', ') || 'Bimbingan Skripsi',
     dosen: user.adviser?.full_name ?? '-',
-    status: SUBMISSION_STATUS_BADGE[s.status] ?? 'MENUNGGU',
+    // Prefer the real Session status once approved (more accurate than Submission
+    // status, which can't distinguish "berlangsung" vs "selesai") — audit #3.
+    status: (s.session_status && SESSION_STATUS_BADGE[s.session_status]) ?? SUBMISSION_STATUS_BADGE[s.status] ?? 'MENUNGGU',
     fileUuid: s.file_uuid,
     fileName: s.file_name,
+    sessionId: s.session_id,
+    logbookStatus: s.logbook_status,
   }));
 
   return (
@@ -348,7 +361,7 @@ export default function StudentDashboard() {
               )}
 
               {!subsLoading && !subsError && (
-                <SessionTable rows={historyRows} onView={handleViewRow} fmtDate={fmtDate} />
+                <SessionTable rows={historyRows} onView={handleViewRow} onOpenSession={handleOpenSession} fmtDate={fmtDate} />
               )}
             </section>
 

@@ -30,6 +30,10 @@ export interface SubmissionSummary {
   symptoms: SubmissionSymptom[];
   file_uuid: string | null;
   file_name: string | null;
+  // Linkage to the approved Session + its logbook (audit #1)
+  session_id: number | null;
+  session_status: 'waiting' | 'in_progress' | 'done' | 'cancelled' | null;
+  logbook_status: 'pending' | 'transcribing' | 'summarizing' | 'ready_for_review' | 'approved' | 'failed' | null;
   created_at: string;
   updated_at: string;
 }
