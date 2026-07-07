@@ -144,6 +144,11 @@ export default function LecturerAdviceHistory() {
                               Lihat sesi
                             </Link>
                           </div>
+                          {item.completion_note && (
+                            <p className="mt-1.5 text-[13px] text-slate-600 bg-gray-50 border border-gray-100 rounded-lg px-2.5 py-1.5">
+                              <span className="font-bold text-on-surface-variant">Catatan mahasiswa: </span>{item.completion_note}
+                            </p>
+                          )}
                         </div>
                       </li>
                     ))}

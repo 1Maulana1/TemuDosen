@@ -128,6 +128,8 @@ class ActionItem(models.Model):
     )
     description = models.TextField()
     is_completed = models.BooleanField(default=False)
+    # ADVICE-01: optional note/evidence the student adds when marking the item done.
+    completion_note = models.TextField(blank=True, default='')
     created_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True, blank=True)
 

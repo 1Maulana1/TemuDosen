@@ -294,6 +294,7 @@ export interface ActionItem {
   id: number;
   description: string;
   is_completed: boolean;
+  completion_note?: string;
   created_at: string;
   completed_at: string | null;
 }
@@ -318,11 +319,15 @@ export async function addActionItem(sessionId: number, description: string): Pro
   return res.json();
 }
 
-/** Mahasiswa: menandai satu saran sebagai sudah ditindaklanjuti. */
+/** Mahasiswa: menandai satu saran sebagai sudah ditindaklanjuti, dengan catatan/bukti opsional. */
 export async function completeActionItem(
-  id: number
-): Promise<{ id: number; is_completed: true; completed_at: string }> {
-  const res = await apiRequest(`/api/action-items/${id}/complete/`, { method: 'POST' });
+  id: number,
+  note?: string
+): Promise<{ id: number; is_completed: true; completion_note: string; completed_at: string }> {
+  const res = await apiRequest(`/api/action-items/${id}/complete/`, {
+    method: 'POST',
+    body: JSON.stringify(note !== undefined ? { note } : {}),
+  });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error((body as { detail?: string }).detail ?? 'Gagal menandai saran selesai.');
@@ -337,6 +342,7 @@ export interface AdviceHistoryItem {
   session_id: number;
   description: string;
   is_completed: boolean;
+  completion_note?: string;
   created_at: string;
   completed_at: string | null;
 }

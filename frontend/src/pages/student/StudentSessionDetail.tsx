@@ -39,6 +39,7 @@ export default function StudentSessionDetail() {
   const [itemsLoading, setItemsLoading] = useState(true);
   const [completingId, setCompletingId] = useState<number | null>(null);
   const [itemsMsg, setItemsMsg] = useState('');
+  const [noteDrafts, setNoteDrafts] = useState<Record<number, string>>({});
 
   const load = useCallback(() => {
     setLoading(true);
@@ -68,9 +69,12 @@ export default function StudentSessionDetail() {
     setCompletingId(id);
     setItemsMsg('');
     try {
-      const result = await completeActionItem(id);
+      const note = (noteDrafts[id] ?? '').trim();
+      const result = await completeActionItem(id, note || undefined);
       setActionItems((prev) =>
-        prev.map((it) => (it.id === id ? { ...it, is_completed: true, completed_at: result.completed_at } : it))
+        prev.map((it) => (it.id === id
+          ? { ...it, is_completed: true, completion_note: result.completion_note, completed_at: result.completed_at }
+          : it))
       );
     } catch (e) {
       setItemsMsg(e instanceof Error ? e.message : 'Gagal menandai saran selesai.');
@@ -164,26 +168,45 @@ export default function StudentSessionDetail() {
               {itemsMsg && <p className="text-sm text-error">{itemsMsg}</p>}
               <ul className="space-y-2">
                 {actionItems.map((item) => (
-                  <li key={item.id} className="flex items-start gap-3 border border-gray-100 rounded-xl p-3">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm text-slate-700">{item.description}</p>
-                      <p className="text-[11px] text-on-surface-variant mt-0.5">
-                        {item.is_completed
-                          ? `Ditindaklanjuti ${fmtDateTime(item.completed_at)}`
-                          : 'Belum ditindaklanjuti'}
-                      </p>
+                  <li key={item.id} className="border border-gray-100 rounded-xl p-3">
+                    <div className="flex items-start gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm text-slate-700">{item.description}</p>
+                        <p className="text-[11px] text-on-surface-variant mt-0.5">
+                          {item.is_completed
+                            ? `Ditindaklanjuti ${fmtDateTime(item.completed_at)}`
+                            : 'Belum ditindaklanjuti'}
+                        </p>
+                      </div>
+                      {item.is_completed && (
+                        <span className="material-symbols-outlined text-success flex-shrink-0" aria-hidden="true">check_circle</span>
+                      )}
                     </div>
+
                     {item.is_completed ? (
-                      <span className="material-symbols-outlined text-success flex-shrink-0" aria-hidden="true">check_circle</span>
+                      item.completion_note ? (
+                        <p className="mt-2 text-[13px] text-slate-600 bg-gray-50 border border-gray-100 rounded-lg px-3 py-2">
+                          <span className="font-bold text-on-surface-variant">Catatan: </span>{item.completion_note}
+                        </p>
+                      ) : null
                     ) : (
-                      <button
-                        type="button"
-                        disabled={completingId === item.id}
-                        onClick={() => handleComplete(item.id)}
-                        className="flex-shrink-0 px-3 py-1.5 rounded-lg border border-primary text-primary text-xs font-bold hover:bg-primary/5 disabled:opacity-60 min-h-[36px] focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
-                      >
-                        {completingId === item.id ? 'Menyimpan…' : 'Tandai Selesai'}
-                      </button>
+                      <div className="mt-2 space-y-2">
+                        <textarea
+                          value={noteDrafts[item.id] ?? ''}
+                          onChange={(e) => setNoteDrafts((d) => ({ ...d, [item.id]: e.target.value }))}
+                          placeholder="Catatan / bukti tindak lanjut (opsional)…"
+                          rows={2}
+                          className="w-full text-sm border border-gray-200 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                        />
+                        <button
+                          type="button"
+                          disabled={completingId === item.id}
+                          onClick={() => handleComplete(item.id)}
+                          className="px-3 py-1.5 rounded-lg border border-primary text-primary text-xs font-bold hover:bg-primary/5 disabled:opacity-60 min-h-[36px] focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+                        >
+                          {completingId === item.id ? 'Menyimpan…' : 'Tandai Selesai'}
+                        </button>
+                      </div>
                     )}
                   </li>
                 ))}

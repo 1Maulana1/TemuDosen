@@ -366,6 +366,11 @@ export default function LecturerSessionDetail() {
                               ? `Ditindaklanjuti mahasiswa ${fmtDateTime(item.completed_at)}`
                               : 'Belum ditindaklanjuti mahasiswa'}
                           </p>
+                          {item.completion_note && (
+                            <p className="mt-1 text-[13px] text-slate-600 bg-gray-50 border border-gray-100 rounded-lg px-2.5 py-1.5">
+                              <span className="font-bold text-on-surface-variant">Catatan mahasiswa: </span>{item.completion_note}
+                            </p>
+                          )}
                         </div>
                       </li>
                     ))}

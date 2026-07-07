@@ -1538,6 +1538,7 @@ class SessionActionItemsView(APIView):
         return Response([
             {
                 'id': i.id, 'description': i.description, 'is_completed': i.is_completed,
+                'completion_note': i.completion_note,
                 'created_at': i.created_at.isoformat(),
                 'completed_at': i.completed_at.isoformat() if i.completed_at else None,
             }
@@ -1578,10 +1579,18 @@ class CompleteActionItemView(APIView):
         if item.session.submission.student != request.user:
             return Response({'detail': 'Anda tidak memiliki izin.'}, status=status.HTTP_403_FORBIDDEN)
 
+        # ADVICE-01: optional note/evidence the student attaches when marking done.
+        note = request.data.get('note')
+        if note is not None:
+            item.completion_note = str(note).strip()
         item.is_completed = True
         item.completed_at = timezone.now()
-        item.save(update_fields=['is_completed', 'completed_at'])
-        return Response({'id': item.id, 'is_completed': True, 'completed_at': item.completed_at.isoformat()})
+        item.save(update_fields=['is_completed', 'completion_note', 'completed_at'])
+        return Response({
+            'id': item.id, 'is_completed': True,
+            'completion_note': item.completion_note,
+            'completed_at': item.completed_at.isoformat(),
+        })
 
 
 class LecturerAdviceHistoryView(APIView):
@@ -1629,6 +1638,7 @@ class LecturerAdviceHistoryView(APIView):
                 'session_id': item.session_id,
                 'description': item.description,
                 'is_completed': item.is_completed,
+                'completion_note': item.completion_note,
                 'created_at': item.created_at.isoformat(),
                 'completed_at': item.completed_at.isoformat() if item.completed_at else None,
             })

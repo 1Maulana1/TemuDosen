@@ -111,6 +111,42 @@ class TestCompleteActionItemView:
         assert item.is_completed is True
         assert item.completed_at is not None
 
+    def test_complete_with_optional_note_saves_it(
+        self, lecturer_user, advisee_student, pending_submission
+    ):
+        """ADVICE-01: the student may attach an optional note/evidence when marking done."""
+        session = _approve(lecturer_user, pending_submission)
+        item = ActionItem.objects.create(session=session, description='Perbaiki bab 2')
+
+        resp = client_for(advisee_student).post(
+            complete_url(item.id), {'note': 'Sudah revisi, lihat lampiran bab2_v3.pdf'}, format='json')
+        assert resp.status_code == 200
+        assert resp.data['completion_note'] == 'Sudah revisi, lihat lampiran bab2_v3.pdf'
+        item.refresh_from_db()
+        assert item.completion_note == 'Sudah revisi, lihat lampiran bab2_v3.pdf'
+        assert item.is_completed is True
+
+    def test_complete_without_note_leaves_it_blank(
+        self, lecturer_user, advisee_student, pending_submission
+    ):
+        session = _approve(lecturer_user, pending_submission)
+        item = ActionItem.objects.create(session=session, description='Perbaiki bab 2')
+
+        resp = client_for(advisee_student).post(complete_url(item.id))
+        assert resp.status_code == 200
+        assert resp.data['completion_note'] == ''
+
+    def test_completion_note_surfaces_in_list(
+        self, lecturer_user, advisee_student, pending_submission
+    ):
+        session = _approve(lecturer_user, pending_submission)
+        item = ActionItem.objects.create(session=session, description='Perbaiki bab 2')
+        client_for(advisee_student).post(complete_url(item.id), {'note': 'bukti terlampir'}, format='json')
+
+        resp = client_for(lecturer_user).get(action_items_url(session.id))
+        assert resp.status_code == 200
+        assert resp.data[0]['completion_note'] == 'bukti terlampir'
+
     def test_other_student_cannot_complete_someone_elses_item(
         self, lecturer_user, student_user, pending_submission
     ):

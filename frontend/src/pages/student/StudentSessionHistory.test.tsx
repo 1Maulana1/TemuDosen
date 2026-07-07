@@ -3,7 +3,7 @@
  * (/mahasiswa/sesi/:id) — Phase 6 (merge): riwayat + ringkasan (read-only) via
  * SessionLogbook (/api/logbook/student/).
  */
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { MemoryRouter } from 'react-router';
@@ -149,6 +149,32 @@ describe('StudentSessionDetail', () => {
 
     await waitFor(() => expect(completedId).toBe(1));
     await waitFor(() => expect(screen.getAllByText(/Ditindaklanjuti/)).toHaveLength(2));
+  });
+
+  it('sends an optional completion note when the student fills one in (ADVICE-01)', async () => {
+    server.use(
+      http.get('/api/queue/7/action-items/', () =>
+        HttpResponse.json([
+          { id: 1, description: 'Perbaiki bab metodologi', is_completed: false, created_at: '2026-07-04T10:00:00Z', completed_at: null },
+        ])
+      )
+    );
+    let body: unknown;
+    server.use(
+      http.post('/api/action-items/1/complete/', async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json({ id: 1, is_completed: true, completion_note: 'sudah revisi bab 3', completed_at: '2026-07-05T09:00:00Z' });
+      })
+    );
+
+    renderDetail();
+    await waitFor(() => expect(screen.getByText('Perbaiki bab metodologi')).toBeInTheDocument());
+
+    fireEvent.change(screen.getByPlaceholderText(/Catatan \/ bukti/i), { target: { value: 'sudah revisi bab 3' } });
+    screen.getByRole('button', { name: /Tandai Selesai/i }).click();
+
+    await waitFor(() => expect(body).toEqual({ note: 'sudah revisi bab 3' }));
+    await waitFor(() => expect(screen.getByText(/sudah revisi bab 3/)).toBeInTheDocument());
   });
 
   it('shows advice items even while the AI summary is still awaiting approval', async () => {
