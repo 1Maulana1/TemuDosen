@@ -108,6 +108,43 @@ StudentDashboard footer "Tentang / Panduan / Kontak" and some nav items are iner
 
 ---
 
+## Security & robustness gaps (deeper audit 2026-07-07)
+
+### S1 — 🔧 CSV injection in exports (security)
+`KetuaJurusanExportView` and `LogbookExportView` write user-controlled text (student
+names, descriptions, summary/advice text) into CSV cells with no formula-injection
+guard. A value starting with `=`, `+`, `-`, or `@` is executed as a formula by Excel/
+LibreOffice → CSV injection (data exfiltration / command execution on the opener's
+machine). Fix: prefix such cells with a `'` (or wrap) before writing. Low effort,
+real security fix.
+
+### S2 — 🔧 Unbounded list endpoints (performance)
+`SubmissionListCreateView.get` (student's submissions), `LecturerLogbookListView`,
+`StudentLogbookListView`, and `LecturerAdviceHistoryView` return ALL rows with no
+pagination or cap. (Session-history and notifications are already capped at [:50].)
+Grows unbounded per user over time. Fix: add DRF pagination or a sane cap.
+
+### S4 — 🔧 No login rate-limiting / brute-force protection (security)
+No DRF throttling and no django-axes/ratelimit anywhere, so the login endpoint
+accepts unlimited password attempts. Fix: add DRF `AnonRateThrottle` on auth (or
+django-axes) to lock out repeated failures.
+
+### S3 — 💡 No DB-level concurrency guard on approve/complete (low)
+Approve/complete rely on a status-check (`status != PENDING` / `!= IN_PROGRESS`)
+rather than `select_for_update()` inside a transaction. The status-check makes
+double-submit practically safe, but a tight race window remains under true
+concurrency. Low priority; wrap the read-modify-write in `transaction.atomic()` +
+`select_for_update()` if it ever matters.
+
+### Verified NOT gaps (deeper audit)
+- Recording file serving is auth-gated (`_can_view_session`).
+- `meeting_link` is validated (URLField + http/https URLValidator).
+- email / nim / nidn are `unique=True` (registration uniqueness enforced).
+- No XSS: frontend uses no `dangerouslySetInnerHTML`; React auto-escapes.
+- Approve is guarded against double-submit via a `status != PENDING` check.
+
+---
+
 ## Priority recap (for whoever picks this up)
 
 **Highest value, small effort (do first):**
