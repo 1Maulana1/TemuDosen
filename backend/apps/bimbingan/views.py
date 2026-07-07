@@ -38,7 +38,7 @@ from rest_framework.views import APIView
 from apps.accounts.permissions import IsLecturer, IsStudent
 from apps.submissions.models import Submission
 
-from .models import ActionItem, DosenCalendarToken, Session, SessionRecording, SystemLog
+from .models import ActionItem, DosenCalendarToken, Notification, Session, SessionRecording, SystemLog
 from .serializers import (
     ApproveSubmissionSerializer,
     LecturerQueueItemSerializer,
@@ -1701,3 +1701,45 @@ class LecturerAdviceHistoryView(APIView):
             'compliance_rate': compliance_rate,
             'per_mahasiswa': per_mahasiswa,
         })
+
+
+# ── Notifications (audit G2) ──────────────────────────────────────────────────
+
+class NotificationListView(APIView):
+    """GET /api/notifications/ — notifikasi milik user + jumlah belum dibaca."""
+    permission_classes = [_permissions.IsAuthenticated]
+
+    def get(self, request):
+        qs = Notification.objects.filter(recipient=request.user)[:50]
+        unread = Notification.objects.filter(recipient=request.user, is_read=False).count()
+        return Response({
+            'unread_count': unread,
+            'notifications': [
+                {
+                    'id': n.id, 'event_type': n.event_type, 'message': n.message,
+                    'session_id': n.session_id, 'is_read': n.is_read,
+                    'created_at': n.created_at.isoformat(),
+                }
+                for n in qs
+            ],
+        })
+
+
+class NotificationReadView(APIView):
+    """POST /api/notifications/<pk>/read/ — tandai satu notifikasi terbaca."""
+    permission_classes = [_permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        updated = Notification.objects.filter(pk=pk, recipient=request.user).update(is_read=True)
+        if not updated:
+            return Response({'detail': 'Notifikasi tidak ditemukan.'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({'id': pk, 'is_read': True})
+
+
+class NotificationReadAllView(APIView):
+    """POST /api/notifications/read-all/ — tandai semua notifikasi user terbaca."""
+    permission_classes = [_permissions.IsAuthenticated]
+
+    def post(self, request):
+        n = Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
+        return Response({'marked_read': n})

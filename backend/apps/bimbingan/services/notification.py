@@ -1,39 +1,50 @@
 """
-Notification service — Phase 2 stub.
-Phase 3 will replace these with real push/email delivery.
+Notification service.
+
+Writes two things per notification:
+  1. A per-user `Notification` row — this is what the recipient's own in-app feed
+     reads (audit G2; previously only SystemLog was written, which is admin-only so
+     the user never saw anything).
+  2. A `SystemLog` row — kept for the admin audit trail.
+
+Real email/push delivery is a separate future enhancement (NOTIF-01).
 """
 import logging
 
 logger = logging.getLogger(__name__)
 
 
-def notify_student(student, message: str, session=None, event_type: str = 'NOTIFICATION'):
-    """Send an in-app notification to a student. Logs to SystemLog."""
-    from apps.bimbingan.models import SystemLog
+def _deliver(recipient, role_tag, message, session, event_type):
+    from apps.bimbingan.models import Notification, SystemLog
+    # Per-user feed row (what the recipient actually sees).
+    try:
+        Notification.objects.create(
+            recipient=recipient,
+            event_type=event_type,
+            message=message,
+            session=session,
+        )
+    except Exception:
+        logger.exception('Gagal membuat Notification untuk %s', getattr(recipient, 'email', '?'))
+    # Admin audit trail.
     SystemLog.objects.create(
         level=SystemLog.Level.INFO,
         event_type=event_type,
-        message=f'[MAHASISWA] {student.email}: {message}',
+        message=f'[{role_tag}] {recipient.email}: {message}',
         context={
-            'user_id': student.id,
-            'user_email': student.email,
+            'user_id': recipient.id,
+            'user_email': recipient.email,
             'session_id': session.id if session else None,
         },
     )
-    logger.info("Notifikasi mahasiswa [%s]: %s", student.email, message)
+    logger.info("Notifikasi %s [%s]: %s", role_tag, recipient.email, message)
+
+
+def notify_student(student, message: str, session=None, event_type: str = 'NOTIFICATION'):
+    """Send an in-app notification to a student (feed row + SystemLog)."""
+    _deliver(student, 'MAHASISWA', message, session, event_type)
 
 
 def notify_lecturer(lecturer, message: str, session=None, event_type: str = 'NOTIFICATION'):
-    """Send an in-app notification to a lecturer. Logs to SystemLog."""
-    from apps.bimbingan.models import SystemLog
-    SystemLog.objects.create(
-        level=SystemLog.Level.INFO,
-        event_type=event_type,
-        message=f'[DOSEN] {lecturer.email}: {message}',
-        context={
-            'user_id': lecturer.id,
-            'user_email': lecturer.email,
-            'session_id': session.id if session else None,
-        },
-    )
-    logger.info("Notifikasi dosen [%s]: %s", lecturer.email, message)
+    """Send an in-app notification to a lecturer (feed row + SystemLog)."""
+    _deliver(lecturer, 'DOSEN', message, session, event_type)

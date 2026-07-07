@@ -26,6 +26,7 @@ from apps.submissions.urls import file_urlpatterns, thesis_urlpatterns
 from apps.bimbingan.urls import (
     queue_urlpatterns, calendar_urlpatterns, stats_urlpatterns,
     admin_urlpatterns, ketua_jurusan_urlpatterns, action_item_urlpatterns,
+    notification_urlpatterns,
 )
 from apps.symptoms.urls import router as symptoms_router
 from apps.logbook.urls import logbook_urlpatterns
@@ -59,6 +60,7 @@ urlpatterns = [
     path('api/ketua-jurusan/', include((ketua_jurusan_urlpatterns, 'ketua-jurusan'))),
     # Phase 3: Action items (FR-KP04)
     path('api/action-items/', include((action_item_urlpatterns, 'action-items'))),
+    path('api/notifications/', include((notification_urlpatterns, 'notifications'))),
     # Phase 6: Logbook (STT/AI summarization + manual fallback) — menggantikan /api/queue/<id>/summary/
     path('api/logbook/', include((logbook_urlpatterns, 'logbook'))),
 ]

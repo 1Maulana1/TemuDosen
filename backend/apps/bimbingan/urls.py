@@ -10,6 +10,7 @@ from .views import (
     KetuaJurusanStatsView, KetuaJurusanExportView, KetuaJurusanComplianceView,
     SessionActionItemsView, SessionActionItemDetailView,
     CompleteActionItemView, LecturerAdviceHistoryView,
+    NotificationListView, NotificationReadView, NotificationReadAllView,
     LecturerSessionHistoryView, StudentSessionHistoryView,
     SessionRecordingFileView,
 )
@@ -30,6 +31,13 @@ queue_urlpatterns = [
     path('<int:session_id>/action-items/', SessionActionItemsView.as_view(), name='queue-action-items'),
     # G1: dosen edit/hapus satu saran
     path('<int:session_id>/action-items/<int:pk>/', SessionActionItemDetailView.as_view(), name='queue-action-item-detail'),
+]
+
+# G2: per-user in-app notifications
+notification_urlpatterns = [
+    path('', NotificationListView.as_view(), name='notification-list'),
+    path('read-all/', NotificationReadAllView.as_view(), name='notification-read-all'),
+    path('<int:pk>/read/', NotificationReadView.as_view(), name='notification-read'),
 ]
 
 calendar_urlpatterns = [
