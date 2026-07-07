@@ -131,6 +131,10 @@ DOSEN_DAILY_QUOTA_MINUTES = env.int('DOSEN_DAILY_QUOTA_MINUTES', default=480)
 # Phase 5 (SESSION-03/04): batas ukuran upload rekaman audio sesi; default 100MB
 # (~2 jam Opus 64kbps masih jauh di bawah ini)
 RECORDING_MAX_UPLOAD_SIZE = env.int('RECORDING_MAX_UPLOAD_SIZE', default=100 * 1024 * 1024)
+# Retention (audit G5/G7): audio recordings + SystemLog rows are pruned by scheduler
+# jobs after N days. The transcript/summary in the logbook is kept regardless.
+RECORDING_RETENTION_DAYS = env.int('RECORDING_RETENTION_DAYS', default=90)
+SYSTEMLOG_RETENTION_DAYS = env.int('SYSTEMLOG_RETENTION_DAYS', default=30)
 
 # ── Phase 6: STT + AI Summarization + Logbook (Celery/Redis/faster-whisper/Anthropic) ──
 # Celery broker (Redis). CELERY_RESULT_BACKEND sengaja TIDAK diset — semua task

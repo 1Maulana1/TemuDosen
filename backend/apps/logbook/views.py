@@ -416,3 +416,29 @@ class CampusLogbookConfigView(APIView):
             context={'enabled': cfg.enabled, 'provider': cfg.provider},
         )
         return Response(self._serialize(cfg))
+
+
+class RetryPipelineView(APIView):
+    """POST /api/logbook/<session_id>/retry/ — dosen mencoba ulang pipeline STT/AI
+    untuk logbook yang FAILED dan masih punya rekaman (audit G6)."""
+    permission_classes = [IsLecturer]
+
+    def post(self, request, session_id):
+        logbook = _get_logbook_or_404(session_id)
+        if logbook is None:
+            return Response({'detail': 'Logbook tidak ditemukan.'}, status=status.HTTP_404_NOT_FOUND)
+        if logbook.session.submission.student.adviser != request.user:
+            return Response({'detail': 'Hanya dosen pembimbing yang dapat mencoba ulang.'},
+                            status=status.HTTP_403_FORBIDDEN)
+        if logbook.status != SessionLogbook.Status.FAILED:
+            return Response({'detail': 'Hanya logbook yang gagal yang dapat diproses ulang.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if not hasattr(logbook.session, 'recording'):
+            return Response({'detail': 'Tidak ada rekaman untuk diproses ulang.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        logbook.status = SessionLogbook.Status.PENDING
+        logbook.save(update_fields=['status', 'updated_at'])
+        from apps.logbook.tasks import dispatch_pipeline
+        dispatched = dispatch_pipeline(logbook)
+        return Response({'status': logbook.status, 'dispatched': bool(dispatched)})

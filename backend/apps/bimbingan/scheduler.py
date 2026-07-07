@@ -182,6 +182,56 @@ def retry_campus_logbook_sync():
         logger.exception('retry_campus_logbook_sync gagal: %s', e)
 
 
+def cleanup_old_recordings():
+    """Audit G5: delete session-recording audio files older than
+    RECORDING_RETENTION_DAYS. The transcript/summary in the logbook is kept — only
+    the raw audio file + its SessionRecording row are removed (storage + privacy)."""
+    try:
+        import os
+        from django.conf import settings
+        from django.utils import timezone
+        from datetime import timedelta
+        from apps.bimbingan.models import SessionRecording, SystemLog
+
+        days = getattr(settings, 'RECORDING_RETENTION_DAYS', 90)
+        cutoff = timezone.now() - timedelta(days=days)
+        old = SessionRecording.objects.filter(uploaded_at__lt=cutoff)
+        removed = 0
+        for rec in old:
+            try:
+                if rec.file_path and os.path.exists(rec.file_path):
+                    os.remove(rec.file_path)
+            except OSError:
+                pass
+            rec.delete()
+            removed += 1
+        if removed:
+            SystemLog.objects.create(
+                level=SystemLog.Level.INFO,
+                event_type='RECORDING_CLEANUP',
+                message=f'{removed} rekaman >{days} hari dihapus (retensi).',
+                context={'removed': removed, 'days': days},
+            )
+    except Exception as e:
+        logger.exception('cleanup_old_recordings gagal: %s', e)
+
+
+def cleanup_old_system_logs():
+    """Audit G7: prune SystemLog rows older than SYSTEMLOG_RETENTION_DAYS
+    automatically (the manual AdminLogsCleanupView still exists too)."""
+    try:
+        from django.conf import settings
+        from django.utils import timezone
+        from datetime import timedelta
+        from apps.bimbingan.models import SystemLog
+
+        days = getattr(settings, 'SYSTEMLOG_RETENTION_DAYS', 30)
+        cutoff = timezone.now() - timedelta(days=days)
+        SystemLog.objects.filter(created_at__lt=cutoff).delete()
+    except Exception as e:
+        logger.exception('cleanup_old_system_logs gagal: %s', e)
+
+
 def start_scheduler():
     """Start APScheduler background scheduler."""
     global _scheduler
@@ -211,6 +261,20 @@ def start_scheduler():
             id='campus_logbook_retry',
             replace_existing=True,
             misfire_grace_time=120,
+        )
+        _scheduler.add_job(
+            cleanup_old_recordings,
+            IntervalTrigger(hours=6),
+            id='recording_cleanup',
+            replace_existing=True,
+            misfire_grace_time=600,
+        )
+        _scheduler.add_job(
+            cleanup_old_system_logs,
+            IntervalTrigger(hours=6),
+            id='systemlog_cleanup',
+            replace_existing=True,
+            misfire_grace_time=600,
         )
         _scheduler.start()
         atexit.register(lambda: _scheduler.shutdown(wait=False))

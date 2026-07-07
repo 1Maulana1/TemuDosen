@@ -12,7 +12,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useParams, useRouteLoaderData } from 'react-router';
 import {
   getLogbookDetail, approveLogbook, rejectLogbook, saveManualNotes, getSessionRecordingUrl,
-  getActionItems, addActionItem, updateActionItem, deleteActionItem, getLogbookExportUrl,
+  getActionItems, addActionItem, updateActionItem, deleteActionItem, getLogbookExportUrl, retryPipeline,
   type LogbookDetail, type SessionSummaryContent, type ActionItem, type CampusSyncStatus,
 } from '../../api/sessions';
 import { logout, type User } from '../../api/auth';
@@ -157,6 +157,20 @@ export default function LecturerSessionDetail() {
       setActionItems((prev) => prev.filter((it) => it.id !== id));
     } catch (e) {
       setItemsMsg(e instanceof Error ? e.message : 'Gagal menghapus saran.');
+    }
+  }
+
+  const [retrying, setRetrying] = useState(false);
+  async function handleRetry() {
+    setRetrying(true);
+    setItemsMsg('');
+    try {
+      await retryPipeline(sessionId);
+      load();  // muat ulang status (pending → pipeline berjalan lagi)
+    } catch (e) {
+      setItemsMsg(e instanceof Error ? e.message : 'Gagal memproses ulang.');
+    } finally {
+      setRetrying(false);
     }
   }
 
@@ -330,6 +344,13 @@ export default function LecturerSessionDetail() {
                         ? 'Draf ringkasan otomatis siap ditinjau — perbaiki bila perlu, lalu setujui.'
                         : 'Transkripsi & ringkasan otomatis belum tersedia — tuliskan ringkasan hasil bimbingan secara manual di bawah ini.'}
                     </p>
+                    {data.status === 'failed' && data.has_recording && (
+                      <button type="button" onClick={handleRetry} disabled={retrying}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-primary text-primary text-xs font-bold hover:bg-primary/5 disabled:opacity-60 min-h-[40px] focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">
+                        <span className="material-symbols-outlined text-base" aria-hidden="true">refresh</span>
+                        {retrying ? 'Memproses…' : 'Coba proses ulang otomatis'}
+                      </button>
+                    )}
                     {data.status === 'ready_for_review' && (
                       <div className="border border-gray-100 rounded-xl p-3 bg-gray-50/60">
                         <SummaryContent content={data.summary_raw} showGroundedness />
