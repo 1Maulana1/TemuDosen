@@ -319,6 +319,28 @@ export async function addActionItem(sessionId: number, description: string): Pro
   return res.json();
 }
 
+/** Dosen: mengubah teks satu saran (G1). */
+export async function updateActionItem(sessionId: number, id: number, description: string): Promise<ActionItem> {
+  const res = await apiRequest(`/api/queue/${sessionId}/action-items/${id}/`, {
+    method: 'PATCH',
+    body: JSON.stringify({ description }),
+  });
+  if (!res.ok) {
+    const b = await res.json().catch(() => ({}));
+    throw new Error((b as { detail?: string }).detail ?? 'Gagal mengubah saran.');
+  }
+  return res.json();
+}
+
+/** Dosen: menghapus satu saran (G1). */
+export async function deleteActionItem(sessionId: number, id: number): Promise<void> {
+  const res = await apiRequest(`/api/queue/${sessionId}/action-items/${id}/`, { method: 'DELETE' });
+  if (!res.ok) {
+    const b = await res.json().catch(() => ({}));
+    throw new Error((b as { detail?: string }).detail ?? 'Gagal menghapus saran.');
+  }
+}
+
 /** Mahasiswa: menandai satu saran sebagai sudah ditindaklanjuti, dengan catatan/bukti opsional. */
 export async function completeActionItem(
   id: number,

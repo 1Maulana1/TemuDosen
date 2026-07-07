@@ -12,7 +12,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useParams, useRouteLoaderData } from 'react-router';
 import {
   getLogbookDetail, approveLogbook, rejectLogbook, saveManualNotes, getSessionRecordingUrl,
-  getActionItems, addActionItem, getLogbookExportUrl,
+  getActionItems, addActionItem, updateActionItem, deleteActionItem, getLogbookExportUrl,
   type LogbookDetail, type SessionSummaryContent, type ActionItem, type CampusSyncStatus,
 } from '../../api/sessions';
 import { logout, type User } from '../../api/auth';
@@ -106,6 +106,8 @@ export default function LecturerSessionDetail() {
   const [newItemText, setNewItemText] = useState('');
   const [addingItem, setAddingItem] = useState(false);
   const [itemsMsg, setItemsMsg] = useState('');
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editText, setEditText] = useState('');
 
   const load = useCallback(() => {
     setLoading(true);
@@ -132,6 +134,29 @@ export default function LecturerSessionDetail() {
       setItemsMsg(e instanceof Error ? e.message : 'Gagal menambah saran.');
     } finally {
       setAddingItem(false);
+    }
+  }
+
+  async function handleSaveEdit(id: number) {
+    const description = editText.trim();
+    if (!description) return;
+    setItemsMsg('');
+    try {
+      const updated = await updateActionItem(sessionId, id, description);
+      setActionItems((prev) => prev.map((it) => (it.id === id ? { ...it, description: updated.description } : it)));
+      setEditingId(null);
+    } catch (e) {
+      setItemsMsg(e instanceof Error ? e.message : 'Gagal mengubah saran.');
+    }
+  }
+
+  async function handleDeleteItem(id: number) {
+    setItemsMsg('');
+    try {
+      await deleteActionItem(sessionId, id);
+      setActionItems((prev) => prev.filter((it) => it.id !== id));
+    } catch (e) {
+      setItemsMsg(e instanceof Error ? e.message : 'Gagal menghapus saran.');
     }
   }
 
@@ -354,24 +379,57 @@ export default function LecturerSessionDetail() {
                     {actionItems.map((item) => (
                       <li key={item.id} className="flex items-start gap-2 border border-gray-100 rounded-xl p-3">
                         <span
-                          className={`material-symbols-outlined text-base flex-shrink-0 ${item.is_completed ? 'text-success' : 'text-gray-300'}`}
+                          className={`material-symbols-outlined text-base flex-shrink-0 mt-0.5 ${item.is_completed ? 'text-success' : 'text-gray-300'}`}
                           aria-hidden="true"
                         >
                           {item.is_completed ? 'check_circle' : 'radio_button_unchecked'}
                         </span>
-                        <div className="min-w-0">
-                          <p className="text-sm text-slate-700">{item.description}</p>
-                          <p className="text-[11px] text-on-surface-variant mt-0.5">
-                            {item.is_completed
-                              ? `Ditindaklanjuti mahasiswa ${fmtDateTime(item.completed_at)}`
-                              : 'Belum ditindaklanjuti mahasiswa'}
-                          </p>
-                          {item.completion_note && (
-                            <p className="mt-1 text-[13px] text-slate-600 bg-gray-50 border border-gray-100 rounded-lg px-2.5 py-1.5">
-                              <span className="font-bold text-on-surface-variant">Catatan mahasiswa: </span>{item.completion_note}
-                            </p>
+                        <div className="min-w-0 flex-1">
+                          {editingId === item.id ? (
+                            <div className="space-y-2">
+                              <textarea
+                                value={editText}
+                                onChange={(e) => setEditText(e.target.value)}
+                                rows={2}
+                                className="w-full text-sm border border-gray-200 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                              />
+                              <div className="flex items-center gap-2">
+                                <button type="button" onClick={() => handleSaveEdit(item.id)} disabled={!editText.trim()}
+                                  className="px-2.5 py-1 rounded-lg bg-primary text-on-primary text-xs font-bold disabled:opacity-60">Simpan</button>
+                                <button type="button" onClick={() => setEditingId(null)}
+                                  className="px-2.5 py-1 rounded-lg text-on-surface-variant text-xs font-bold">Batal</button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <p className="text-sm text-slate-700">{item.description}</p>
+                              <p className="text-[11px] text-on-surface-variant mt-0.5">
+                                {item.is_completed
+                                  ? `Ditindaklanjuti mahasiswa ${fmtDateTime(item.completed_at)}`
+                                  : 'Belum ditindaklanjuti mahasiswa'}
+                              </p>
+                              {item.completion_note && (
+                                <p className="mt-1 text-[13px] text-slate-600 bg-gray-50 border border-gray-100 rounded-lg px-2.5 py-1.5">
+                                  <span className="font-bold text-on-surface-variant">Catatan mahasiswa: </span>{item.completion_note}
+                                </p>
+                              )}
+                            </>
                           )}
                         </div>
+                        {editingId !== item.id && (
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <button type="button" aria-label="Ubah saran" title="Ubah"
+                              onClick={() => { setEditingId(item.id); setEditText(item.description); setItemsMsg(''); }}
+                              className="w-8 h-8 rounded-lg text-on-surface-variant hover:bg-primary/10 hover:text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">
+                              <span className="material-symbols-outlined text-lg" aria-hidden="true">edit</span>
+                            </button>
+                            <button type="button" aria-label="Hapus saran" title="Hapus"
+                              onClick={() => handleDeleteItem(item.id)}
+                              className="w-8 h-8 rounded-lg text-on-surface-variant hover:bg-error/10 hover:text-error focus-visible:ring-2 focus-visible:ring-error focus-visible:outline-none">
+                              <span className="material-symbols-outlined text-lg" aria-hidden="true">delete</span>
+                            </button>
+                          </div>
+                        )}
                       </li>
                     ))}
                   </ul>

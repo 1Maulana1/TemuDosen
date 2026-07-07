@@ -8,7 +8,8 @@ from .views import (
     LecturerStatsView, AdminStatsView, AdminEmergencyCancelView,
     AdminLogsView, AdminLogsCleanupView,
     KetuaJurusanStatsView, KetuaJurusanExportView, KetuaJurusanComplianceView,
-    SessionActionItemsView, CompleteActionItemView, LecturerAdviceHistoryView,
+    SessionActionItemsView, SessionActionItemDetailView,
+    CompleteActionItemView, LecturerAdviceHistoryView,
     LecturerSessionHistoryView, StudentSessionHistoryView,
     SessionRecordingFileView,
 )
@@ -27,6 +28,8 @@ queue_urlpatterns = [
     path('lecturer/advice-history/', LecturerAdviceHistoryView.as_view(), name='queue-lecturer-advice-history'),
     # FR-KP04: saran / tindak lanjut bimbingan, dilekatkan ke sebuah sesi
     path('<int:session_id>/action-items/', SessionActionItemsView.as_view(), name='queue-action-items'),
+    # G1: dosen edit/hapus satu saran
+    path('<int:session_id>/action-items/<int:pk>/', SessionActionItemDetailView.as_view(), name='queue-action-item-detail'),
 ]
 
 calendar_urlpatterns = [

@@ -1557,11 +1557,59 @@ class SessionActionItemsView(APIView):
             return Response({'detail': 'Deskripsi saran wajib diisi.'}, status=status.HTTP_400_BAD_REQUEST)
 
         item = ActionItem.objects.create(session=session, description=description)
+        # G3: beri tahu mahasiswa ada saran baru untuk ditindaklanjuti.
+        notify_student(
+            session.submission.student,
+            'Ada saran/tindak lanjut baru dari dosen pembimbing Anda.',
+            session=session,
+            event_type='ADVICE_ADDED',
+        )
         return Response(
             {'id': item.id, 'description': item.description, 'is_completed': False,
              'created_at': item.created_at.isoformat()},
             status=status.HTTP_201_CREATED,
         )
+
+
+class SessionActionItemDetailView(APIView):
+    """PATCH/DELETE /api/queue/<session_id>/action-items/<pk>/ — dosen mengubah teks
+    atau menghapus satu saran miliknya (audit G1). Dosen pembimbing sesi saja."""
+    permission_classes = [IsLecturer]
+
+    def _get_item(self, request, session_id, pk):
+        try:
+            item = ActionItem.objects.select_related(
+                'session__submission__student__adviser'
+            ).get(pk=pk, session_id=session_id)
+        except ActionItem.DoesNotExist:
+            return None, Response({'detail': 'Saran tidak ditemukan.'}, status=status.HTTP_404_NOT_FOUND)
+        if item.session.submission.student.adviser != request.user:
+            return None, Response({'detail': 'Hanya dosen pembimbing yang dapat mengubah saran.'},
+                                  status=status.HTTP_403_FORBIDDEN)
+        return item, None
+
+    def patch(self, request, session_id, pk):
+        item, err = self._get_item(request, session_id, pk)
+        if err:
+            return err
+        description = (request.data.get('description') or '').strip()
+        if not description:
+            return Response({'detail': 'Deskripsi saran wajib diisi.'}, status=status.HTTP_400_BAD_REQUEST)
+        item.description = description
+        item.save(update_fields=['description'])
+        return Response({
+            'id': item.id, 'description': item.description, 'is_completed': item.is_completed,
+            'completion_note': item.completion_note,
+            'created_at': item.created_at.isoformat(),
+            'completed_at': item.completed_at.isoformat() if item.completed_at else None,
+        })
+
+    def delete(self, request, session_id, pk):
+        item, err = self._get_item(request, session_id, pk)
+        if err:
+            return err
+        item.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class CompleteActionItemView(APIView):

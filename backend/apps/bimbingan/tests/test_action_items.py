@@ -10,7 +10,7 @@ Covers:
 import pytest
 from rest_framework.test import APIClient
 
-from apps.bimbingan.models import ActionItem, Session
+from apps.bimbingan.models import ActionItem, Session, SystemLog
 
 
 def client_for(user):
@@ -93,6 +93,66 @@ class TestSessionActionItemsView:
 
     def test_nonexistent_session_returns_404(self, lecturer_user):
         resp = client_for(lecturer_user).get(action_items_url(999999))
+        assert resp.status_code == 404
+
+    def test_adding_advice_notifies_student(self, lecturer_user, advisee_student, pending_submission):
+        """G3: creating an advice item fires an ADVICE_ADDED notification."""
+        session = _approve(lecturer_user, pending_submission)
+        client_for(lecturer_user).post(
+            action_items_url(session.id), {'description': 'Perbaiki bab 3'}, format='json')
+        assert SystemLog.objects.filter(event_type='ADVICE_ADDED').exists()
+
+
+def item_detail_url(session_id, pk):
+    return f'/api/queue/{session_id}/action-items/{pk}/'
+
+
+@pytest.mark.django_db
+class TestSessionActionItemDetailView:
+    """G1: dosen can edit/delete an advice item they gave."""
+
+    def test_lecturer_can_edit_description(self, lecturer_user, pending_submission):
+        session = _approve(lecturer_user, pending_submission)
+        item = ActionItem.objects.create(session=session, description='typo asli')
+
+        resp = client_for(lecturer_user).patch(
+            item_detail_url(session.id, item.id), {'description': 'Perbaiki bab 3 (revisi)'}, format='json')
+        assert resp.status_code == 200
+        assert resp.data['description'] == 'Perbaiki bab 3 (revisi)'
+        item.refresh_from_db()
+        assert item.description == 'Perbaiki bab 3 (revisi)'
+
+    def test_edit_rejects_empty(self, lecturer_user, pending_submission):
+        session = _approve(lecturer_user, pending_submission)
+        item = ActionItem.objects.create(session=session, description='x')
+        resp = client_for(lecturer_user).patch(
+            item_detail_url(session.id, item.id), {'description': '  '}, format='json')
+        assert resp.status_code == 400
+
+    def test_lecturer_can_delete(self, lecturer_user, pending_submission):
+        session = _approve(lecturer_user, pending_submission)
+        item = ActionItem.objects.create(session=session, description='hapus aku')
+        resp = client_for(lecturer_user).delete(item_detail_url(session.id, item.id))
+        assert resp.status_code == 204
+        assert not ActionItem.objects.filter(pk=item.id).exists()
+
+    def test_other_lecturer_forbidden(self, lecturer_user, approved_lecturer, pending_submission):
+        session = _approve(lecturer_user, pending_submission)
+        item = ActionItem.objects.create(session=session, description='rahasia')
+        resp = client_for(approved_lecturer).delete(item_detail_url(session.id, item.id))
+        assert resp.status_code == 403
+        assert ActionItem.objects.filter(pk=item.id).exists()
+
+    def test_student_forbidden(self, lecturer_user, advisee_student, pending_submission):
+        session = _approve(lecturer_user, pending_submission)
+        item = ActionItem.objects.create(session=session, description='x')
+        resp = client_for(advisee_student).patch(
+            item_detail_url(session.id, item.id), {'description': 'y'}, format='json')
+        assert resp.status_code == 403
+
+    def test_missing_item_404(self, lecturer_user, pending_submission):
+        session = _approve(lecturer_user, pending_submission)
+        resp = client_for(lecturer_user).delete(item_detail_url(session.id, 999999))
         assert resp.status_code == 404
 
 
