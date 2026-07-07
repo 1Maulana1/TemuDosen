@@ -26,7 +26,13 @@ export default function NotificationBell() {
       .catch(() => {});
   };
 
-  useEffect(() => { load(); }, []);
+  // U4: refresh berkala supaya notifikasi baru muncul tanpa reload (badge tetap
+  // hidup saat user berdiam di satu halaman). 60s — ringan, hanya unread feed.
+  useEffect(() => {
+    load();
+    const t = setInterval(load, 60_000);
+    return () => clearInterval(t);
+  }, []);
 
   // Close on outside click
   useEffect(() => {

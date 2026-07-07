@@ -108,6 +108,7 @@ export default function LecturerSessionDetail() {
   const [itemsMsg, setItemsMsg] = useState('');
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editText, setEditText] = useState('');
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -157,6 +158,8 @@ export default function LecturerSessionDetail() {
       setActionItems((prev) => prev.filter((it) => it.id !== id));
     } catch (e) {
       setItemsMsg(e instanceof Error ? e.message : 'Gagal menghapus saran.');
+    } finally {
+      setDeleteConfirmId(null);
     }
   }
 
@@ -437,19 +440,35 @@ export default function LecturerSessionDetail() {
                             </>
                           )}
                         </div>
-                        {editingId !== item.id && (
-                          <div className="flex items-center gap-1 flex-shrink-0">
-                            <button type="button" aria-label="Ubah saran" title="Ubah"
-                              onClick={() => { setEditingId(item.id); setEditText(item.description); setItemsMsg(''); }}
-                              className="w-8 h-8 rounded-lg text-on-surface-variant hover:bg-primary/10 hover:text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">
-                              <span className="material-symbols-outlined text-lg" aria-hidden="true">edit</span>
-                            </button>
-                            <button type="button" aria-label="Hapus saran" title="Hapus"
-                              onClick={() => handleDeleteItem(item.id)}
-                              className="w-8 h-8 rounded-lg text-on-surface-variant hover:bg-error/10 hover:text-error focus-visible:ring-2 focus-visible:ring-error focus-visible:outline-none">
-                              <span className="material-symbols-outlined text-lg" aria-hidden="true">delete</span>
-                            </button>
-                          </div>
+                        {/* U1: item yang sudah ditindaklanjuti mahasiswa dikunci —
+                            edit/hapus disembunyikan agar bukti mahasiswa tak terhapus. */}
+                        {editingId !== item.id && !item.is_completed && (
+                          deleteConfirmId === item.id ? (
+                            <div className="flex items-center gap-1.5 flex-shrink-0">
+                              <span className="text-[11px] font-bold text-error">Hapus?</span>
+                              <button type="button" onClick={() => handleDeleteItem(item.id)}
+                                className="px-2 py-1 rounded-lg bg-error text-white text-xs font-bold focus-visible:ring-2 focus-visible:ring-error focus-visible:outline-none">
+                                Ya
+                              </button>
+                              <button type="button" onClick={() => setDeleteConfirmId(null)}
+                                className="px-2 py-1 rounded-lg text-on-surface-variant text-xs font-bold focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">
+                                Batal
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              <button type="button" aria-label="Ubah saran" title="Ubah"
+                                onClick={() => { setEditingId(item.id); setEditText(item.description); setItemsMsg(''); }}
+                                className="w-8 h-8 rounded-lg text-on-surface-variant hover:bg-primary/10 hover:text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">
+                                <span className="material-symbols-outlined text-lg" aria-hidden="true">edit</span>
+                              </button>
+                              <button type="button" aria-label="Hapus saran" title="Hapus"
+                                onClick={() => { setDeleteConfirmId(item.id); setItemsMsg(''); }}
+                                className="w-8 h-8 rounded-lg text-on-surface-variant hover:bg-error/10 hover:text-error focus-visible:ring-2 focus-visible:ring-error focus-visible:outline-none">
+                                <span className="material-symbols-outlined text-lg" aria-hidden="true">delete</span>
+                              </button>
+                            </div>
+                          )
                         )}
                       </li>
                     ))}

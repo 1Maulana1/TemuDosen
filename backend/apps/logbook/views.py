@@ -294,11 +294,26 @@ class LogbookExportView(APIView):
             return self._render_pdf(payload, filename_base)
         return self._render_csv(payload, filename_base)
 
+    @staticmethod
+    def _fmt_tanggal(iso):
+        """U2: tampilkan tanggal terbaca manusia di ekspor (payload API tetap ISO)."""
+        if not iso:
+            return '-'
+        try:
+            from datetime import datetime
+            from django.utils import timezone as djtz
+            dt = datetime.fromisoformat(iso)
+            if djtz.is_aware(dt):
+                dt = djtz.localtime(dt)
+            return dt.strftime('%d-%m-%Y %H:%M WIB')
+        except (ValueError, TypeError):
+            return iso
+
     def _rows(self, payload):
         return [
             ('NIM', payload.get('nim') or '-'),
             ('NIDN', payload.get('nidn') or '-'),
-            ('Tanggal', payload.get('tanggal') or '-'),
+            ('Tanggal', self._fmt_tanggal(payload.get('tanggal'))),
             ('Topik', payload.get('topik') or '-'),
             ('Durasi (menit)', str(payload.get('durasi_menit') or 0)),
             ('Ringkasan', payload.get('ringkasan') or '-'),

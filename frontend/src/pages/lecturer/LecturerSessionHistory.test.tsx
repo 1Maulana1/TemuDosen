@@ -209,4 +209,34 @@ describe('LecturerSessionDetail', () => {
     await waitFor(() => expect(capturedBody).toEqual({ description: 'Perbanyak kutipan jurnal terbaru' }));
     await waitFor(() => expect(screen.getByText('Perbanyak kutipan jurnal terbaru')).toBeInTheDocument());
   });
+
+  it('locks completed advice items and requires confirmation before delete (U1)', async () => {
+    server.use(
+      http.get('/api/queue/7/action-items/', () =>
+        HttpResponse.json([
+          { id: 1, description: 'Masih terbuka', is_completed: false, created_at: '2026-07-04T10:00:00Z', completed_at: null },
+          { id: 2, description: 'Sudah dikerjakan', is_completed: true, completion_note: 'bukti', created_at: '2026-07-03T10:00:00Z', completed_at: '2026-07-04T08:00:00Z' },
+        ])
+      )
+    );
+    let deleted = false;
+    server.use(
+      http.delete('/api/queue/7/action-items/1/', () => { deleted = true; return new HttpResponse(null, { status: 204 }); })
+    );
+
+    renderDetail();
+    await waitFor(() => expect(screen.getByText('Masih terbuka')).toBeInTheDocument());
+
+    // completed item is locked: exactly ONE delete button (for the open item)
+    expect(screen.getAllByRole('button', { name: /Hapus saran/i })).toHaveLength(1);
+
+    // deleting needs an explicit confirm — first click only reveals it
+    fireEvent.click(screen.getByRole('button', { name: /Hapus saran/i }));
+    expect(deleted).toBe(false);
+    expect(screen.getByText('Hapus?')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /^Ya$/ }));
+    await waitFor(() => expect(deleted).toBe(true));
+    await waitFor(() => expect(screen.queryByText('Masih terbuka')).not.toBeInTheDocument());
+  });
 });

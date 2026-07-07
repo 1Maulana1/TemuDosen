@@ -78,7 +78,9 @@ export default function SessionTable({ rows, onView, onOpenSession, fmtDate }: S
                   >
                     <span className="material-symbols-outlined text-xl" aria-hidden="true">visibility</span>
                   </button>
-                  {row.sessionId && onOpenSession && (
+                  {/* U8: sembunyikan saat sesi masih MENUNGGU — belum ada detail/
+                      logbook yang berarti untuk dilihat mahasiswa. */}
+                  {row.sessionId && onOpenSession && row.status !== 'MENUNGGU' && (
                     <button
                       type="button"
                       onClick={() => onOpenSession(row)}

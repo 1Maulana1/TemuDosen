@@ -1598,6 +1598,13 @@ class SessionActionItemDetailView(APIView):
         if item.session.submission.student.adviser != request.user:
             return None, Response({'detail': 'Hanya dosen pembimbing yang dapat mengubah saran.'},
                                   status=status.HTTP_403_FORBIDDEN)
+        # U1: item yang sudah ditindaklanjuti mahasiswa dikunci — mengubah/menghapusnya
+        # ikut melenyapkan catatan/bukti tindak lanjut mahasiswa.
+        if item.is_completed:
+            return None, Response(
+                {'detail': 'Saran yang sudah ditindaklanjuti mahasiswa tidak dapat diubah atau dihapus.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         return item, None
 
     def patch(self, request, session_id, pk):

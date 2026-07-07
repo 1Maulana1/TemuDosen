@@ -155,6 +155,22 @@ class TestSessionActionItemDetailView:
         resp = client_for(lecturer_user).delete(item_detail_url(session.id, 999999))
         assert resp.status_code == 404
 
+    def test_completed_item_locked_from_edit_and_delete(self, lecturer_user, pending_submission):
+        """U1: an item the student already followed up on can't be edited/deleted —
+        doing so would erase the student's completion note/evidence."""
+        from django.utils import timezone
+        session = _approve(lecturer_user, pending_submission)
+        item = ActionItem.objects.create(
+            session=session, description='Sudah dikerjakan', is_completed=True,
+            completion_note='bukti terlampir', completed_at=timezone.now())
+
+        assert client_for(lecturer_user).patch(
+            item_detail_url(session.id, item.id), {'description': 'ubah'}, format='json'
+        ).status_code == 400
+        assert client_for(lecturer_user).delete(
+            item_detail_url(session.id, item.id)).status_code == 400
+        assert ActionItem.objects.filter(pk=item.id).exists()
+
 
 @pytest.mark.django_db
 class TestCompleteActionItemView:
