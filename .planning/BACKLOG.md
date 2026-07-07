@@ -153,9 +153,11 @@ concurrency. Low priority; wrap the read-modify-write in `transaction.atomic()` 
 ## UI review findings (live walk, 2026-07-07 — see UI-REVIEW-2026-07-07.md)
 
 > **✅ RESOLVED 2026-07-07 (same day): U1, U2, U3, U4, U5, U8 all fixed + tested**
-> (backend 340 / frontend 64; U1 verified live in the browser). Remaining: U6 (=G8
-> dead footer links), U7 (pre-hydration click, low), and the U0 follow-up (delete
-> the stale outer `E:\Proyek S4\frontend`+`backend` copies — user decision).
+> (backend 340 / frontend 64; U1 verified live in the browser). **U0 follow-up done
+> 2026-07-07:** the stale outer copies were renamed to
+> `E:\Proyek S4\_STALE_frontend_jangan-dipakai` + `_STALE_backend_jangan-dipakai`
+> (safe to delete permanently once confident). Remaining: U6 (=G8 dead footer
+> links), U7 (pre-hydration click, low).
 
 - **U0 (KRITIS, resolved)** — outer `.claude/launch.json` served the STALE outer copy;
   fixed to point at TemuDosen. Follow-up: delete/archive `E:\Proyek S4\frontend`+`backend`.
