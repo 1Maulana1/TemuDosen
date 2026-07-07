@@ -68,3 +68,51 @@ the recording consent gate server-side. Completing a not-started session is bloc
 Queue estimate uses `sum(symptom.duration_minutes) or 30`. No per-category
 DEFAULT_ESTIMATES and no 5s timeout guard (per the old NFR-04 note). Fine in
 practice (durations are DB-driven), noted for completeness.
+
+### G5 — 🔧 No retention/cleanup for session recording audio (storage + privacy)
+Nothing ever deletes `SessionRecording` audio files. On a system that records every
+session they accumulate on disk unbounded, and keeping guidance-audio indefinitely is
+a privacy concern. Add a retention policy + scheduled cleanup (e.g. delete the audio
+file once the logbook is approved / after N days), mirroring the H-15 / auto-cancel
+scheduler jobs. Consider deleting the file but keeping the transcript/summary.
+
+### G6 — 🔧 No way to re-run a FAILED STT/AI pipeline
+`dispatch_pipeline` fires once on session complete. If it fails (STT_TIMEOUT /
+STT_EMPTY / LLM_FAILED), the logbook goes FAILED and the only path is manual notes —
+there's no "coba proses ulang" action to re-attempt (useful for transient failures,
+e.g. the LLM API was briefly down). Add a lecturer/admin endpoint to re-dispatch the
+pipeline for a FAILED logbook that still has a recording.
+
+### G7 — 💡 SystemLog cleanup is manual, not scheduled (low priority)
+`AdminLogsCleanupView` (>30 days) exists but is a manual POST — an admin must click
+it. Could be a scheduled job (like the other scheduler tasks) so logs self-prune.
+
+### G8 — 💡 Dead footer links (low priority polish)
+StudentDashboard footer "Tentang / Panduan / Kontak" and some nav items are inert
+"Segera hadir" placeholders. Either build the pages or remove the links.
+
+### Verified NOT gaps (checked 2026-07-07)
+- Resubmit after REJECTED is blocked; REVISION allowed + linked via
+  `previous_submission`; the revision note is shown to the student in `SubmissionForm`.
+- `CompleteSessionView` guards `status != IN_PROGRESS` and enforces the recording
+  consent gate server-side.
+- Daily-quota-full on approve returns a clean 400.
+- Reject-logbook → FAILED → manual-notes recovery works end-to-end.
+- No crude `prompt()/alert()` UX left in the frontend.
+
+---
+
+## Priority recap (for whoever picks this up)
+
+**Highest value, small effort (do first):**
+- P1 (recalc queue on early finish) — cuts wait time, reuses infra.
+- G1 (advice edit/delete), G3 (notify on advice add).
+
+**Real gaps, moderate effort:**
+- G2 (user-facing notifications — nothing is shown to students today).
+- G5 (recording retention), G6 (STT pipeline retry).
+
+**Low priority / polish:** N-04, G7, G8.
+
+**v2 milestone (large):** P2 (defense scheduling) + the deferred set (VIDEO-01,
+NOTIF-01, PLAG-01, MOBILE-01, DIAR-01, SCORE-01).
