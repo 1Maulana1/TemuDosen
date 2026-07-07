@@ -150,6 +150,19 @@ concurrency. Low priority; wrap the read-modify-write in `transaction.atomic()` 
 
 ---
 
+## UI review findings (live walk, 2026-07-07 — see UI-REVIEW-2026-07-07.md)
+
+- **U0 (KRITIS, resolved)** — outer `.claude/launch.json` served the STALE outer copy;
+  fixed to point at TemuDosen. Follow-up: delete/archive `E:\Proyek S4\frontend`+`backend`.
+- **U1 🟠** — advice delete: no confirmation modal; edit/delete still offered on
+  student-completed items (deleting erases their evidence note).
+- **U2 🟡** — logbook export CSV "Tanggal" is a raw ISO timestamp; format it.
+- **U3 ✅ fixed** — bare "-" placeholder no longer escaped to `'-` by the S1 guard.
+- **U4 🟡** — NotificationBell never auto-refreshes (fetch on mount/open only).
+- **U5 🟡** — login 429 throttle message likely shown in English (needs ID copy).
+- **U7/U8 💡** — pre-hydration submit click swallowed; menu_book shown for WAITING
+  sessions (ambiguous expectation).
+
 ## Priority recap (for whoever picks this up)
 
 **Highest value, small effort (do first):**

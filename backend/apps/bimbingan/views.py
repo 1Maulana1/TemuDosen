@@ -1291,6 +1291,8 @@ def _csv_safe(value):
     formula trigger (= + - @, tab, CR) is prefixed with a single quote so Excel/
     LibreOffice treats it as text, not a formula."""
     s = '' if value is None else str(value)
+    if s == '-':  # placeholder dash umum di export — bukan formula, jangan diubah
+        return s
     if s[:1] in ('=', '+', '-', '@', '\t', '\r'):
         return "'" + s
     return s
