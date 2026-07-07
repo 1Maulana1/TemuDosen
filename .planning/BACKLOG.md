@@ -38,4 +38,33 @@ multi-party constraint-satisfaction problem (find a slot free for everyone).
 
 ## Feature gaps found in the existing system (audit 2026-07-07)
 
-_(populated below as the gap-hunt proceeds)_
+### G1 — 🔧 Advice items can't be edited or deleted
+Only `POST` (add) + `POST /complete/` exist for `ActionItem`. A lecturer who
+mistypes an advice item, or wants to remove/reword one, has no way to. Add
+`PATCH`/`DELETE /api/queue/<session_id>/action-items/<id>/` (lecturer-only, own
+advisee's session). Guard: don't let editing silently un-complete a student's note.
+
+### G2 — 🧱 Notifications are generated but never shown to the recipient
+`apps/bimbingan/services/notification.py` is a "Phase 2 stub": `notify_student` /
+`notify_lecturer` only write a `SystemLog` row. SystemLog is **admin-only** (Admin
+Dashboard). So H-15 reminders, "pengajuan disetujui", "ringkasan tersedia", auto-
+cancel notices, etc. are logged but the student/lecturer **never see them** — there
+is no per-user notification inbox/feed or email/push delivery. Options: (a) a
+`Notification` model + a student/lecturer bell/feed UI (in-app, in scope), and/or
+(b) real email/push (NOTIF-01, v2). Right now the whole notification feature is
+effectively invisible to end users.
+
+### G3 — 🔧 Adding an advice item doesn't notify the student
+`SessionActionItemsView.post` creates the `ActionItem` but never calls
+`notify_student`, so even the (stub) notification isn't fired for new advice. Add a
+`notify_student(..., event_type='ADVICE_ADDED')` call. (Depends on G2 to actually
+reach the student, but the trigger is missing regardless.)
+
+### G4 — ✅ NOT a gap (verified)
+`CompleteSessionView` correctly guards `status != IN_PROGRESS` → 400, and enforces
+the recording consent gate server-side. Completing a not-started session is blocked.
+
+### N-04 — 💡 estimate fallback is coarse (low priority)
+Queue estimate uses `sum(symptom.duration_minutes) or 30`. No per-category
+DEFAULT_ESTIMATES and no 5s timeout guard (per the old NFR-04 note). Fine in
+practice (durations are DB-driven), noted for completeness.
