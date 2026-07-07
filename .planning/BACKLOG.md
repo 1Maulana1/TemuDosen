@@ -38,6 +38,12 @@ multi-party constraint-satisfaction problem (find a slot free for everyone).
 
 ## Feature gaps found in the existing system (audit 2026-07-07)
 
+> **✅ RESOLVED 2026-07-07: G1, G2, G3, G5, G6, G7 all built + tested** (backend 337,
+> frontend 63). G1 advice edit/delete · G2 user-facing notifications (Notification
+> model + bell) · G3 notify-on-advice-add · G5 recording retention job · G6 STT
+> pipeline retry endpoint+button · G7 SystemLog auto-cleanup job. Remaining open:
+> N-04, G8 (low-priority polish), P1/P2 + v2 features.
+
 ### G1 — 🔧 Advice items can't be edited or deleted
 Only `POST` (add) + `POST /complete/` exist for `ActionItem`. A lecturer who
 mistypes an advice item, or wants to remove/reword one, has no way to. Add

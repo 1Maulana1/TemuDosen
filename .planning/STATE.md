@@ -2,7 +2,7 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: All 8 phases COMPLETE — Phase 7 (SC1-6) + Phase 8 (SC1-4) closed 2026-07-06/07; audit T1-T5 addressed (T2 thesis-progress backend built); backend 315 / frontend 61 green
+status: All 8 phases COMPLETE — Phase 7 (SC1-6) + Phase 8 (SC1-4) closed 2026-07-06/07; audit T1-T5 addressed (T2 thesis-progress backend built); backend 337 / frontend 63 green
 last_updated: "2026-07-07T00:00:00.000Z"
 progress:
   total_phases: 8
@@ -22,7 +22,7 @@ See `.planning/PROJECT.md` for core value, constraints, and full requirements.
 
 ## Current Position
 
-**Milestone COMPLETE — all 8 phases done (2026-07-07).** Backend **315/315**, frontend **61/61**, `tsc -b` + `npm run build` clean, `manage.py check` clean, no missing migrations. Full-project audit + resolutions in `.planning/AUDIT-2026-07-07.md`.
+**Milestone COMPLETE — all 8 phases done (2026-07-07).** Backend **337/337**, frontend **63/63**, `tsc -b` + `npm run build` clean, `manage.py check` clean, no missing migrations. Full-project audit + resolutions in `.planning/AUDIT-2026-07-07.md`.
 
 **This session (2026-07-06→07)** — continuing from the remote-integration base:
 - **Phase 7 finished (SC1-SC6).** SC2: `LecturerAdviceHistoryView` + `/dosen/saran` aggregate advice history. SC3-6: campus logbook sync via the TECH-SPEC §2 decoupled adapter (`apps/logbook/services/campus_logbook.py` — Sekawan/KPTI adapters + `build_payload` + `sync_logbook`), CSV/PDF export fallback (`LogbookExportView`), retry job (`retry_campus_logbook_sync`) + admin-dashboard surfacing, runtime admin config (`CampusLogbookConfig` singleton + `CampusLogbookConfigView`). Deferred nits in `07-DEFERRED.md`.
