@@ -80,7 +80,7 @@ class LecturerLogbookListView(APIView):
             SessionLogbook.objects
             .filter(session__submission__student__adviser=request.user)
             .select_related('session__submission__student__adviser')
-            .order_by('-created_at')
+            .order_by('-created_at')[:100]  # S2: cap, pola sama dgn history [:50]
         )
         return Response(LogbookListSerializer(qs, many=True).data)
 
@@ -235,7 +235,7 @@ class StudentLogbookListView(APIView):
             .filter(session__submission__student=request.user,
                     status=SessionLogbook.Status.APPROVED)
             .select_related('session__submission__student__adviser')
-            .order_by('-created_at')
+            .order_by('-created_at')[:100]  # S2: cap, pola sama dgn history [:50]
         )
         return Response(LogbookListSerializer(qs, many=True).data)
 

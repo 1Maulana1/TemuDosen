@@ -97,12 +97,14 @@ class SubmissionListCreateView(APIView):
         """
         Return the authenticated student's own submissions ordered by -created_at.
         """
+        # S2: cap agar respons tak tumbuh tanpa batas (satu mahasiswa realistisnya
+        # jauh di bawah ini; pola sama dengan cap [:50] di history/notifications).
         submissions = (
             Submission.objects
             .filter(student=request.user)
             .select_related('session', 'session__logbook')
             .prefetch_related('symptoms', 'file')
-            .order_by('-created_at')
+            .order_by('-created_at')[:100]
         )
         serializer = SubmissionListSerializer(submissions, many=True)
         return Response(serializer.data)

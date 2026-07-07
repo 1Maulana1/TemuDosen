@@ -466,11 +466,8 @@ export default function StudentDashboard() {
       <footer className="border-t border-gray-200 bg-surface pb-20 md:pb-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-on-surface-variant">
           <span className="font-bold text-slate-600">TemuDosen</span>
-          <div className="flex items-center gap-4">
-            <span className="cursor-not-allowed" title="Segera hadir">Tentang</span>
-            <span className="cursor-not-allowed" title="Segera hadir">Panduan</span>
-            <span className="cursor-not-allowed" title="Segera hadir">Kontak</span>
-          </div>
+          {/* G8/U6: tautan Tentang/Panduan/Kontak dihapus — halaman targetnya belum
+              ada; tambahkan kembali saat kontennya dibangun. */}
           <span>&copy; {new Date().getFullYear()} TemuDosen. Semua hak dilindungi.</span>
         </div>
       </footer>

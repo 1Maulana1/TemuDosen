@@ -1682,7 +1682,8 @@ class LecturerAdviceHistoryView(APIView):
             ActionItem.objects
             .filter(session__submission__student__adviser=request.user)
             .select_related('session__submission__student')
-            .order_by('-created_at')
+            .order_by('-created_at')[:500]  # S2: cap — statistik dihitung dari
+            # 500 saran terbaru; jauh di atas volume nyata satu dosen
         )
 
         total = len(items)
