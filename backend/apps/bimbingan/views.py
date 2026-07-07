@@ -916,6 +916,12 @@ class CompleteSessionView(APIView):
             event_type='SESSION_COMPLETED',
         )
 
+        # P1: sesi yang selesai lebih cepat dari estimasi meneruskan sisa waktunya —
+        # antrean WAITING dipadatkan mulai "sekarang" (pola yang sama dengan cancel),
+        # sehingga mahasiswa berikutnya dimajukan, bukan menunggu jadwal lama.
+        from .scheduler import _recalculate_queue
+        _recalculate_queue(request.user)
+
         SystemLog.objects.create(
             level=SystemLog.Level.INFO,
             event_type='SESSION_COMPLETED',

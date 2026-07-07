@@ -127,6 +127,32 @@ class TestCompleteSession:
         resp = client_for(lecturer_user).post(complete_url(99999))
         assert resp.status_code == 404
 
+    def test_early_finish_pulls_waiting_queue_forward(
+        self, lecturer_user, advisee_student, second_advisee_student,
+        pending_submission, submission_for, symptom_category
+    ):
+        """P1: a session finishing earlier than estimated passes the freed time on —
+        completing recalculates the dosen's WAITING queue from "now", so the next
+        student's scheduled_at moves up instead of keeping the old slot."""
+        from datetime import timedelta
+        from django.utils import timezone
+
+        in_progress = _start(lecturer_user, _approve(lecturer_user, pending_submission))
+
+        sub2 = submission_for(second_advisee_student, [symptom_category])
+        waiting = _approve(lecturer_user, sub2)
+        # jadwal lama: masih jauh (slot estimasi sesi pertama belum "termakan")
+        late = timezone.now() + timedelta(minutes=45)
+        Session.objects.filter(pk=waiting.pk).update(scheduled_at=late)
+
+        resp = client_for(lecturer_user).post(complete_url(in_progress.id))
+        assert resp.status_code == 200
+
+        waiting.refresh_from_db()
+        # dimajukan: kini dijadwalkan ± sekarang, bukan slot lama 45 menit lagi
+        assert waiting.scheduled_at < late - timedelta(minutes=30)
+        assert abs((waiting.scheduled_at - timezone.now()).total_seconds()) < 120
+
     def test_logs_session_completed_event(self, lecturer_user, pending_submission):
         session = _start(lecturer_user, _approve(lecturer_user, pending_submission))
 
