@@ -15,6 +15,8 @@
  * Renders at 360px without horizontal scroll (max-w-md container).
  */
 
+import { resolveUrl } from '../api/client';
+
 interface PDFPreviewProps {
   fileUuid: string;
   fileName?: string;
@@ -26,7 +28,7 @@ export default function PDFPreview({
   fileName = 'draft.pdf',
   onClose,
 }: PDFPreviewProps) {
-  const fileUrl = `/api/files/${fileUuid}/`;
+  const fileUrl = resolveUrl(`/api/files/${fileUuid}/`);
 
   return (
     <div

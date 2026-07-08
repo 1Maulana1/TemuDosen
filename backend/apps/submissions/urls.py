@@ -11,7 +11,10 @@ Routes:
 """
 from django.urls import path
 
-from .views import LecturerSubmissionListView, SubmissionListCreateView, serve_submission_file
+from .views import (
+    LecturerSubmissionListView, SubmissionListCreateView, serve_submission_file,
+    ThesisProgressView, ThesisChapterUpdateView,
+)
 from apps.bimbingan.views import ApproveSubmissionView, RejectSubmissionView
 
 urlpatterns = [
@@ -25,4 +28,10 @@ urlpatterns = [
 # File serving: /api/files/<uuid>/ is registered at root URL config level
 file_urlpatterns = [
     path('<uuid:file_uuid>/', serve_submission_file, name='serve-submission-file'),
+]
+
+# Thesis progress (audit T2): registered at /api/thesis-progress/ in config/urls.py
+thesis_urlpatterns = [
+    path('', ThesisProgressView.as_view(), name='thesis-progress'),
+    path('<int:pk>/', ThesisChapterUpdateView.as_view(), name='thesis-chapter-update'),
 ]

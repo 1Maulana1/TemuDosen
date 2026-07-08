@@ -99,6 +99,15 @@ REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend',
     ],
+    # Brute-force protection (audit S4): ScopedRateThrottle only applies to views
+    # that set `throttle_scope` (currently just LoginView), so other endpoints are
+    # unaffected. Keyed by IP for anonymous requests.
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.ScopedRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'login': env('LOGIN_THROTTLE_RATE', default='10/min'),
+    },
 }
 
 # Session settings (server-side, D-21)
@@ -131,6 +140,10 @@ DOSEN_DAILY_QUOTA_MINUTES = env.int('DOSEN_DAILY_QUOTA_MINUTES', default=480)
 # Phase 5 (SESSION-03/04): batas ukuran upload rekaman audio sesi; default 100MB
 # (~2 jam Opus 64kbps masih jauh di bawah ini)
 RECORDING_MAX_UPLOAD_SIZE = env.int('RECORDING_MAX_UPLOAD_SIZE', default=100 * 1024 * 1024)
+# Retention (audit G5/G7): audio recordings + SystemLog rows are pruned by scheduler
+# jobs after N days. The transcript/summary in the logbook is kept regardless.
+RECORDING_RETENTION_DAYS = env.int('RECORDING_RETENTION_DAYS', default=90)
+SYSTEMLOG_RETENTION_DAYS = env.int('SYSTEMLOG_RETENTION_DAYS', default=30)
 
 # ── Phase 6: STT + AI Summarization + Logbook (Celery/Redis/faster-whisper/Anthropic) ──
 # Celery broker (Redis). CELERY_RESULT_BACKEND sengaja TIDAK diset — semua task
@@ -149,6 +162,16 @@ STT_MODEL_SIZE = env('STT_MODEL_SIZE', default='small')
 STT_COMPUTE_TYPE = env('STT_COMPUTE_TYPE', default='int8')
 STT_LANGUAGE = env('STT_LANGUAGE', default='id')
 STT_MODEL_DOWNLOAD_ROOT = env('STT_MODEL_DOWNLOAD_ROOT', default=str(BASE_DIR / 'storage' / 'whisper_models'))
+
+# ── Campus logbook integration (Phase 7 SC3-6: Sekawan/KPTI) ────────────────────
+# Feature flag off by default → sync is a no-op and the CSV/PDF export fallback is
+# offered instead (graceful degradation, LOGBOOK-03). "Belum ada API kampus" = aman.
+CAMPUS_LOGBOOK_ENABLED = env.bool('CAMPUS_LOGBOOK_ENABLED', default=False)
+CAMPUS_LOGBOOK_PROVIDER = env('CAMPUS_LOGBOOK_PROVIDER', default='sekawan')  # 'sekawan' | 'kpti'
+CAMPUS_LOGBOOK_BASE_URL = env('CAMPUS_LOGBOOK_BASE_URL', default='')
+CAMPUS_LOGBOOK_TOKEN = env('CAMPUS_LOGBOOK_TOKEN', default='')
+CAMPUS_LOGBOOK_TIMEOUT = env.int('CAMPUS_LOGBOOK_TIMEOUT', default=5)
+CAMPUS_LOGBOOK_MAX_RETRIES = env.int('CAMPUS_LOGBOOK_MAX_RETRIES', default=3)
 
 # Anthropic LLM summarization (D-04). Model id harus valid — jangan disubstitusi.
 LLM_MODEL = env('LLM_MODEL', default='claude-haiku-4-5')

@@ -282,3 +282,42 @@ class TestKetuaJurusanExportView:
     def test_lecturer_forbidden(self, authenticated_lecturer):
         resp = authenticated_lecturer.get(self.url)
         assert resp.status_code == 403
+
+    def test_csv_includes_approved_summary_column(self, ketua_jurusan_user, lecturer_user, pending_submission):
+        """Phase 8 SC2 (REPORT-01): the guidance-history export surfaces the approved
+        AI/manual summary, not just the student's original complaint."""
+        from apps.logbook.models import SessionLogbook
+        session = _approve(lecturer_user, pending_submission)
+        SessionLogbook.objects.create(
+            session=session,
+            status=SessionLogbook.Status.APPROVED,
+            summary_edited={'advice_points': [{'topic': 'Metodologi', 'detail': 'Perbaiki bab 3'}],
+                            'improvement_notes': []},
+        )
+
+        resp = client_for(ketua_jurusan_user).get(self.url)
+        assert resp.status_code == 200
+        body = resp.content.decode('utf-8-sig')
+        assert 'Ringkasan Disetujui' in body   # new column header
+        assert 'Perbaiki bab 3' in body        # the approved summary content
+
+    def test_csv_neutralizes_formula_injection(self, ketua_jurusan_user, lecturer_user, advisee_student, pending_submission):
+        """Audit S1: a cell starting with a formula trigger is prefixed with a quote
+        so Excel/LibreOffice treats it as text, not an executable formula."""
+        advisee_student.full_name = '=HYPERLINK("http://evil")'
+        advisee_student.save(update_fields=['full_name'])
+        _approve(lecturer_user, pending_submission)
+
+        resp = client_for(ketua_jurusan_user).get(self.url)
+        body = resp.content.decode('utf-8-sig')
+        assert "'=HYPERLINK" in body          # neutralized
+        assert '\n=HYPERLINK' not in body     # never a bare formula cell
+
+    def test_csv_shows_status_label_when_summary_not_approved(self, ketua_jurusan_user, lecturer_user, pending_submission):
+        from apps.logbook.models import SessionLogbook
+        session = _approve(lecturer_user, pending_submission)
+        SessionLogbook.objects.create(session=session, status=SessionLogbook.Status.READY_FOR_REVIEW)
+
+        resp = client_for(ketua_jurusan_user).get(self.url)
+        body = resp.content.decode('utf-8-sig')
+        assert 'Menunggu tinjauan dosen' in body

@@ -61,6 +61,8 @@ class LogbookDetailSerializer(serializers.ModelSerializer):
             # D-11: token/biaya LLM — hanya di serializer dosen; serializer
             # mahasiswa (turunan di bawah) mengecualikannya.
             'llm_input_tokens', 'llm_output_tokens', 'llm_cost_estimate_idr',
+            # Phase 7 SC3-5: status sinkron ke logbook kampus (Sekawan/KPTI)
+            'campus_sync_status', 'campus_entry_id', 'campus_synced_at',
         ]
 
     def get_dosen_name(self, obj):

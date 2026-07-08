@@ -59,12 +59,25 @@ class _ImmediateThread:
 
 @pytest.fixture(autouse=True)
 def _run_calendar_thread_synchronously(monkeypatch):
+    # The approve view creates the calendar event on a fire-and-forget thread;
+    # patch Thread so it runs inline against the test connection (no real thread →
+    # no "database table is locked" race). Enabling the feature flag is done
+    # per-class via the `_calendar_enabled` fixture on the sync-exercising classes
+    # below, so the calendar-DISABLED tests (status/callback 503) keep it off.
     monkeypatch.setattr('apps.bimbingan.views.threading.Thread', _ImmediateThread)
+
+
+@pytest.fixture
+def _calendar_enabled(settings):
+    """Turn the Google Calendar feature flag on — used by the sync-exercising
+    classes below (the approve view only spawns the calendar thread when enabled)."""
+    settings.GOOGLE_CALENDAR_ENABLED = True
 
 
 # ── SC1/SC3 — Approve: create event, graceful degradation ──────────────────────
 
 @pytest.mark.django_db
+@pytest.mark.usefixtures('_calendar_enabled')
 class TestApproveCalendarSync:
     def test_approve_stores_google_event_id_when_calendar_succeeds(
         self, authenticated_lecturer, pending_submission
@@ -161,6 +174,7 @@ class TestApproveCalendarSync:
 # ── SC2 — Cancel: delete event ──────────────────────────────────────────────────
 
 @pytest.mark.django_db
+@pytest.mark.usefixtures('_calendar_enabled')
 class TestCancelCalendarSync:
     def test_cancel_deletes_calendar_event_when_present(
         self, authenticated_lecturer, advisee_student, pending_submission
@@ -213,6 +227,7 @@ class TestCancelCalendarSync:
 # ── SC2 — Reschedule (queue compaction): update event ───────────────────────────
 
 @pytest.mark.django_db
+@pytest.mark.usefixtures('_calendar_enabled')
 class TestRescheduleCalendarSync:
     def test_recalculate_queue_updates_calendar_when_schedule_shifts(
         self,

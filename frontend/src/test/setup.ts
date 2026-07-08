@@ -19,6 +19,12 @@ const defaultHandlers = [
   http.get('/api/auth/me/', () => {
     return HttpResponse.json({ detail: 'Authentication credentials were not provided.' }, { status: 403 });
   }),
+
+  // Notifications — the NotificationBell in AppNavbar fetches this on every page
+  // that renders the nav; default to empty so tests don't need to mock it.
+  http.get('/api/notifications/', () => {
+    return HttpResponse.json({ unread_count: 0, notifications: [] });
+  }),
 ];
 
 export const server = setupServer(...defaultHandlers);

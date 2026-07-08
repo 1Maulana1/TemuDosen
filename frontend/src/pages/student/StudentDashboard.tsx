@@ -8,25 +8,23 @@
  *   FR-M02 — "Antrean Aktif Saya" pakai data real-time dari GET /api/queue/my/.
  *   FR-M03 — Tombol "Batalkan" hanya tampil saat status sesi 'waiting' (bukan
  *            giliran/berlangsung), dengan modal konfirmasi sebelum POST cancel.
- *   FR-M05 — "Aksi" di tabel riwayat membuka pratinjau berkas draft (data nyata).
- *            Transkrip & ringkasan sesi BELUM didukung backend (tidak ada field
- *            transcript/summary di model Session) — lihat TODO di bawah.
+ *   FR-M05 — "Aksi" di tabel riwayat: pratinjau berkas draft + (baris ber-sesi)
+ *            buka detail sesi/logbook via session_id (audit #1).
  *   FR-M06 — Tidak diimplementasikan di layar ini: menandai action-item selesai
  *            butuh session_id yang tidak diekspos oleh SubmissionSummary. Perlu
  *            perubahan backend terpisah (di luar scope task ini, sudah dilaporkan).
  *
+ * Akurat sejak audit #1/#3: kolom "Status" riwayat memakai status Session
+ * (waiting/in_progress/done/cancelled) bila sesinya sudah dibuat, dan stat
+ * "Sesi Selesai" = jumlah submission yang session_status-nya 'done'.
+ *
  * Data yang MASIH PENDEKATAN (bukan endpoint dedicated), didokumentasikan inline:
- *   - Kolom "Status" riwayat pakai status Submission (pending/approved/rejected/
- *     revision/cancelled), BUKAN status Session (waiting/in_progress/done/cancelled).
- *     Setelah 'approved', tidak ada cara membedakan "masih berjalan" vs "selesai"
- *     dari endpoint yang ada.
- *   - Stat "Sesi Selesai" = jumlah submission approved dikurangi 1 jika sedang ada
- *     antrean aktif (pendekatan, bisa sedikit meleset jika ada cancel pasca-approval).
  *   - "Topik" pada kartu Antrean Aktif diambil dari submission berstatus 'approved'
  *     (StudentQueueSession tidak mengekspos symptom/topik maupun submission id).
  *   - "Total bimbingan" di kartu dosen = jumlah submission approved (bukan dari
  *     endpoint hitung khusus).
- *   - "Progres Skripsi" — TODO(backend): statis/mock, belum ada model/endpoint.
+ *   - "Progres Skripsi" — data nyata via GET/PATCH /api/thesis-progress/ (audit T2);
+ *     mahasiswa menandai sendiri tiap bab (Bab I–V, di-seed saat akses pertama).
  */
 import { useEffect, useState } from 'react';
 import { useRouteLoaderData, useLocation, useNavigate, Link } from 'react-router';
@@ -34,6 +32,7 @@ import type { User } from '../../api/auth';
 import { logout } from '../../api/auth';
 import { fetchMySubmissions, type SubmissionSummary } from '../../api/submissions';
 import { getMyQueue, cancelMyQueue, type StudentQueueSession } from '../../api/sessions';
+import { getThesisProgress, updateThesisChapter, type ThesisProgress } from '../../api/thesis';
 import StatusBadge from '../../components/StatusBadge';
 import StatCard from '../../components/StatCard';
 import SessionTable, { type SessionTableRow } from '../../components/SessionTable';
@@ -58,14 +57,13 @@ const QUEUE_STATUS_BADGE: Record<string, BadgeStatus> = {
   done: 'SELESAI',
 };
 
-// TODO(backend): checklist bab masih statis — belum ada model/endpoint progres skripsi.
-const THESIS_CHAPTERS: { label: string; done: boolean; active?: boolean }[] = [
-  { label: 'Bab I — Pendahuluan', done: true },
-  { label: 'Bab II — Tinjauan Pustaka', done: true },
-  { label: 'Bab III — Metodologi Penelitian', done: false, active: true },
-  { label: 'Bab IV — Hasil & Pembahasan', done: false },
-  { label: 'Bab V — Kesimpulan & Saran', done: false },
-];
+// Session.status → badge, untuk baris riwayat yang sesinya sudah dibuat (audit #3).
+const SESSION_STATUS_BADGE: Record<string, BadgeStatus> = {
+  waiting: 'MENUNGGU',
+  in_progress: 'BERLANGSUNG',
+  done: 'SELESAI',
+  cancelled: 'DIBATALKAN',
+};
 
 function getInitials(name: string): string {
   return name.split(' ').slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('');
@@ -139,12 +137,36 @@ export default function StudentDashboard() {
     (location.state as { toast?: string } | null)?.toast ?? null
   );
 
+  const [thesis, setThesis] = useState<ThesisProgress | null>(null);
+  const [thesisError, setThesisError] = useState<string | null>(null);
+
   useEffect(() => {
     fetchMySubmissions()
       .then(setSubs)
       .catch(() => setSubsError('Gagal memuat riwayat sesi. Coba muat ulang halaman.'))
       .finally(() => setSubsLoading(false));
   }, []);
+
+  useEffect(() => {
+    getThesisProgress()
+      .then(setThesis)
+      .catch(() => setThesisError('Gagal memuat progres skripsi.'));
+  }, []);
+
+  async function handleToggleChapter(id: number, next: boolean) {
+    if (!thesis) return;
+    // optimistic update
+    const prev = thesis;
+    const chapters = thesis.chapters.map((c) => (c.id === id ? { ...c, is_completed: next } : c));
+    const completed = chapters.filter((c) => c.is_completed).length;
+    setThesis({ ...thesis, chapters, completed, percent: chapters.length ? Math.round((completed / chapters.length) * 100) : 0 });
+    try {
+      await updateThesisChapter(id, next);
+    } catch {
+      setThesis(prev);  // rollback
+      setToast('Gagal memperbarui progres skripsi.');
+    }
+  }
 
   useEffect(() => {
     getMyQueue()
@@ -177,6 +199,10 @@ export default function StudentDashboard() {
     setPreview({ uuid: row.fileUuid, name: row.fileName ?? 'draft.pdf' });
   }
 
+  function handleOpenSession(row: SessionTableRow) {
+    if (row.sessionId) navigate(`/mahasiswa/sesi/${row.sessionId}`);
+  }
+
   const firstName = user?.full_name?.split(' ')?.[0] ?? 'Mahasiswa';
 
   // FR-M01: blokir CTA jika ada submission menunggu keputusan dosen ATAU antrean aktif berjalan
@@ -186,8 +212,8 @@ export default function StudentDashboard() {
   const totalSesi = subs.length;
   const menungguKonfirmasi = subs.filter((s) => s.status === 'pending').length;
   const approvedSubs = subs.filter((s) => s.status === 'approved');
-  // Pendekatan: submission approved yang bukan sesi aktif saat ini dianggap "selesai".
-  const sesiSelesai = Math.max(0, approvedSubs.length - (queue ? 1 : 0));
+  // Akurat (audit #3): sesi selesai = submission yang sesinya berstatus DONE.
+  const sesiSelesai = subs.filter((s) => s.session_status === 'done').length;
 
   // Topik antrean aktif: correlate dari submission approved (lihat catatan di header file).
   const activeSubmission = approvedSubs[0];
@@ -198,9 +224,13 @@ export default function StudentDashboard() {
     date: s.created_at,
     topic: s.symptoms.map((x) => x.name).join(', ') || 'Bimbingan Skripsi',
     dosen: user.adviser?.full_name ?? '-',
-    status: SUBMISSION_STATUS_BADGE[s.status] ?? 'MENUNGGU',
+    // Prefer the real Session status once approved (more accurate than Submission
+    // status, which can't distinguish "berlangsung" vs "selesai") — audit #3.
+    status: (s.session_status && SESSION_STATUS_BADGE[s.session_status]) ?? SUBMISSION_STATUS_BADGE[s.status] ?? 'MENUNGGU',
     fileUuid: s.file_uuid,
     fileName: s.file_name,
+    sessionId: s.session_id,
+    logbookStatus: s.logbook_status,
   }));
 
   return (
@@ -331,7 +361,7 @@ export default function StudentDashboard() {
               )}
 
               {!subsLoading && !subsError && (
-                <SessionTable rows={historyRows} onView={handleViewRow} fmtDate={fmtDate} />
+                <SessionTable rows={historyRows} onView={handleViewRow} onOpenSession={handleOpenSession} fmtDate={fmtDate} />
               )}
             </section>
 
@@ -380,49 +410,55 @@ export default function StudentDashboard() {
               )}
             </section>
 
-            {/* Progres Skripsi (mock/static — lihat TODO di header file) */}
+            {/* Progres Skripsi — checklist bab yang bisa ditandai sendiri (audit T2) */}
             <section className="lg:col-start-3 lg:row-start-2 bg-surface rounded-2xl border border-gray-200 shadow-sm p-6">
               <div className="flex items-center justify-between mb-1">
                 <h2 className="font-headline font-bold text-lg text-on-surface">Progres Skripsi</h2>
-                <span className="text-sm font-bold text-primary">
-                  {Math.round((THESIS_CHAPTERS.filter((c) => c.done).length / THESIS_CHAPTERS.length) * 100)}%
-                </span>
+                {thesis && <span className="text-sm font-bold text-primary">{thesis.percent}%</span>}
               </div>
-              <p className="text-xs text-on-surface-variant mb-4">Data contoh — belum terhubung ke backend</p>
-              <div className="w-full h-2 rounded-full bg-gray-100 mb-5 overflow-hidden">
-                <div
-                  className="h-full bg-primary rounded-full transition-all"
-                  style={{
-                    width: `${Math.round((THESIS_CHAPTERS.filter((c) => c.done).length / THESIS_CHAPTERS.length) * 100)}%`,
-                  }}
-                />
-              </div>
-              <ul className="space-y-3">
-                {THESIS_CHAPTERS.map((c) => (
-                  <li key={c.label} className="flex items-center gap-3">
-                    {c.done ? (
-                      <span className="material-symbols-outlined text-success text-xl flex-shrink-0" aria-hidden="true">
-                        check_circle
-                      </span>
-                    ) : (
-                      <span
-                        className={`material-symbols-outlined text-xl flex-shrink-0 ${c.active ? 'text-primary' : 'text-gray-300'}`}
-                        aria-hidden="true"
-                      >
-                        {c.active ? 'radio_button_checked' : 'radio_button_unchecked'}
-                      </span>
-                    )}
-                    <span
-                      className={[
-                        'text-sm',
-                        c.done ? 'line-through text-on-surface-variant' : c.active ? 'text-slate-900 font-bold' : 'text-on-surface-variant',
-                      ].join(' ')}
-                    >
-                      {c.label}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              {thesisError ? (
+                <p className="text-xs text-error mb-2">{thesisError}</p>
+              ) : !thesis ? (
+                <p className="text-xs text-on-surface-variant mb-4">Memuat…</p>
+              ) : (
+                <>
+                  <p className="text-xs text-on-surface-variant mb-4">Tandai setiap bab yang sudah selesai.</p>
+                  <div className="w-full h-2 rounded-full bg-gray-100 mb-5 overflow-hidden">
+                    <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${thesis.percent}%` }} />
+                  </div>
+                  <ul className="space-y-1">
+                    {thesis.chapters.map((c) => {
+                      const isActive = !c.is_completed && c.id === thesis.chapters.find((x) => !x.is_completed)?.id;
+                      return (
+                        <li key={c.id}>
+                          <button
+                            type="button"
+                            onClick={() => handleToggleChapter(c.id, !c.is_completed)}
+                            aria-pressed={c.is_completed}
+                            className="w-full flex items-center gap-3 py-2 text-left rounded-lg hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+                          >
+                            <span
+                              className={`material-symbols-outlined text-xl flex-shrink-0 ${c.is_completed ? 'text-success' : isActive ? 'text-primary' : 'text-gray-300'}`}
+                              style={c.is_completed ? { fontVariationSettings: "'FILL' 1" } : undefined}
+                              aria-hidden="true"
+                            >
+                              {c.is_completed ? 'check_circle' : isActive ? 'radio_button_checked' : 'radio_button_unchecked'}
+                            </span>
+                            <span
+                              className={[
+                                'text-sm',
+                                c.is_completed ? 'line-through text-on-surface-variant' : isActive ? 'text-slate-900 font-bold' : 'text-on-surface-variant',
+                              ].join(' ')}
+                            >
+                              {c.title}
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </>
+              )}
             </section>
         </div>
       </main>
@@ -430,11 +466,8 @@ export default function StudentDashboard() {
       <footer className="border-t border-gray-200 bg-surface pb-20 md:pb-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-on-surface-variant">
           <span className="font-bold text-slate-600">TemuDosen</span>
-          <div className="flex items-center gap-4">
-            <span className="cursor-not-allowed" title="Segera hadir">Tentang</span>
-            <span className="cursor-not-allowed" title="Segera hadir">Panduan</span>
-            <span className="cursor-not-allowed" title="Segera hadir">Kontak</span>
-          </div>
+          {/* G8/U6: tautan Tentang/Panduan/Kontak dihapus — halaman targetnya belum
+              ada; tambahkan kembali saat kontennya dibangun. */}
           <span>&copy; {new Date().getFullYear()} TemuDosen. Semua hak dilindungi.</span>
         </div>
       </footer>

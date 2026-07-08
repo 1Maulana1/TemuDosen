@@ -58,6 +58,10 @@ export async function login(email: string, password: string): Promise<User> {
   const data = await response.json();
 
   if (!response.ok) {
+    // U5: pesan throttle DRF (429) berbahasa Inggris — ganti copy Indonesia.
+    if (response.status === 429) {
+      throw new Error('Terlalu banyak percobaan masuk. Tunggu sebentar lalu coba lagi.');
+    }
     throw new Error(data.detail ?? 'Login gagal. Periksa email dan password Anda.');
   }
 

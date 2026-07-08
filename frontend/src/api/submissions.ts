@@ -13,7 +13,7 @@
  * for the Content-Type override for multipart, handled below).
  */
 
-import { getCsrfToken } from './client';
+import { getCsrfToken, resolveUrl } from './client';
 
 export interface SubmissionSymptom {
   id: number;
@@ -30,6 +30,10 @@ export interface SubmissionSummary {
   symptoms: SubmissionSymptom[];
   file_uuid: string | null;
   file_name: string | null;
+  // Linkage to the approved Session + its logbook (audit #1)
+  session_id: number | null;
+  session_status: 'waiting' | 'in_progress' | 'done' | 'cancelled' | null;
+  logbook_status: 'pending' | 'transcribing' | 'summarizing' | 'ready_for_review' | 'approved' | 'failed' | null;
   created_at: string;
   updated_at: string;
 }
@@ -71,7 +75,7 @@ export async function createSubmission(
 
   formData.append('draft_file', payload.draft_file);
 
-  const response = await fetch('/api/submissions/', {
+  const response = await fetch(resolveUrl('/api/submissions/'), {
     method: 'POST',
     credentials: 'include',
     headers: {
@@ -94,7 +98,7 @@ export async function createSubmission(
  * Requires IsStudent permission (authenticated + approved student).
  */
 export async function fetchMySubmissions(): Promise<SubmissionSummary[]> {
-  const response = await fetch('/api/submissions/', {
+  const response = await fetch(resolveUrl('/api/submissions/'), {
     credentials: 'include',
   });
 
@@ -144,7 +148,7 @@ export async function fetchLecturerSubmissions(
 
   const url = `/api/submissions/lecturer/${query.toString() ? '?' + query.toString() : ''}`;
 
-  const response = await fetch(url, {
+  const response = await fetch(resolveUrl(url), {
     credentials: 'include',
   });
 

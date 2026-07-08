@@ -23,6 +23,7 @@ import LecturerRequests from './pages/lecturer/LecturerRequests';
 import LecturerQueue from './pages/lecturer/LecturerQueue';
 import LecturerSettings from './pages/lecturer/LecturerSettings';
 import LecturerHistory from './pages/lecturer/LecturerHistory';
+import LecturerAdviceHistory from './pages/lecturer/LecturerAdviceHistory';
 import LecturerSessionDetail from './pages/lecturer/LecturerSessionDetail';
 import KetuaJurusanDashboard from './pages/ketua-jurusan/KetuaJurusanDashboard';
 import { getCurrentUser } from './api/auth';
@@ -93,6 +94,7 @@ export const router = createBrowserRouter([
       { path: 'requests', element: <LecturerRequests /> },
       { path: 'queue', element: <LecturerQueue /> },
       { path: 'riwayat', element: <LecturerHistory /> },
+      { path: 'saran', element: <LecturerAdviceHistory /> },
       { path: 'sesi/:id', element: <LecturerSessionDetail /> },
       { path: 'pengaturan', element: <LecturerSettings /> },
     ],

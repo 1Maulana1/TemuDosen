@@ -2,7 +2,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link, useRouteLoaderData, useNavigate } from 'react-router';
 import { logout, type User } from '../../api/auth';
 import { AppNavbar, AppBottomNav, NAV_ITEMS } from '../../components/AppNav';
-import { getAdminStats, adminEmergencyCancel, type AdminStats } from '../../api/stats';
+import {
+  getAdminStats, adminEmergencyCancel, type AdminStats,
+  getCampusLogbookConfig, updateCampusLogbookConfig, type CampusLogbookConfig,
+} from '../../api/stats';
 
 function fmtTime(iso: string) {
   try { return new Date(iso).toLocaleString('id-ID', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }); }
@@ -87,6 +90,86 @@ function EmergencyCancelModal({ dosenName, activeSessions, onConfirm, onClose, l
         </form>
       </div>
     </div>
+  );
+}
+
+export function CampusLogbookConfigCard({ stats }: { stats?: AdminStats['integrations']['campus_logbook'] }) {
+  const [cfg, setCfg] = useState<CampusLogbookConfig | null>(null);
+  const [token, setToken] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  useEffect(() => {
+    getCampusLogbookConfig().then(setCfg).catch(() => setCfg(null));
+  }, []);
+
+  async function handleSave() {
+    if (!cfg) return;
+    setSaving(true);
+    setMsg(null);
+    try {
+      const payload: Parameters<typeof updateCampusLogbookConfig>[0] = {
+        enabled: cfg.enabled, provider: cfg.provider, base_url: cfg.base_url,
+      };
+      if (token) payload.token = token;
+      const updated = await updateCampusLogbookConfig(payload);
+      setCfg(updated);
+      setToken('');
+      setMsg({ ok: true, text: 'Konfigurasi tersimpan.' });
+    } catch (e) {
+      setMsg({ ok: false, text: e instanceof Error ? e.message : 'Gagal menyimpan.' });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!cfg) return null;
+
+  return (
+    <section>
+      <h2 className="font-headline font-bold text-lg text-slate-900 mb-3">Integrasi Logbook Kampus</h2>
+      <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm space-y-3">
+        {stats && (stats.pending_retry > 0 || stats.failed > 0) && (
+          <p className="text-[11px] text-warning bg-warning/10 rounded-lg px-3 py-2">
+            {stats.synced} tersinkron · {stats.pending_retry} menunggu coba ulang · {stats.failed} gagal
+          </p>
+        )}
+        <label className="flex items-center gap-2 text-sm font-bold text-slate-800">
+          <input type="checkbox" checked={cfg.enabled}
+            onChange={(e) => setCfg({ ...cfg, enabled: e.target.checked })} />
+          Aktifkan sinkron otomatis
+        </label>
+        <div>
+          <label className="block text-[11px] font-bold text-neutral-gray mb-1">Provider</label>
+          <select value={cfg.provider} onChange={(e) => setCfg({ ...cfg, provider: e.target.value })}
+            className="w-full text-sm border border-gray-200 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-primary">
+            <option value="sekawan">Sekawan</option>
+            <option value="kpti">KPTI</option>
+          </select>
+        </div>
+        <div>
+          <label className="block text-[11px] font-bold text-neutral-gray mb-1">URL API</label>
+          <input type="url" value={cfg.base_url} placeholder="https://kampus.example/api"
+            onChange={(e) => setCfg({ ...cfg, base_url: e.target.value })}
+            className="w-full text-sm border border-gray-200 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-primary" />
+        </div>
+        <div>
+          <label className="block text-[11px] font-bold text-neutral-gray mb-1">
+            Token API {cfg.has_token && <span className="text-success font-normal">(tersimpan — kosongkan bila tak diubah)</span>}
+          </label>
+          <input type="password" value={token} placeholder={cfg.has_token ? '••••••••' : 'Bearer token'}
+            onChange={(e) => setToken(e.target.value)}
+            className="w-full text-sm border border-gray-200 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-primary" />
+        </div>
+        {msg && (
+          <p className={`text-[11px] font-bold ${msg.ok ? 'text-success' : 'text-error'}`} aria-live="polite">{msg.text}</p>
+        )}
+        <button type="button" onClick={handleSave} disabled={saving}
+          className="w-full py-2.5 rounded-lg bg-primary text-on-primary text-sm font-bold hover:bg-primary-hover disabled:opacity-60 min-h-[44px] focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">
+          {saving ? 'Menyimpan…' : 'Simpan Konfigurasi'}
+        </button>
+      </div>
+    </section>
   );
 }
 
@@ -177,14 +260,21 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm flex items-center gap-3">
-                <span className={`material-symbols-outlined text-2xl ${data.integrations.logbook.enabled ? 'text-success' : 'text-gray-300'}`}>menu_book</span>
+                <span className={`material-symbols-outlined text-2xl ${data.integrations.campus_logbook?.enabled ? 'text-success' : 'text-gray-300'}`}>menu_book</span>
                 <div>
                   <p className="font-bold text-sm text-slate-800">Logbook Kampus</p>
-                  <p className="text-[11px] text-neutral-gray">{data.integrations.logbook.enabled ? 'Aktif' : 'Nonaktif'}</p>
+                  <p className="text-[11px] text-neutral-gray">
+                    {data.integrations.campus_logbook?.enabled
+                      ? (data.integrations.campus_logbook.configured ? 'Aktif' : 'Aktif · belum dikonfigurasi')
+                      : 'Nonaktif'}
+                  </p>
                 </div>
               </div>
             </div>
           </section>
+
+          {/* Konfigurasi integrasi logbook kampus (Phase 7 SC6 / ADMIN-04) */}
+          <CampusLogbookConfigCard stats={data.integrations.campus_logbook} />
 
           {/* Pemrosesan STT/AI (ADMIN-05, S-17) */}
           <section>

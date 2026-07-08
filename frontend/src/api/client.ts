@@ -23,6 +23,23 @@ export function getCsrfToken(): string {
 const UNSAFE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
 /**
+ * Base URL for the Django backend.
+ *
+ * - Dev: leave VITE_API_URL unset → stays '' so relative '/api/*' paths go
+ *   through the Vite proxy (see vite.config.ts).
+ * - Prod (Cloudflare Pages): set VITE_API_URL to the backend origin, e.g.
+ *   https://api.temudosen.com → requests become absolute cross-origin calls.
+ *
+ * Trailing slash is stripped so we never produce a double slash.
+ */
+const API_BASE = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '');
+
+/** Prepend API_BASE to root-relative ('/...') URLs; leave absolute URLs as-is. */
+export function resolveUrl(url: string): string {
+  return url.startsWith('/') ? API_BASE + url : url;
+}
+
+/**
  * Central fetch wrapper — wraps all API calls in the frontend.
  *
  * @param url   Relative or absolute URL (relative paths go through Vite proxy → Django)
@@ -49,7 +66,7 @@ export async function apiRequest(
     headers['X-CSRFToken'] = getCsrfToken();
   }
 
-  return fetch(url, {
+  return fetch(resolveUrl(url), {
     ...options,
     credentials: 'include', // always send session cookie (Pitfall 2 prevention)
     headers,

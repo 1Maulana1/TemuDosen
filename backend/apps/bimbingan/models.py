@@ -128,6 +128,8 @@ class ActionItem(models.Model):
     )
     description = models.TextField()
     is_completed = models.BooleanField(default=False)
+    # ADVICE-01: optional note/evidence the student adds when marking the item done.
+    completion_note = models.TextField(blank=True, default='')
     created_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True, blank=True)
 
@@ -159,3 +161,33 @@ class SystemLog(models.Model):
 
     def __str__(self):
         return f'[{self.level}] {self.event_type}: {self.message[:60]}'
+
+
+class Notification(models.Model):
+    """Per-user, in-app notification (audit G2).
+
+    Previously `notify_student`/`notify_lecturer` only wrote a `SystemLog` (admin-
+    only), so the recipient never saw anything. These rows are what the user's own
+    notification feed reads.
+    """
+    recipient = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='notifications',
+    )
+    event_type = models.CharField(max_length=50, blank=True, default='')
+    message = models.TextField()
+    session = models.ForeignKey(
+        'bimbingan.Session',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='notifications',
+    )
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'→{self.recipient_id} [{"read" if self.is_read else "unread"}] {self.message[:50]}'

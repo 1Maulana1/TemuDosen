@@ -38,7 +38,7 @@ from rest_framework.views import APIView
 from apps.accounts.permissions import IsLecturer, IsStudent
 from apps.submissions.models import Submission
 
-from .models import ActionItem, DosenCalendarToken, Session, SessionRecording, SystemLog
+from .models import ActionItem, DosenCalendarToken, Notification, Session, SessionRecording, SystemLog
 from .serializers import (
     ApproveSubmissionSerializer,
     LecturerQueueItemSerializer,
@@ -270,11 +270,16 @@ class ApproveSubmissionView(APIView):
             'attendee_emails': [dosen.email, student.email],
             'location': location,
         }
-        threading.Thread(
-            target=_create_calendar_event_async,
-            args=(dosen.id, session.id, event_data),
-            daemon=True,
-        ).start()
+        # Only spawn the background thread when Calendar is actually enabled — when
+        # it's off (default + all test settings) the thread would just open a DB
+        # connection, do nothing useful, and race pytest's teardown ("database table
+        # is locked"). Gating here keeps prod behavior identical and kills the flake.
+        if getattr(settings, 'GOOGLE_CALENDAR_ENABLED', False):
+            threading.Thread(
+                target=_create_calendar_event_async,
+                args=(dosen.id, session.id, event_data),
+                daemon=True,
+            ).start()
 
         # Notify student
         notify_student(
@@ -911,6 +916,12 @@ class CompleteSessionView(APIView):
             event_type='SESSION_COMPLETED',
         )
 
+        # P1: sesi yang selesai lebih cepat dari estimasi meneruskan sisa waktunya —
+        # antrean WAITING dipadatkan mulai "sekarang" (pola yang sama dengan cancel),
+        # sehingga mahasiswa berikutnya dimajukan, bukan menunggu jadwal lama.
+        from .scheduler import _recalculate_queue
+        _recalculate_queue(request.user)
+
         SystemLog.objects.create(
             level=SystemLog.Level.INFO,
             event_type='SESSION_COMPLETED',
@@ -987,6 +998,24 @@ class LecturerStatsView(APIView):
             'done_sessions_week': done_week,
             'avg_duration_minutes': avg_duration,
         })
+
+
+def _campus_logbook_integration_status():
+    """Phase 7 SC5/SC6: campus logbook integration health for the Admin Dashboard."""
+    from apps.logbook.models import SessionLogbook
+    from apps.logbook.services.campus_logbook import effective_config
+    cfg = effective_config()
+    return {
+        'enabled': cfg['enabled'],
+        'configured': bool(cfg['base_url'] and cfg['token']),
+        'provider': cfg['provider'],
+        'pending_retry': SessionLogbook.objects.filter(
+            campus_sync_status=SessionLogbook.CampusSyncStatus.PENDING_RETRY).count(),
+        'failed': SessionLogbook.objects.filter(
+            campus_sync_status=SessionLogbook.CampusSyncStatus.FAILED).count(),
+        'synced': SessionLogbook.objects.filter(
+            campus_sync_status=SessionLogbook.CampusSyncStatus.SYNCED).count(),
+    }
 
 
 class AdminStatsView(APIView):
@@ -1077,6 +1106,7 @@ class AdminStatsView(APIView):
                     'connected_dosens': DosenCalendarToken.objects.count(),
                 },
                 'logbook': {'enabled': getattr(settings, 'STT_LLM_ENABLED', False)},
+                'campus_logbook': _campus_logbook_integration_status(),
             },
         })
 
@@ -1262,6 +1292,52 @@ class KetuaJurusanStatsView(APIView):
         })
 
 
+def _csv_safe(value):
+    """Neutralize CSV formula injection (audit S1): a cell whose first char is a
+    formula trigger (= + - @, tab, CR) is prefixed with a single quote so Excel/
+    LibreOffice treats it as text, not a formula."""
+    s = '' if value is None else str(value)
+    if s == '-':  # placeholder dash umum di export — bukan formula, jangan diubah
+        return s
+    if s[:1] in ('=', '+', '-', '@', '\t', '\r'):
+        return "'" + s
+    return s
+
+
+def _approved_summary_text(session):
+    """Phase 8 SC2 (REPORT-01): render a session's approved logbook summary as text
+    for the ketua-jurusan guidance-history export. Falls back to a status label when
+    the summary isn't approved yet, or '-' when there's no logbook at all."""
+    logbook = getattr(session, 'logbook', None)  # reverse O2O → None if absent
+    if logbook is None:
+        return '-'
+
+    from apps.logbook.models import SessionLogbook
+    if logbook.status != SessionLogbook.Status.APPROVED:
+        return {
+            SessionLogbook.Status.PENDING: 'Belum diringkas',
+            SessionLogbook.Status.TRANSCRIBING: 'Transkripsi berjalan',
+            SessionLogbook.Status.SUMMARIZING: 'Merangkum',
+            SessionLogbook.Status.READY_FOR_REVIEW: 'Menunggu tinjauan dosen',
+            SessionLogbook.Status.FAILED: 'Gagal diringkas',
+        }.get(logbook.status, '-')
+
+    summary = logbook.summary_edited or {}
+    if 'manual_notes' in summary:
+        return (summary.get('manual_notes') or '').strip() or '-'
+
+    parts = []
+    for a in (summary.get('advice_points') or []):
+        detail = (a.get('detail') or '').strip()
+        if detail:
+            parts.append(detail)
+    for i in (summary.get('improvement_notes') or []):
+        action = (i.get('action') or '').strip()
+        if action:
+            parts.append(action)
+    return ' • '.join(parts) or '-'
+
+
 class KetuaJurusanExportView(APIView):
     """GET /api/ketua-jurusan/export/?format=csv|pdf&period=weekly|monthly|semester — FR-KP03."""
 
@@ -1289,7 +1365,7 @@ class KetuaJurusanExportView(APIView):
         sessions = Session.objects.filter(
             created_at__gte=since,
         ).select_related(
-            'submission__student', 'submission__student__adviser',
+            'submission__student', 'submission__student__adviser', 'logbook',
         ).prefetch_related('submission__symptoms').order_by('-created_at')
 
         period_label = _PERIOD_LABELS.get(period, period).replace(' ', '')
@@ -1307,10 +1383,11 @@ class KetuaJurusanExportView(APIView):
                 s.estimated_minutes,
                 s.get_status_display(),
                 s.submission.description or '-',
+                _approved_summary_text(s),
             ])
 
         columns = ['NIM', 'Nama Mahasiswa', 'Nama Dosen', 'Tanggal', 'Topik',
-                   'Durasi (menit)', 'Status', 'Ringkasan']
+                   'Durasi (menit)', 'Status', 'Keluhan Awal', 'Ringkasan Disetujui']
 
         if export_format == 'pdf':
             return self._render_pdf(columns, rows, filename_base, period)
@@ -1326,7 +1403,7 @@ class KetuaJurusanExportView(APIView):
 
         writer = csv.writer(response)
         writer.writerow(columns)
-        writer.writerows(rows)
+        writer.writerows([[_csv_safe(c) for c in row] for row in rows])
         return response
 
     def _render_pdf(self, columns, rows, filename_base, period):
@@ -1479,6 +1556,7 @@ class SessionActionItemsView(APIView):
         return Response([
             {
                 'id': i.id, 'description': i.description, 'is_completed': i.is_completed,
+                'completion_note': i.completion_note,
                 'created_at': i.created_at.isoformat(),
                 'completed_at': i.completed_at.isoformat() if i.completed_at else None,
             }
@@ -1497,11 +1575,66 @@ class SessionActionItemsView(APIView):
             return Response({'detail': 'Deskripsi saran wajib diisi.'}, status=status.HTTP_400_BAD_REQUEST)
 
         item = ActionItem.objects.create(session=session, description=description)
+        # G3: beri tahu mahasiswa ada saran baru untuk ditindaklanjuti.
+        notify_student(
+            session.submission.student,
+            'Ada saran/tindak lanjut baru dari dosen pembimbing Anda.',
+            session=session,
+            event_type='ADVICE_ADDED',
+        )
         return Response(
             {'id': item.id, 'description': item.description, 'is_completed': False,
              'created_at': item.created_at.isoformat()},
             status=status.HTTP_201_CREATED,
         )
+
+
+class SessionActionItemDetailView(APIView):
+    """PATCH/DELETE /api/queue/<session_id>/action-items/<pk>/ — dosen mengubah teks
+    atau menghapus satu saran miliknya (audit G1). Dosen pembimbing sesi saja."""
+    permission_classes = [IsLecturer]
+
+    def _get_item(self, request, session_id, pk):
+        try:
+            item = ActionItem.objects.select_related(
+                'session__submission__student__adviser'
+            ).get(pk=pk, session_id=session_id)
+        except ActionItem.DoesNotExist:
+            return None, Response({'detail': 'Saran tidak ditemukan.'}, status=status.HTTP_404_NOT_FOUND)
+        if item.session.submission.student.adviser != request.user:
+            return None, Response({'detail': 'Hanya dosen pembimbing yang dapat mengubah saran.'},
+                                  status=status.HTTP_403_FORBIDDEN)
+        # U1: item yang sudah ditindaklanjuti mahasiswa dikunci — mengubah/menghapusnya
+        # ikut melenyapkan catatan/bukti tindak lanjut mahasiswa.
+        if item.is_completed:
+            return None, Response(
+                {'detail': 'Saran yang sudah ditindaklanjuti mahasiswa tidak dapat diubah atau dihapus.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return item, None
+
+    def patch(self, request, session_id, pk):
+        item, err = self._get_item(request, session_id, pk)
+        if err:
+            return err
+        description = (request.data.get('description') or '').strip()
+        if not description:
+            return Response({'detail': 'Deskripsi saran wajib diisi.'}, status=status.HTTP_400_BAD_REQUEST)
+        item.description = description
+        item.save(update_fields=['description'])
+        return Response({
+            'id': item.id, 'description': item.description, 'is_completed': item.is_completed,
+            'completion_note': item.completion_note,
+            'created_at': item.created_at.isoformat(),
+            'completed_at': item.completed_at.isoformat() if item.completed_at else None,
+        })
+
+    def delete(self, request, session_id, pk):
+        item, err = self._get_item(request, session_id, pk)
+        if err:
+            return err
+        item.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class CompleteActionItemView(APIView):
@@ -1519,7 +1652,120 @@ class CompleteActionItemView(APIView):
         if item.session.submission.student != request.user:
             return Response({'detail': 'Anda tidak memiliki izin.'}, status=status.HTTP_403_FORBIDDEN)
 
+        # ADVICE-01: optional note/evidence the student attaches when marking done.
+        note = request.data.get('note')
+        if note is not None:
+            item.completion_note = str(note).strip()
         item.is_completed = True
         item.completed_at = timezone.now()
-        item.save(update_fields=['is_completed', 'completed_at'])
-        return Response({'id': item.id, 'is_completed': True, 'completed_at': item.completed_at.isoformat()})
+        item.save(update_fields=['is_completed', 'completion_note', 'completed_at'])
+        return Response({
+            'id': item.id, 'is_completed': True,
+            'completion_note': item.completion_note,
+            'completed_at': item.completed_at.isoformat(),
+        })
+
+
+class LecturerAdviceHistoryView(APIView):
+    """
+    GET /api/queue/lecturer/advice-history/ — ADVICE-02 (Phase 7 SC2).
+
+    Rekap seluruh saran/tindak-lanjut (ActionItem) lintas sesi untuk semua
+    mahasiswa bimbingan dosen yang login, dikelompokkan per mahasiswa beserta
+    status kepatuhannya. Berbeda dari SessionActionItemsView (per-sesi) dan
+    KetuaJurusanComplianceView (lintas-dosen, khusus ketua jurusan/admin).
+    """
+    permission_classes = [IsLecturer]
+
+    def get(self, request):
+        items = (
+            ActionItem.objects
+            .filter(session__submission__student__adviser=request.user)
+            .select_related('session__submission__student')
+            .order_by('-created_at')[:500]  # S2: cap — statistik dihitung dari
+            # 500 saran terbaru; jauh di atas volume nyata satu dosen
+        )
+
+        total = len(items)
+        completed = sum(1 for i in items if i.is_completed)
+        compliance_rate = round(completed / total * 100) if total else 0
+
+        per_mahasiswa_map = {}
+        for item in items:
+            student = item.session.submission.student
+            key = student.id
+            if key not in per_mahasiswa_map:
+                per_mahasiswa_map[key] = {
+                    'student_id': student.id,
+                    'nama': student.full_name,
+                    'nim': student.nim or '-',
+                    'total_saran': 0,
+                    'saran_selesai': 0,
+                    'items': [],
+                }
+            bucket = per_mahasiswa_map[key]
+            bucket['total_saran'] += 1
+            if item.is_completed:
+                bucket['saran_selesai'] += 1
+            bucket['items'].append({
+                'id': item.id,
+                'session_id': item.session_id,
+                'description': item.description,
+                'is_completed': item.is_completed,
+                'completion_note': item.completion_note,
+                'created_at': item.created_at.isoformat(),
+                'completed_at': item.completed_at.isoformat() if item.completed_at else None,
+            })
+
+        per_mahasiswa = sorted(
+            per_mahasiswa_map.values(), key=lambda m: m['nama'].lower()
+        )
+
+        return Response({
+            'total_saran': total,
+            'saran_selesai': completed,
+            'compliance_rate': compliance_rate,
+            'per_mahasiswa': per_mahasiswa,
+        })
+
+
+# ── Notifications (audit G2) ──────────────────────────────────────────────────
+
+class NotificationListView(APIView):
+    """GET /api/notifications/ — notifikasi milik user + jumlah belum dibaca."""
+    permission_classes = [_permissions.IsAuthenticated]
+
+    def get(self, request):
+        qs = Notification.objects.filter(recipient=request.user)[:50]
+        unread = Notification.objects.filter(recipient=request.user, is_read=False).count()
+        return Response({
+            'unread_count': unread,
+            'notifications': [
+                {
+                    'id': n.id, 'event_type': n.event_type, 'message': n.message,
+                    'session_id': n.session_id, 'is_read': n.is_read,
+                    'created_at': n.created_at.isoformat(),
+                }
+                for n in qs
+            ],
+        })
+
+
+class NotificationReadView(APIView):
+    """POST /api/notifications/<pk>/read/ — tandai satu notifikasi terbaca."""
+    permission_classes = [_permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        updated = Notification.objects.filter(pk=pk, recipient=request.user).update(is_read=True)
+        if not updated:
+            return Response({'detail': 'Notifikasi tidak ditemukan.'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({'id': pk, 'is_read': True})
+
+
+class NotificationReadAllView(APIView):
+    """POST /api/notifications/read-all/ — tandai semua notifikasi user terbaca."""
+    permission_classes = [_permissions.IsAuthenticated]
+
+    def post(self, request):
+        n = Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
+        return Response({'marked_read': n})

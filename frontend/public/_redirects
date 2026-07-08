@@ -1,0 +1,4 @@
+# Cloudflare Pages SPA fallback — serve index.html for all client-side routes
+# so React Router deep links (e.g. /student/queue) don't 404 on hard refresh.
+# API calls go to VITE_API_URL (a different origin), so they never hit Pages.
+/*    /index.html   200

@@ -8,7 +8,9 @@ from .views import (
     LecturerStatsView, AdminStatsView, AdminEmergencyCancelView,
     AdminLogsView, AdminLogsCleanupView,
     KetuaJurusanStatsView, KetuaJurusanExportView, KetuaJurusanComplianceView,
-    SessionActionItemsView, CompleteActionItemView,
+    SessionActionItemsView, SessionActionItemDetailView,
+    CompleteActionItemView, LecturerAdviceHistoryView,
+    NotificationListView, NotificationReadView, NotificationReadAllView,
     LecturerSessionHistoryView, StudentSessionHistoryView,
     SessionRecordingFileView,
 )
@@ -23,8 +25,19 @@ queue_urlpatterns = [
     # Phase 6 merge: ringkasan pindah ke /api/logbook/ (lihat apps.logbook.urls)
     path('lecturer/', LecturerQueueView.as_view(), name='queue-lecturer'),
     path('lecturer/history/', LecturerSessionHistoryView.as_view(), name='queue-lecturer-history'),
+    # ADVICE-02 (Phase 7 SC2): rekap saran agregat lintas sesi per mahasiswa bimbingan
+    path('lecturer/advice-history/', LecturerAdviceHistoryView.as_view(), name='queue-lecturer-advice-history'),
     # FR-KP04: saran / tindak lanjut bimbingan, dilekatkan ke sebuah sesi
     path('<int:session_id>/action-items/', SessionActionItemsView.as_view(), name='queue-action-items'),
+    # G1: dosen edit/hapus satu saran
+    path('<int:session_id>/action-items/<int:pk>/', SessionActionItemDetailView.as_view(), name='queue-action-item-detail'),
+]
+
+# G2: per-user in-app notifications
+notification_urlpatterns = [
+    path('', NotificationListView.as_view(), name='notification-list'),
+    path('read-all/', NotificationReadAllView.as_view(), name='notification-read-all'),
+    path('<int:pk>/read/', NotificationReadView.as_view(), name='notification-read'),
 ]
 
 calendar_urlpatterns = [

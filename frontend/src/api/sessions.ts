@@ -1,7 +1,7 @@
 /**
  * Sessions & queue API — Phase 2.
  */
-import { apiRequest } from './client';
+import { apiRequest, resolveUrl } from './client';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -196,6 +196,17 @@ export interface LogbookDetail {
   llm_input_tokens?: number | null;
   llm_output_tokens?: number | null;
   llm_cost_estimate_idr?: string | null;
+  // Phase 7 SC3-5: status sinkron ke logbook kampus (Sekawan/KPTI).
+  campus_sync_status?: CampusSyncStatus;
+  campus_entry_id?: string;
+  campus_synced_at?: string | null;
+}
+
+export type CampusSyncStatus = 'not_synced' | 'synced' | 'failed' | 'pending_retry';
+
+/** URL unduhan ekspor CSV/PDF ringkasan (SC4) — fallback upload manual ke logbook kampus. */
+export function getLogbookExportUrl(sessionId: number, format: 'csv' | 'pdf'): string {
+  return resolveUrl(`/api/logbook/${sessionId}/export/?format=${format}`);
 }
 
 export async function getLecturerSessionHistory(): Promise<SessionHistoryItem[]> {
@@ -247,6 +258,16 @@ export async function approveLogbook(
 }
 
 /** Gate tambahan (STT-04): dosen menolak draf AI ready_for_review, dialihkan ke jalur manual. */
+/** Dosen: coba proses ulang pipeline STT/AI untuk logbook yang gagal (G6). */
+export async function retryPipeline(sessionId: number): Promise<{ status: string; dispatched: boolean }> {
+  const res = await apiRequest(`/api/logbook/${sessionId}/retry/`, { method: 'POST' });
+  if (!res.ok) {
+    const b = await res.json().catch(() => ({}));
+    throw new Error((b as { detail?: string }).detail ?? 'Gagal memproses ulang.');
+  }
+  return res.json();
+}
+
 export async function rejectLogbook(sessionId: number): Promise<LogbookDetail> {
   const res = await apiRequest(`/api/logbook/${sessionId}/reject/`, { method: 'POST' });
   if (!res.ok) {
@@ -277,6 +298,110 @@ export function getSessionRecordingUrl(sessionId: number): string {
   return `/api/queue/${sessionId}/recording/`;
 }
 
+// ── Advice items (Phase 7, ADVICE-01/02) ────────────────────────────────────────
+
+export interface ActionItem {
+  id: number;
+  description: string;
+  is_completed: boolean;
+  completion_note?: string;
+  created_at: string;
+  completed_at: string | null;
+}
+
+/** Dosen & mahasiswa (pemilik sesi): daftar saran untuk satu sesi. */
+export async function getActionItems(sessionId: number): Promise<ActionItem[]> {
+  const res = await apiRequest(`/api/queue/${sessionId}/action-items/`);
+  if (!res.ok) throw new Error('Gagal memuat daftar saran.');
+  return res.json();
+}
+
+/** Dosen: menambah satu saran untuk sesi ini. */
+export async function addActionItem(sessionId: number, description: string): Promise<ActionItem> {
+  const res = await apiRequest(`/api/queue/${sessionId}/action-items/`, {
+    method: 'POST',
+    body: JSON.stringify({ description }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error((body as { detail?: string }).detail ?? 'Gagal menambah saran.');
+  }
+  return res.json();
+}
+
+/** Dosen: mengubah teks satu saran (G1). */
+export async function updateActionItem(sessionId: number, id: number, description: string): Promise<ActionItem> {
+  const res = await apiRequest(`/api/queue/${sessionId}/action-items/${id}/`, {
+    method: 'PATCH',
+    body: JSON.stringify({ description }),
+  });
+  if (!res.ok) {
+    const b = await res.json().catch(() => ({}));
+    throw new Error((b as { detail?: string }).detail ?? 'Gagal mengubah saran.');
+  }
+  return res.json();
+}
+
+/** Dosen: menghapus satu saran (G1). */
+export async function deleteActionItem(sessionId: number, id: number): Promise<void> {
+  const res = await apiRequest(`/api/queue/${sessionId}/action-items/${id}/`, { method: 'DELETE' });
+  if (!res.ok) {
+    const b = await res.json().catch(() => ({}));
+    throw new Error((b as { detail?: string }).detail ?? 'Gagal menghapus saran.');
+  }
+}
+
+/** Mahasiswa: menandai satu saran sebagai sudah ditindaklanjuti, dengan catatan/bukti opsional. */
+export async function completeActionItem(
+  id: number,
+  note?: string
+): Promise<{ id: number; is_completed: true; completion_note: string; completed_at: string }> {
+  const res = await apiRequest(`/api/action-items/${id}/complete/`, {
+    method: 'POST',
+    body: JSON.stringify(note !== undefined ? { note } : {}),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error((body as { detail?: string }).detail ?? 'Gagal menandai saran selesai.');
+  }
+  return res.json();
+}
+
+// ── ADVICE-02 (Phase 7 SC2): rekap saran agregat per mahasiswa bimbingan ──────
+
+export interface AdviceHistoryItem {
+  id: number;
+  session_id: number;
+  description: string;
+  is_completed: boolean;
+  completion_note?: string;
+  created_at: string;
+  completed_at: string | null;
+}
+
+export interface AdviceHistoryStudent {
+  student_id: number;
+  nama: string;
+  nim: string;
+  total_saran: number;
+  saran_selesai: number;
+  items: AdviceHistoryItem[];
+}
+
+export interface LecturerAdviceHistory {
+  total_saran: number;
+  saran_selesai: number;
+  compliance_rate: number;
+  per_mahasiswa: AdviceHistoryStudent[];
+}
+
+/** Dosen: rekap saran lintas sesi & status tindak lanjut, dikelompokkan per mahasiswa bimbingan. */
+export async function getLecturerAdviceHistory(): Promise<LecturerAdviceHistory> {
+  const res = await apiRequest('/api/queue/lecturer/advice-history/');
+  if (!res.ok) throw new Error('Gagal memuat riwayat saran.');
+  return res.json();
+}
+
 // ── Calendar status ────────────────────────────────────────────────────────────
 
 export async function getCalendarStatus(): Promise<{ enabled: boolean; connected: boolean }> {
@@ -286,5 +411,5 @@ export async function getCalendarStatus(): Promise<{ enabled: boolean; connected
 }
 
 export function getCalendarAuthUrl(): string {
-  return '/api/calendar/auth/';
+  return resolveUrl('/api/calendar/auth/');
 }

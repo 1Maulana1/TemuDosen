@@ -46,6 +46,15 @@ class TestLogin:
         response = api_client.post('/api/auth/login/', {}, format='json')
         assert response.status_code == 400
 
+    def test_login_is_rate_limited(self, api_client, admin_user):
+        """Audit S4: repeated attempts are throttled (429) to blunt brute-force.
+        Default rate is 10/min; the 11th attempt within the window is rejected."""
+        payload = {'email': admin_user.email, 'password': 'wrongpassword'}
+        statuses = [api_client.post('/api/auth/login/', payload, format='json').status_code
+                    for _ in range(11)]
+        assert 429 in statuses
+        assert statuses[-1] == 429
+
 
 @pytest.mark.django_db
 class TestMeEndpoint:

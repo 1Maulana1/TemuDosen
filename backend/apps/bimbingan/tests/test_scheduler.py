@@ -10,8 +10,11 @@ from datetime import timedelta
 import pytest
 from django.utils import timezone
 
-from apps.bimbingan.models import Session, SystemLog
-from apps.bimbingan.scheduler import check_auto_cancel, check_h15_notifications
+from apps.bimbingan.models import Session, SessionRecording, SystemLog
+from apps.bimbingan.scheduler import (
+    check_auto_cancel, check_h15_notifications,
+    cleanup_old_recordings, cleanup_old_system_logs,
+)
 from apps.submissions.models import Submission
 
 
@@ -142,3 +145,52 @@ class TestAutoCancel:
         assert not SystemLog.objects.filter(
             event_type='EMERGENCY_CANCEL', message__icontains='tidak hadir'
         ).exists()
+
+
+@pytest.mark.django_db
+class TestCleanupOldRecordings:
+    """Audit G5 — old recording audio is pruned; the file itself is removed."""
+
+    def _rec(self, session, path, days_old):
+        rec = SessionRecording.objects.create(
+            session=session, original_filename='r.webm', file_path=str(path),
+            file_size=10, mime_type='audio/webm')
+        SessionRecording.objects.filter(pk=rec.pk).update(
+            uploaded_at=timezone.now() - timedelta(days=days_old))
+        return rec
+
+    def test_deletes_old_recording_and_file(self, lecturer_user, pending_submission, tmp_path, settings):
+        settings.RECORDING_RETENTION_DAYS = 90
+        session = _approve_session(lecturer_user, pending_submission)
+        f = tmp_path / 'old.webm'; f.write_bytes(b'x')
+        rec = self._rec(session, f, days_old=120)
+
+        cleanup_old_recordings()
+        assert not SessionRecording.objects.filter(pk=rec.pk).exists()
+        assert not f.exists()
+        assert SystemLog.objects.filter(event_type='RECORDING_CLEANUP').exists()
+
+    def test_keeps_recent_recording(self, lecturer_user, pending_submission, tmp_path, settings):
+        settings.RECORDING_RETENTION_DAYS = 90
+        session = _approve_session(lecturer_user, pending_submission)
+        f = tmp_path / 'new.webm'; f.write_bytes(b'x')
+        rec = self._rec(session, f, days_old=10)
+
+        cleanup_old_recordings()
+        assert SessionRecording.objects.filter(pk=rec.pk).exists()
+        assert f.exists()
+
+
+@pytest.mark.django_db
+class TestCleanupOldSystemLogs:
+    """Audit G7 — SystemLog rows older than the retention window are auto-pruned."""
+
+    def test_prunes_old_keeps_recent(self, settings):
+        settings.SYSTEMLOG_RETENTION_DAYS = 30
+        old = SystemLog.objects.create(event_type='X', message='old')
+        SystemLog.objects.filter(pk=old.pk).update(created_at=timezone.now() - timedelta(days=40))
+        recent = SystemLog.objects.create(event_type='Y', message='recent')
+
+        cleanup_old_system_logs()
+        assert not SystemLog.objects.filter(pk=old.pk).exists()
+        assert SystemLog.objects.filter(pk=recent.pk).exists()

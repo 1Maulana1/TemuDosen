@@ -15,7 +15,7 @@
  * bottom bar.
  */
 import { Link } from 'react-router';
-import { useEffect, useState } from 'react';
+import NotificationBell from './NotificationBell';
 
 export interface NavItem {
   key: string;
@@ -42,6 +42,7 @@ export const NAV_ITEMS: Record<AppRole, NavItem[]> = {
     { key: 'permintaan', to: '/dosen/requests', icon: 'inbox', label: 'Permintaan' },
     { key: 'antrian', to: '/dosen/queue', icon: 'format_list_numbered', label: 'Antrian' },
     { key: 'riwayat', to: '/dosen/riwayat', icon: 'history', label: 'Riwayat' },
+    { key: 'saran', to: '/dosen/saran', icon: 'checklist', label: 'Saran' },
     { key: 'profil', to: '/dosen/pengaturan', icon: 'person', label: 'Profil' },
   ],
   admin: [
@@ -69,14 +70,6 @@ interface AppNavbarProps {
 }
 
 export function AppNavbar({ items, active, userName, onLogout, brandSuffix }: AppNavbarProps) {
-  const [notice, setNotice] = useState(false);
-
-  useEffect(() => {
-    if (!notice) return;
-    const t = setTimeout(() => setNotice(false), 3000);
-    return () => clearTimeout(t);
-  }, [notice]);
-
   return (
     <header className="sticky top-0 z-40 bg-surface border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
@@ -114,21 +107,7 @@ export function AppNavbar({ items, active, userName, onLogout, brandSuffix }: Ap
         </div>
 
         <div className="flex items-center gap-3 flex-shrink-0 relative">
-          <button
-            type="button"
-            aria-label="Notifikasi (segera hadir)"
-            title="Fitur notifikasi segera hadir"
-            onClick={() => setNotice(true)}
-            className="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
-          >
-            <span className="material-symbols-outlined text-xl" aria-hidden="true">notifications</span>
-          </button>
-
-          {notice && (
-            <div role="status" aria-live="polite" className="absolute top-12 right-0 z-50 whitespace-nowrap rounded-lg bg-slate-800 text-white text-xs font-bold px-3 py-2 shadow-lg">
-              Notifikasi belum tersedia.
-            </div>
-          )}
+          <NotificationBell />
 
           <div className="flex items-center gap-2 pl-2 border-l border-gray-200">
             <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-on-primary font-bold text-xs flex-shrink-0">

@@ -3,7 +3,7 @@
  * (/mahasiswa/sesi/:id) — Phase 6 (merge): riwayat + ringkasan (read-only) via
  * SessionLogbook (/api/logbook/student/).
  */
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { MemoryRouter } from 'react-router';
@@ -68,7 +68,8 @@ describe('StudentSessionDetail', () => {
           transcript: '', summary_raw: {}, summary_edited: { manual_notes: 'Sudah bagus, lanjut bab 4.' },
           approved_at: '2026-07-04T10:05:00Z',
         })
-      )
+      ),
+      http.get('/api/queue/7/action-items/', () => HttpResponse.json([]))
     );
   });
 
@@ -116,5 +117,79 @@ describe('StudentSessionDetail', () => {
     await waitFor(() =>
       expect(screen.getByText(/menunggu dosen mengisi dan menyetujuinya/i)).toBeInTheDocument()
     );
+  });
+
+  it('lists advice items and lets the student mark one complete (ADVICE-01)', async () => {
+    server.use(
+      http.get('/api/queue/7/action-items/', () =>
+        HttpResponse.json([
+          { id: 1, description: 'Perbaiki bab metodologi', is_completed: false, created_at: '2026-07-04T10:00:00Z', completed_at: null },
+          { id: 2, description: 'Tambah referensi bab 2', is_completed: true, created_at: '2026-07-03T10:00:00Z', completed_at: '2026-07-04T08:00:00Z' },
+        ])
+      )
+    );
+    let completedId: number | null = null;
+    server.use(
+      http.post('/api/action-items/1/complete/', () => {
+        completedId = 1;
+        return HttpResponse.json({ id: 1, is_completed: true, completed_at: '2026-07-05T09:00:00Z' });
+      })
+    );
+
+    renderDetail();
+    await waitFor(() => expect(screen.getByText('Saran & Tindak Lanjut')).toBeInTheDocument());
+    expect(screen.getByText('Perbaiki bab metodologi')).toBeInTheDocument();
+    expect(screen.getByText('Tambah referensi bab 2')).toBeInTheDocument();
+    expect(screen.getByText('Belum ditindaklanjuti')).toBeInTheDocument();
+
+    // Item #2 is already completed, so exactly one "Ditindaklanjuti" line exists
+    // before the click; after marking #1 done there should be two.
+    expect(screen.getAllByText(/Ditindaklanjuti/)).toHaveLength(1);
+    screen.getByRole('button', { name: /Tandai Selesai/i }).click();
+
+    await waitFor(() => expect(completedId).toBe(1));
+    await waitFor(() => expect(screen.getAllByText(/Ditindaklanjuti/)).toHaveLength(2));
+  });
+
+  it('sends an optional completion note when the student fills one in (ADVICE-01)', async () => {
+    server.use(
+      http.get('/api/queue/7/action-items/', () =>
+        HttpResponse.json([
+          { id: 1, description: 'Perbaiki bab metodologi', is_completed: false, created_at: '2026-07-04T10:00:00Z', completed_at: null },
+        ])
+      )
+    );
+    let body: unknown;
+    server.use(
+      http.post('/api/action-items/1/complete/', async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json({ id: 1, is_completed: true, completion_note: 'sudah revisi bab 3', completed_at: '2026-07-05T09:00:00Z' });
+      })
+    );
+
+    renderDetail();
+    await waitFor(() => expect(screen.getByText('Perbaiki bab metodologi')).toBeInTheDocument());
+
+    fireEvent.change(screen.getByPlaceholderText(/Catatan \/ bukti/i), { target: { value: 'sudah revisi bab 3' } });
+    screen.getByRole('button', { name: /Tandai Selesai/i }).click();
+
+    await waitFor(() => expect(body).toEqual({ note: 'sudah revisi bab 3' }));
+    await waitFor(() => expect(screen.getByText(/sudah revisi bab 3/)).toBeInTheDocument());
+  });
+
+  it('shows advice items even while the AI summary is still awaiting approval', async () => {
+    server.use(
+      http.get('/api/logbook/student/7/', () =>
+        HttpResponse.json({ detail: 'Ringkasan belum tersedia.' }, { status: 403 })
+      ),
+      http.get('/api/queue/7/action-items/', () =>
+        HttpResponse.json([
+          { id: 3, description: 'Perbanyak bacaan teori', is_completed: false, created_at: '2026-07-04T10:00:00Z', completed_at: null },
+        ])
+      )
+    );
+    renderDetail();
+    await waitFor(() => expect(screen.getByText('Perbanyak bacaan teori')).toBeInTheDocument());
+    expect(screen.getByText(/menunggu dosen mengisi dan menyetujuinya/i)).toBeInTheDocument();
   });
 });

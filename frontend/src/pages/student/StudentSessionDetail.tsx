@@ -7,7 +7,10 @@
  */
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useParams, useRouteLoaderData } from 'react-router';
-import { getStudentLogbookDetail, getSessionRecordingUrl, type LogbookDetail } from '../../api/sessions';
+import {
+  getStudentLogbookDetail, getSessionRecordingUrl, getActionItems, completeActionItem,
+  type LogbookDetail, type ActionItem,
+} from '../../api/sessions';
 import { logout, type User } from '../../api/auth';
 import { AppNavbar, AppBottomNav, NAV_ITEMS } from '../../components/AppNav';
 import SummaryContent from '../../components/SummaryContent';
@@ -29,6 +32,15 @@ export default function StudentSessionDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Saran (ActionItem) tidak terikat status persetujuan logbook AI — dosen bisa
+  // menambah saran kapan pun setelah sesi selesai, jadi di-fetch terpisah supaya
+  // tetap tampil walau ringkasan AI masih "belum tersedia" (Phase 7, ADVICE-01).
+  const [actionItems, setActionItems] = useState<ActionItem[]>([]);
+  const [itemsLoading, setItemsLoading] = useState(true);
+  const [completingId, setCompletingId] = useState<number | null>(null);
+  const [itemsMsg, setItemsMsg] = useState('');
+  const [noteDrafts, setNoteDrafts] = useState<Record<number, string>>({});
+
   const load = useCallback(() => {
     setLoading(true);
     setError(null);
@@ -38,6 +50,12 @@ export default function StudentSessionDetail() {
       .then(setData)
       .catch((e) => setError(e instanceof Error ? e.message : 'Gagal memuat sesi.'))
       .finally(() => setLoading(false));
+
+    setItemsLoading(true);
+    getActionItems(sessionId)
+      .then(setActionItems)
+      .catch(() => {})
+      .finally(() => setItemsLoading(false));
   }, [sessionId]);
 
   useEffect(() => { load(); }, [load]);
@@ -45,6 +63,24 @@ export default function StudentSessionDetail() {
   async function handleLogout() {
     await logout();
     navigate('/login');
+  }
+
+  async function handleComplete(id: number) {
+    setCompletingId(id);
+    setItemsMsg('');
+    try {
+      const note = (noteDrafts[id] ?? '').trim();
+      const result = await completeActionItem(id, note || undefined);
+      setActionItems((prev) =>
+        prev.map((it) => (it.id === id
+          ? { ...it, is_completed: true, completion_note: result.completion_note, completed_at: result.completed_at }
+          : it))
+      );
+    } catch (e) {
+      setItemsMsg(e instanceof Error ? e.message : 'Gagal menandai saran selesai.');
+    } finally {
+      setCompletingId(null);
+    }
   }
 
   return (
@@ -121,6 +157,62 @@ export default function StudentSessionDetail() {
               </div>
             </section>
           </>
+        )}
+
+        {/* Saran & Tindak Lanjut (Phase 7, ADVICE-01) — lepas dari status ringkasan AI,
+            dosen bisa memberi saran kapan pun setelah sesi selesai. */}
+        {!itemsLoading && actionItems.length > 0 && (
+          <section>
+            <h2 className="font-headline font-bold text-lg text-slate-900 mb-3">Saran &amp; Tindak Lanjut</h2>
+            <div className="bg-surface rounded-2xl border border-gray-200 shadow-sm p-5 space-y-3">
+              {itemsMsg && <p className="text-sm text-error">{itemsMsg}</p>}
+              <ul className="space-y-2">
+                {actionItems.map((item) => (
+                  <li key={item.id} className="border border-gray-100 rounded-xl p-3">
+                    <div className="flex items-start gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm text-slate-700">{item.description}</p>
+                        <p className="text-[11px] text-on-surface-variant mt-0.5">
+                          {item.is_completed
+                            ? `Ditindaklanjuti ${fmtDateTime(item.completed_at)}`
+                            : 'Belum ditindaklanjuti'}
+                        </p>
+                      </div>
+                      {item.is_completed && (
+                        <span className="material-symbols-outlined text-success flex-shrink-0" aria-hidden="true">check_circle</span>
+                      )}
+                    </div>
+
+                    {item.is_completed ? (
+                      item.completion_note ? (
+                        <p className="mt-2 text-[13px] text-slate-600 bg-gray-50 border border-gray-100 rounded-lg px-3 py-2">
+                          <span className="font-bold text-on-surface-variant">Catatan: </span>{item.completion_note}
+                        </p>
+                      ) : null
+                    ) : (
+                      <div className="mt-2 space-y-2">
+                        <textarea
+                          value={noteDrafts[item.id] ?? ''}
+                          onChange={(e) => setNoteDrafts((d) => ({ ...d, [item.id]: e.target.value }))}
+                          placeholder="Catatan / bukti tindak lanjut (opsional)…"
+                          rows={2}
+                          className="w-full text-sm border border-gray-200 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                        />
+                        <button
+                          type="button"
+                          disabled={completingId === item.id}
+                          onClick={() => handleComplete(item.id)}
+                          className="px-3 py-1.5 rounded-lg border border-primary text-primary text-xs font-bold hover:bg-primary/5 disabled:opacity-60 min-h-[36px] focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+                        >
+                          {completingId === item.id ? 'Menyimpan…' : 'Tandai Selesai'}
+                        </button>
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </section>
         )}
       </main>
 
