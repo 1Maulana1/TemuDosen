@@ -1,4 +1,4 @@
-import { apiRequest } from './client';
+import { apiRequest, resolveUrl } from './client';
 
 export interface LecturerStats {
   total_sessions_week: number;
@@ -170,7 +170,7 @@ export async function getKetuaJurusanCompliance(period: ReportPeriod = 'monthly'
 }
 
 export function getKetuaJurusanExportUrl(period: ReportPeriod = 'monthly', format: 'csv' | 'pdf' = 'csv'): string {
-  return `/api/ketua-jurusan/export/?period=${period}&format=${format}`;
+  return resolveUrl(`/api/ketua-jurusan/export/?period=${period}&format=${format}`);
 }
 
 export interface StartSessionConsent {

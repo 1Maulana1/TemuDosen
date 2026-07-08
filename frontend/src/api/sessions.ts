@@ -1,7 +1,7 @@
 /**
  * Sessions & queue API — Phase 2.
  */
-import { apiRequest } from './client';
+import { apiRequest, resolveUrl } from './client';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -206,7 +206,7 @@ export type CampusSyncStatus = 'not_synced' | 'synced' | 'failed' | 'pending_ret
 
 /** URL unduhan ekspor CSV/PDF ringkasan (SC4) — fallback upload manual ke logbook kampus. */
 export function getLogbookExportUrl(sessionId: number, format: 'csv' | 'pdf'): string {
-  return `/api/logbook/${sessionId}/export/?format=${format}`;
+  return resolveUrl(`/api/logbook/${sessionId}/export/?format=${format}`);
 }
 
 export async function getLecturerSessionHistory(): Promise<SessionHistoryItem[]> {
@@ -411,5 +411,5 @@ export async function getCalendarStatus(): Promise<{ enabled: boolean; connected
 }
 
 export function getCalendarAuthUrl(): string {
-  return '/api/calendar/auth/';
+  return resolveUrl('/api/calendar/auth/');
 }

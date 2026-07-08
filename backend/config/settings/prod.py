@@ -15,8 +15,16 @@ DATABASES = {
 # HTTPS-only cookies in production
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
-SESSION_COOKIE_SAMESITE = 'Lax'
-CSRF_COOKIE_SAMESITE = 'Lax'
+
+# Cookie SameSite policy.
+#   - 'Lax' (default): frontend and backend share a registrable domain, e.g.
+#     app.temudosen.com  ↔  api.temudosen.com  (same-site → cookies flow).
+#   - 'None': frontend is on a DIFFERENT site, e.g. temudosen.pages.dev  ↔
+#     api.temudosen.com. Cross-site auth cookies require SameSite=None; Secure.
+# Set COOKIE_SAMESITE=None in the environment for a *.pages.dev frontend.
+COOKIE_SAMESITE = env.str('COOKIE_SAMESITE', default='Lax')
+SESSION_COOKIE_SAMESITE = COOKIE_SAMESITE
+CSRF_COOKIE_SAMESITE = COOKIE_SAMESITE
 
 # Security headers
 SECURE_HSTS_SECONDS = 31536000
