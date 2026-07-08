@@ -43,6 +43,9 @@ class LogbookListSerializer(serializers.ModelSerializer):
 class LogbookDetailSerializer(serializers.ModelSerializer):
     """Detail 1 logbook: transkrip + ringkasan (raw & editan) + status."""
     session_id = serializers.IntegerField(source='session.id', read_only=True)
+    # Dipakai dosen untuk membuka/menyunting progres skripsi mahasiswa terkait.
+    mahasiswa_id = serializers.IntegerField(
+        source='session.submission.student.id', read_only=True)
     mahasiswa_name = serializers.CharField(
         source='session.submission.student.full_name', read_only=True)
     nim = serializers.CharField(source='session.submission.student.nim', read_only=True)
@@ -55,7 +58,7 @@ class LogbookDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = SessionLogbook
         fields = [
-            'session_id', 'mahasiswa_name', 'nim', 'dosen_name', 'scheduled_at', 'ts1',
+            'session_id', 'mahasiswa_id', 'mahasiswa_name', 'nim', 'dosen_name', 'scheduled_at', 'ts1',
             'ts2', 'has_recording', 'status', 'is_manual', 'transcript',
             'summary_raw', 'summary_edited', 'approved_at',
             # D-11: token/biaya LLM — hanya di serializer dosen; serializer

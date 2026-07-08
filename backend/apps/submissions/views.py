@@ -21,6 +21,7 @@ Views:
 """
 import os
 
+from django.contrib.auth import get_user_model
 from django.http import FileResponse, Http404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, generics, status
@@ -241,6 +242,70 @@ class ThesisChapterUpdateView(APIView):
     def patch(self, request, pk):
         try:
             chapter = ThesisChapter.objects.get(pk=pk, student=request.user)
+        except ThesisChapter.DoesNotExist:
+            return Response({'detail': 'Bab tidak ditemukan.'}, status=status.HTTP_404_NOT_FOUND)
+
+        is_completed = request.data.get('is_completed')
+        if not isinstance(is_completed, bool):
+            return Response(
+                {'detail': "Field 'is_completed' (boolean) wajib diisi."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        chapter.is_completed = is_completed
+        chapter.save(update_fields=['is_completed', 'updated_at'])
+        return Response(_serialize_chapter(chapter))
+
+
+# ── Lecturer-side thesis progress ──────────────────────────────────────────────
+#
+# Penandaan bab skripsi kini otoritatif di sisi dosen pembimbing (mahasiswa hanya
+# melihat). Kedua view di bawah dibatasi ke advisee milik dosen tersebut:
+# student.adviser == request.user (pola isolasi sama seperti REVIEW-01).
+
+def _get_advisee_or_404(lecturer, student_id):
+    """Return the lecturer's advisee, or None if not found / not their advisee."""
+    return (
+        get_user_model().objects
+        .filter(pk=student_id, role='student', adviser=lecturer)
+        .first()
+    )
+
+
+class LecturerThesisProgressView(APIView):
+    """GET /api/thesis-progress/lecturer/<student_id>/ — read an advisee's chapter
+    checklist (seeded Bab I–V on first access). Scoped to the lecturer's advisees."""
+    permission_classes = [IsLecturer]
+
+    def get(self, request, student_id):
+        student = _get_advisee_or_404(request.user, student_id)
+        if student is None:
+            return Response({'detail': 'Mahasiswa bimbingan tidak ditemukan.'}, status=status.HTTP_404_NOT_FOUND)
+        chapters = [_serialize_chapter(c) for c in ThesisChapter.ensure_for(student)]
+        total = len(chapters)
+        completed = sum(1 for c in chapters if c['is_completed'])
+        return Response({
+            'chapters': chapters,
+            'total': total,
+            'completed': completed,
+            'percent': round(completed / total * 100) if total else 0,
+        })
+
+
+class LecturerThesisChapterUpdateView(APIView):
+    """PATCH /api/thesis-progress/lecturer/<student_id>/<id>/ — lecturer toggles one
+    of their advisee's chapters."""
+    permission_classes = [IsLecturer]
+
+    def patch(self, request, student_id, pk):
+        student = _get_advisee_or_404(request.user, student_id)
+        if student is None:
+            return Response({'detail': 'Mahasiswa bimbingan tidak ditemukan.'}, status=status.HTTP_404_NOT_FOUND)
+
+        # ensure_for seeds Bab I–V the first time so a dosen can mark chapters even
+        # if the student never opened their dashboard.
+        ThesisChapter.ensure_for(student)
+        try:
+            chapter = ThesisChapter.objects.get(pk=pk, student=student)
         except ThesisChapter.DoesNotExist:
             return Response({'detail': 'Bab tidak ditemukan.'}, status=status.HTTP_404_NOT_FOUND)
 

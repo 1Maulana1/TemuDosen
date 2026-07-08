@@ -16,6 +16,7 @@ import {
   type LogbookDetail, type SessionSummaryContent, type ActionItem, type CampusSyncStatus,
 } from '../../api/sessions';
 import { logout, type User } from '../../api/auth';
+import { getStudentThesisProgress, updateStudentThesisChapter, type ThesisProgress } from '../../api/thesis';
 import { AppNavbar, AppBottomNav, NAV_ITEMS } from '../../components/AppNav';
 import SummaryContent from '../../components/SummaryContent';
 import RejectLogbookModal from '../../components/RejectLogbookModal';
@@ -110,17 +111,42 @@ export default function LecturerSessionDetail() {
   const [editText, setEditText] = useState('');
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
 
+  const [thesis, setThesis] = useState<ThesisProgress | null>(null);
+  const [thesisErr, setThesisErr] = useState('');
+
   const load = useCallback(() => {
     setLoading(true);
     setError(null);
     getLogbookDetail(sessionId)
-      .then((d) => { setData(d); setSummaryDraft(summaryToText(d.summary_edited ?? d.summary_raw)); })
+      .then((d) => {
+        setData(d);
+        setSummaryDraft(summaryToText(d.summary_edited ?? d.summary_raw));
+        setThesisErr('');
+        getStudentThesisProgress(d.mahasiswa_id)
+          .then(setThesis)
+          .catch(() => setThesisErr('Gagal memuat progres skripsi mahasiswa.'));
+      })
       .catch((e) => setError(e instanceof Error ? e.message : 'Gagal memuat sesi.'))
       .finally(() => setLoading(false));
     getActionItems(sessionId).then(setActionItems).catch(() => {});
   }, [sessionId]);
 
   useEffect(() => { load(); }, [load]);
+
+  async function handleToggleChapter(chapterId: number, next: boolean) {
+    if (!data || !thesis) return;
+    const prev = thesis;
+    const chapters = thesis.chapters.map((c) => (c.id === chapterId ? { ...c, is_completed: next } : c));
+    const completed = chapters.filter((c) => c.is_completed).length;
+    setThesis({ ...thesis, chapters, completed, percent: chapters.length ? Math.round((completed / chapters.length) * 100) : 0 });
+    setThesisErr('');
+    try {
+      await updateStudentThesisChapter(data.mahasiswa_id, chapterId, next);
+    } catch (e) {
+      setThesis(prev);  // rollback
+      setThesisErr(e instanceof Error ? e.message : 'Gagal memperbarui progres skripsi.');
+    }
+  }
 
   async function handleAddItem() {
     const description = newItemText.trim();
@@ -495,6 +521,62 @@ export default function LecturerSessionDetail() {
                     Tambah
                   </button>
                 </div>
+              </div>
+            </section>
+
+            {/* Progres Skripsi — dosen menandai bab yang sudah diselesaikan mahasiswa.
+                Mahasiswa hanya melihat (read-only) di dashboard mereka. */}
+            <section>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="font-headline font-bold text-lg text-slate-900">Progres Skripsi</h2>
+                {thesis && <span className="text-sm font-bold text-primary">{thesis.percent}%</span>}
+              </div>
+              <div className="bg-surface rounded-2xl border border-gray-200 shadow-sm p-5 space-y-3">
+                {thesisErr && <p className="text-sm text-error">{thesisErr}</p>}
+                {!thesis && !thesisErr && (
+                  <p className="text-sm text-on-surface-variant">Memuat progres skripsi…</p>
+                )}
+                {thesis && (
+                  <>
+                    <p className="text-[11px] text-on-surface-variant">
+                      Tandai setiap bab yang sudah diselesaikan mahasiswa. Mahasiswa melihat progres ini di dashboard mereka.
+                    </p>
+                    <div className="w-full h-2 rounded-full bg-gray-100 overflow-hidden">
+                      <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${thesis.percent}%` }} />
+                    </div>
+                    <ul className="space-y-1">
+                      {thesis.chapters.map((c) => {
+                        const isActive = !c.is_completed && c.id === thesis.chapters.find((x) => !x.is_completed)?.id;
+                        return (
+                          <li key={c.id}>
+                            <button
+                              type="button"
+                              onClick={() => handleToggleChapter(c.id, !c.is_completed)}
+                              aria-pressed={c.is_completed}
+                              className="w-full flex items-center gap-3 py-2 text-left rounded-lg hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+                            >
+                              <span
+                                className={`material-symbols-outlined text-xl flex-shrink-0 ${c.is_completed ? 'text-success' : isActive ? 'text-primary' : 'text-gray-300'}`}
+                                style={c.is_completed ? { fontVariationSettings: "'FILL' 1" } : undefined}
+                                aria-hidden="true"
+                              >
+                                {c.is_completed ? 'check_circle' : isActive ? 'radio_button_checked' : 'radio_button_unchecked'}
+                              </span>
+                              <span
+                                className={[
+                                  'text-sm',
+                                  c.is_completed ? 'line-through text-on-surface-variant' : isActive ? 'text-slate-900 font-bold' : 'text-on-surface-variant',
+                                ].join(' ')}
+                              >
+                                {c.title}
+                              </span>
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </>
+                )}
               </div>
             </section>
           </>

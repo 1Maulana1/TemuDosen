@@ -8,7 +8,9 @@
  *   - Deskripsi Masalah — optional textarea, 500-char counter
  *   - Upload Draft — required (UploadZone)
  *   - Estimasi Durasi — dark bento card computed from selected symptoms
- *   - Sticky footer CTA: "Lanjutkan ke Jadwal" disabled until >=1 symptom AND file present
+ *   - CTA "Lanjutkan ke Jadwal" (mengalir dalam sidebar; di mobile menumpuk di
+ *     bawah kartu estimasi, bukan footer fixed) — disabled until >=1 symptom AND file
+ *   - AppBottomNav mobile seperti halaman lain
  *
  * On submit: POST multipart to /api/submissions/ via createSubmission().
  * On success: navigate to /mahasiswa (dashboard S-06).
@@ -20,7 +22,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate, useRouteLoaderData } from 'react-router';
 import { logout, type User } from '../../api/auth';
-import { AppNavbar, NAV_ITEMS } from '../../components/AppNav';
+import { AppNavbar, AppBottomNav, NAV_ITEMS } from '../../components/AppNav';
 import { fetchSymptoms } from '../../api/symptoms';
 import type { SymptomCategory } from '../../api/symptoms';
 import { createSubmission, fetchMySubmissions } from '../../api/submissions';
@@ -176,7 +178,7 @@ export default function SubmissionForm() {
       ) : (
       <>
       {/* Main form — 2 kolom di desktop (isian + sidebar estimasi) */}
-      <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 py-6 pb-32 lg:pb-10">
+      <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 py-6 pb-24 md:pb-8">
         {/* Page header + step progress */}
         <div className="mb-6">
           <h1 className="font-headline font-bold text-2xl text-on-surface">Ajukan Bimbingan Baru</h1>
@@ -355,7 +357,7 @@ export default function SubmissionForm() {
               disabled={!canSubmit || isSubmitting}
               aria-disabled={!canSubmit}
               className={[
-                'hidden lg:flex w-full py-4 px-6 rounded-xl font-bold text-sm items-center justify-center space-x-2 transition-all active:scale-[0.98]',
+                'flex w-full py-4 px-6 rounded-xl font-bold text-sm items-center justify-center space-x-2 transition-all active:scale-[0.98]',
                 canSubmit && !isSubmitting
                   ? 'bg-primary text-on-primary shadow-lg shadow-primary/25 cursor-pointer'
                   : 'bg-primary text-on-primary opacity-50 cursor-not-allowed',
@@ -370,42 +372,10 @@ export default function SubmissionForm() {
           </aside>
         </div>
       </main>
-
-      {/* Sticky footer CTA — mobile only (desktop pakai tombol di sidebar) */}
-      <footer className="lg:hidden fixed bottom-0 left-0 right-0 w-full bg-white border-t border-gray-100 z-50">
-        <div className="max-w-xl mx-auto p-4 pb-6">
-          <button
-            type="submit"
-            form="submissionForm"
-            disabled={!canSubmit || isSubmitting}
-            aria-busy={isSubmitting}
-            aria-disabled={!canSubmit}
-            className={[
-              'w-full py-4 px-6 rounded-xl font-bold text-sm flex items-center justify-center space-x-2',
-              'transition-all active:scale-[0.98]',
-              canSubmit && !isSubmitting
-                ? 'bg-primary text-on-primary shadow-xl shadow-primary/25 cursor-pointer'
-                : 'bg-primary text-on-primary opacity-50 cursor-not-allowed',
-            ].join(' ')}
-          >
-            {isSubmitting ? (
-              <>
-                <span className="material-symbols-outlined text-sm animate-spin">
-                  autorenew
-                </span>
-                <span>Memproses...</span>
-              </>
-            ) : (
-              <>
-                <span>Lanjutkan ke Jadwal</span>
-                <span className="material-symbols-outlined text-sm">arrow_forward</span>
-              </>
-            )}
-          </button>
-        </div>
-      </footer>
       </>
       )}
+
+      <AppBottomNav items={NAV_ITEMS.mahasiswa} active="ajukan" />
     </div>
   );
 }

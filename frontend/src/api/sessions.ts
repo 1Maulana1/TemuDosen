@@ -179,6 +179,7 @@ export interface SessionSummaryContent {
 
 export interface LogbookDetail {
   session_id: number;
+  mahasiswa_id: number;
   mahasiswa_name: string;
   nim: string;
   dosen_name: string;

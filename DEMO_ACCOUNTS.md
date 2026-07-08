@@ -2,6 +2,8 @@
 
 Akun test untuk development & testing lokal. **Jangan gunakan di production!**
 
+> **Semua akun demo memakai satu password yang sama: `demo123`** (dosen, mahasiswa, ketua jurusan).
+
 ## Cara Setup
 
 Jalankan command berikut untuk membuat akun demo:
@@ -11,27 +13,52 @@ cd backend
 python manage.py seed_dev
 ```
 
+Untuk mengisi **data bimbingan demo** (pengajuan, antrean, sesi berlangsung,
+sesi selesai + logbook & saran) agar dashboard dosen dan ketua jurusan terlihat
+berisi, jalankan juga:
+
+```bash
+python manage.py seed_bimbingan
+```
+
+`seed_bimbingan` idempoten per mahasiswa (mahasiswa yang sudah punya pengajuan
+dilewati), jadi aman dijalankan berulang. Skenario yang dibuat: pending, revisi,
+menunggu di antrean, sedang berlangsung, dan selesai (dengan logbook disetujui +
+saran/tindak lanjut).
+
 ## Test Accounts
+
+Password semua akun di bawah: **`demo123`**
 
 ### 🎓 Mahasiswa
 
-| Email | Password | NIM | Pembimbing | Status |
-|-------|----------|-----|-----------|--------|
-| `arifin@students.uii.ac.id` | `mhs123` | 20210001 | Dr. Siti Rahayu | ✅ Approved |
-| `dewi@students.uii.ac.id` | `mhs123` | 20210002 | Dr. Budi Santoso | ✅ Approved |
+| Email | NIM | Pembimbing | Status |
+|-------|-----|-----------|--------|
+| `arifin@students.uii.ac.id` | 20210001 | Dr. Siti Rahayu | ✅ Approved |
+| `dewi@students.uii.ac.id` | 20210002 | Dr. Budi Santoso | ✅ Approved |
+| `rizky@students.uii.ac.id` | 20210003 | Dr. Siti Rahayu | ✅ Approved |
+| `putri@students.uii.ac.id` | 20210004 | Dr. Rina Wijaya | ✅ Approved |
+| `fajar@students.uii.ac.id` | 20210005 | Dr. Budi Santoso | ✅ Approved |
+| `siska@students.uii.ac.id` | 20210006 | Agus Pratama | ✅ Approved |
+| `andi@students.uii.ac.id` | 20210007 | Dr. Maya Sari | ✅ Approved |
+| `nabila@students.uii.ac.id` | 20210008 | Dr. Rina Wijaya | ✅ Approved |
 
 ### 👨‍🏫 Dosen
 
-| Email | Password | NIDN | Status |
-|-------|----------|------|--------|
-| `siti.rahayu@uii.ac.id` | `dosen123` | 0012345678 | ✅ Approved |
-| `budi.santoso@uii.ac.id` | `dosen123` | 0087654321 | ✅ Approved |
+| Email | NIDN | Status |
+|-------|------|--------|
+| `siti.rahayu@uii.ac.id` | 0012345678 | ✅ Approved |
+| `budi.santoso@uii.ac.id` | 0087654321 | ✅ Approved |
+| `rina.wijaya@uii.ac.id` | 0011223344 | ✅ Approved |
+| `agus.pratama@uii.ac.id` | 0055667788 | ✅ Approved |
+| `maya.sari@uii.ac.id` | 0099887766 | ✅ Approved |
 
 ### 👔 Ketua Jurusan
 
-| Email | Password | Status |
-|-------|----------|--------|
-| `ketuajurusan@uii.ac.id` | `ketuajurusan123` | ✅ Approved |
+| Email | Nama | Status |
+|-------|------|--------|
+| `ketuajurusan@uii.ac.id` | Prof. Ahmad Fauzi | ✅ Approved |
+| `kaprodi.ti@uii.ac.id` | Dr. Hendra Gunawan, M.Kom | ✅ Approved |
 
 ### 🔐 Admin
 
@@ -45,7 +72,7 @@ python manage.py seed_dev
 
 ### 1️⃣ Mahasiswa: Ajukan Bimbingan
 ```
-Login sebagai: arifin@students.uii.ac.id / mhs123
+Login sebagai: arifin@students.uii.ac.id / demo123
 → Halaman: /mahasiswa/
 → Tombol: Ajukan Bimbingan
 → Isi: Pilih gejala + upload draft PDF
@@ -53,28 +80,28 @@ Login sebagai: arifin@students.uii.ac.id / mhs123
 
 ### 2️⃣ Dosen: Approve/Reject Pengajuan
 ```
-Login sebagai: siti.rahayu@uii.ac.id / dosen123
+Login sebagai: siti.rahayu@uii.ac.id / demo123
 → Halaman: /dosen/requests
 → Aksi: Approve dengan durasi estimasi, atau Reject dengan catatan
 ```
 
 ### 3️⃣ Mahasiswa: Monitor Antrian
 ```
-Login sebagai: arifin@students.uii.ac.id / mhs123
+Login sebagai: arifin@students.uii.ac.id / demo123
 → Halaman: /mahasiswa/queue
 → Lihat: Nomor antrian, estimasi tunggu, info dosen
 ```
 
 ### 4️⃣ Dosen: Lihat Antrian Hari Ini
 ```
-Login sebagai: siti.rahayu@uii.ac.id / dosen123
+Login sebagai: siti.rahayu@uii.ac.id / demo123
 → Halaman: /dosen/queue
 → Lihat: Mahasiswa menunggu, status sesi, tombol Selesai
 ```
 
 ### 5️⃣ Ketua Jurusan: Dashboard Statistik
 ```
-Login sebagai: ketuajurusan@uii.ac.id / ketuajurusan123
+Login sebagai: ketuajurusan@uii.ac.id / demo123
 → Halaman: /ketua-jurusan/
 → Lihat: Rekap beban kerja dosen, stats sesi
 ```

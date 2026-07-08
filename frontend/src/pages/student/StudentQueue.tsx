@@ -236,10 +236,6 @@ export default function StudentQueue() {
       <main className="flex-1 w-full max-w-4xl mx-auto px-4 sm:px-6 py-6 pb-24 md:pb-8">
         <div className="flex items-center justify-between">
           <h1 className="font-headline font-bold text-2xl text-on-surface">Status Antrian</h1>
-          <button type="button" onClick={loadQueue} aria-label="Refresh"
-            className="p-2 rounded-full hover:bg-gray-100 min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">
-            <span className="material-symbols-outlined text-gray-600">refresh</span>
-          </button>
         </div>
         {!loading && lastUpdated && (
           <p className="text-center text-[11px] text-gray-400 pt-3" aria-live="polite">

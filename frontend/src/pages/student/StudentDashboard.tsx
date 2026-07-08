@@ -23,8 +23,8 @@
  *     (StudentQueueSession tidak mengekspos symptom/topik maupun submission id).
  *   - "Total bimbingan" di kartu dosen = jumlah submission approved (bukan dari
  *     endpoint hitung khusus).
- *   - "Progres Skripsi" — data nyata via GET/PATCH /api/thesis-progress/ (audit T2);
- *     mahasiswa menandai sendiri tiap bab (Bab I–V, di-seed saat akses pertama).
+ *   - "Progres Skripsi" — data nyata via GET /api/thesis-progress/ (audit T2);
+ *     read-only bagi mahasiswa. Penandaan bab (Bab I–V) hanya oleh dosen pembimbing.
  */
 import { useEffect, useState } from 'react';
 import { useRouteLoaderData, useLocation, useNavigate, Link } from 'react-router';
@@ -32,7 +32,7 @@ import type { User } from '../../api/auth';
 import { logout } from '../../api/auth';
 import { fetchMySubmissions, type SubmissionSummary } from '../../api/submissions';
 import { getMyQueue, cancelMyQueue, type StudentQueueSession } from '../../api/sessions';
-import { getThesisProgress, updateThesisChapter, type ThesisProgress } from '../../api/thesis';
+import { getThesisProgress, type ThesisProgress } from '../../api/thesis';
 import StatusBadge from '../../components/StatusBadge';
 import StatCard from '../../components/StatCard';
 import SessionTable, { type SessionTableRow } from '../../components/SessionTable';
@@ -152,21 +152,6 @@ export default function StudentDashboard() {
       .then(setThesis)
       .catch(() => setThesisError('Gagal memuat progres skripsi.'));
   }, []);
-
-  async function handleToggleChapter(id: number, next: boolean) {
-    if (!thesis) return;
-    // optimistic update
-    const prev = thesis;
-    const chapters = thesis.chapters.map((c) => (c.id === id ? { ...c, is_completed: next } : c));
-    const completed = chapters.filter((c) => c.is_completed).length;
-    setThesis({ ...thesis, chapters, completed, percent: chapters.length ? Math.round((completed / chapters.length) * 100) : 0 });
-    try {
-      await updateThesisChapter(id, next);
-    } catch {
-      setThesis(prev);  // rollback
-      setToast('Gagal memperbarui progres skripsi.');
-    }
-  }
 
   useEffect(() => {
     getMyQueue()
@@ -390,7 +375,9 @@ export default function StudentDashboard() {
                   </p>
 
                   <a
-                    href={`mailto:${user.adviser.email}`}
+                    href={`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(user.adviser.email)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-primary
                                text-accent-link text-sm font-bold hover:bg-primary/10 transition-colors min-h-[44px]
                                focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
@@ -422,7 +409,7 @@ export default function StudentDashboard() {
                 <p className="text-xs text-on-surface-variant mb-4">Memuat…</p>
               ) : (
                 <>
-                  <p className="text-xs text-on-surface-variant mb-4">Tandai setiap bab yang sudah selesai.</p>
+                  <p className="text-xs text-on-surface-variant mb-4">Progres bab ditandai oleh dosen pembimbing Anda.</p>
                   <div className="w-full h-2 rounded-full bg-gray-100 mb-5 overflow-hidden">
                     <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${thesis.percent}%` }} />
                   </div>
@@ -430,29 +417,22 @@ export default function StudentDashboard() {
                     {thesis.chapters.map((c) => {
                       const isActive = !c.is_completed && c.id === thesis.chapters.find((x) => !x.is_completed)?.id;
                       return (
-                        <li key={c.id}>
-                          <button
-                            type="button"
-                            onClick={() => handleToggleChapter(c.id, !c.is_completed)}
-                            aria-pressed={c.is_completed}
-                            className="w-full flex items-center gap-3 py-2 text-left rounded-lg hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+                        <li key={c.id} className="flex items-center gap-3 py-2">
+                          <span
+                            className={`material-symbols-outlined text-xl flex-shrink-0 ${c.is_completed ? 'text-success' : isActive ? 'text-primary' : 'text-gray-300'}`}
+                            style={c.is_completed ? { fontVariationSettings: "'FILL' 1" } : undefined}
+                            aria-hidden="true"
                           >
-                            <span
-                              className={`material-symbols-outlined text-xl flex-shrink-0 ${c.is_completed ? 'text-success' : isActive ? 'text-primary' : 'text-gray-300'}`}
-                              style={c.is_completed ? { fontVariationSettings: "'FILL' 1" } : undefined}
-                              aria-hidden="true"
-                            >
-                              {c.is_completed ? 'check_circle' : isActive ? 'radio_button_checked' : 'radio_button_unchecked'}
-                            </span>
-                            <span
-                              className={[
-                                'text-sm',
-                                c.is_completed ? 'line-through text-on-surface-variant' : isActive ? 'text-slate-900 font-bold' : 'text-on-surface-variant',
-                              ].join(' ')}
-                            >
-                              {c.title}
-                            </span>
-                          </button>
+                            {c.is_completed ? 'check_circle' : isActive ? 'radio_button_checked' : 'radio_button_unchecked'}
+                          </span>
+                          <span
+                            className={[
+                              'text-sm',
+                              c.is_completed ? 'line-through text-on-surface-variant' : isActive ? 'text-slate-900 font-bold' : 'text-on-surface-variant',
+                            ].join(' ')}
+                          >
+                            {c.title}
+                          </span>
                         </li>
                       );
                     })}

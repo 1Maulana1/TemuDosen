@@ -77,7 +77,9 @@ export default function StudentProfile() {
                     {adviser.nidn && <p className="text-[11px] text-on-surface-variant">NIDN {adviser.nidn}</p>}
                   </div>
                   {adviser.email && (
-                    <a href={`mailto:${adviser.email}`}
+                    <a href={`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(adviser.email)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="px-3 py-2 border border-primary text-accent-link text-xs font-bold rounded-lg hover:bg-primary/10 min-h-[44px] flex items-center gap-1 flex-shrink-0 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">
                       <span className="material-symbols-outlined text-base" aria-hidden="true">mail</span>
                       Email
