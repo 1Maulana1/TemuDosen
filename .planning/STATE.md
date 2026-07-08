@@ -22,7 +22,7 @@ See `.planning/PROJECT.md` for core value, constraints, and full requirements.
 
 ## Current Position
 
-**Milestone COMPLETE — all 8 phases done (2026-07-07).** Backend **337/337**, frontend **63/63**, `tsc -b` + `npm run build` clean, `manage.py check` clean, no missing migrations. Full-project audit + resolutions in `.planning/AUDIT-2026-07-07.md`.
+**Milestone COMPLETE — all 8 phases done (2026-07-07).** Backend **337/337**, frontend **63/63**, `tsc -b` + `npm run build` clean, `manage.py check` clean, no missing migrations. Full-project audit + resolutions in `docs/AUDIT.md`.
 
 **This session (2026-07-06→07)** — continuing from the remote-integration base:
 - **Phase 7 finished (SC1-SC6).** SC2: `LecturerAdviceHistoryView` + `/dosen/saran` aggregate advice history. SC3-6: campus logbook sync via the TECH-SPEC §2 decoupled adapter (`apps/logbook/services/campus_logbook.py` — Sekawan/KPTI adapters + `build_payload` + `sync_logbook`), CSV/PDF export fallback (`LogbookExportView`), retry job (`retry_campus_logbook_sync`) + admin-dashboard surfacing, runtime admin config (`CampusLogbookConfig` singleton + `CampusLogbookConfigView`). Deferred nits in `07-DEFERRED.md`.
