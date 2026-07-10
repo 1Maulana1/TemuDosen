@@ -13,7 +13,7 @@ from django.urls import path
 
 from .views import (
     LecturerSubmissionListView, SubmissionListCreateView, serve_submission_file,
-    ThesisProgressView, ThesisChapterUpdateView,
+    ThesisProgressView,
     LecturerThesisProgressView, LecturerThesisChapterUpdateView,
 )
 from apps.bimbingan.views import ApproveSubmissionView, RejectSubmissionView
@@ -32,11 +32,9 @@ file_urlpatterns = [
 ]
 
 # Thesis progress (audit T2): registered at /api/thesis-progress/ in config/urls.py
+# Read-only for the student; chapters are marked by the advising lecturer (see below).
 thesis_urlpatterns = [
     path('', ThesisProgressView.as_view(), name='thesis-progress'),
-    # Lecturer-side (advisee) — must precede the '<int:pk>/' student route so
-    # 'lecturer' isn't captured as a chapter id.
     path('lecturer/<int:student_id>/', LecturerThesisProgressView.as_view(), name='thesis-progress-lecturer'),
     path('lecturer/<int:student_id>/<int:pk>/', LecturerThesisChapterUpdateView.as_view(), name='thesis-chapter-update-lecturer'),
-    path('<int:pk>/', ThesisChapterUpdateView.as_view(), name='thesis-chapter-update'),
 ]

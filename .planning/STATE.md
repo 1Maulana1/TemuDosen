@@ -2,8 +2,8 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: All 8 phases COMPLETE — Phase 7 (SC1-6) + Phase 8 (SC1-4) closed 2026-07-06/07; audit T1-T5 addressed (T2 thesis-progress backend built); backend 337 / frontend 63 green
-last_updated: "2026-07-07T00:00:00.000Z"
+status: All 8 phases COMPLETE — Phase 7 (SC1-6) + Phase 8 (SC1-4) closed 2026-07-06/07; audit T1-T5 addressed (T2 thesis-progress backend built); backend 344 / frontend 64 green (2026-07-10 critical re-audit)
+last_updated: "2026-07-10T00:00:00.000Z"
 progress:
   total_phases: 8
   completed_phases: 8
@@ -22,7 +22,12 @@ See `.planning/PROJECT.md` for core value, constraints, and full requirements.
 
 ## Current Position
 
-**Milestone COMPLETE — all 8 phases done (2026-07-07).** Backend **337/337**, frontend **63/63**, `tsc -b` + `npm run build` clean, `manage.py check` clean, no missing migrations. Full-project audit + resolutions in `docs/AUDIT.md`.
+**Milestone COMPLETE — all 8 phases done (2026-07-07).** Backend **344/344**, frontend **64/64**, `tsc -b` + `npm run build` clean, `manage.py check` clean, no missing migrations. Full-project audit + resolutions in `docs/AUDIT.md`.
+
+**Critical re-audit (2026-07-10):** ran every backend/frontend test for real (not static counts) and cross-checked every doc claim (G1-G8, S1-S4, U1-U8, P1, REPORT-01/02) against the actual code — all confirmed genuinely wired, nothing silently reverted. Found and fixed two real gaps:
+1. **Stale test, not a product regression** — `fddb673` (2026-07-08) intentionally made "Progres Skripsi" read-only for students (dosen now marks chapters), but left the old student-toggle frontend test and the now-unused `ThesisChapterUpdateView` backend endpoint (+ its dead frontend API wrapper `updateThesisChapter`) in place. Removed the dead endpoint/URL/tests, rewrote the frontend test to assert read-only behavior instead of toggling.
+2. **Windows-only environment bug (not app code)** — `python-magic==0.4.27` (Unix variant) causes an OS-level access violation on `import magic` in a Windows venv, which is **not catchable by the existing `try/except (ImportError, OSError)`** guard in `apps/submissions/serializers.py`. Since `config/urls.py` transitively imports this on the first URL resolution, it silently hung or crashed *every* test run that touched a URL — which is why full-suite runs looked "stuck" for 30+ minutes. Fixed by pinning `python-magic-bin==0.4.14` for `sys_platform == 'win32'` in `requirements.txt` (Unix/prod keeps `python-magic`, unaffected). Any teammate developing on Windows would hit the exact same multi-hour false lead without this fix.
+- Also resolved a previously-open question (see Todos below): `VideoProvider`/Jitsi **is live-wired**, not dead code — confirmed via direct code read (`method === 'online'` gate in `LecturerDashboard.tsx`, `LecturerQueue.tsx`, `StudentQueue.tsx`).
 
 **This session (2026-07-06→07)** — continuing from the remote-integration base:
 - **Phase 7 finished (SC1-SC6).** SC2: `LecturerAdviceHistoryView` + `/dosen/saran` aggregate advice history. SC3-6: campus logbook sync via the TECH-SPEC §2 decoupled adapter (`apps/logbook/services/campus_logbook.py` — Sekawan/KPTI adapters + `build_payload` + `sync_logbook`), CSV/PDF export fallback (`LogbookExportView`), retry job (`retry_campus_logbook_sync`) + admin-dashboard surfacing, runtime admin config (`CampusLogbookConfig` singleton + `CampusLogbookConfigView`). Deferred nits in `07-DEFERRED.md`.
@@ -105,7 +110,7 @@ Two team branches (`main`, with Farel's Phase 2 UI/consent work, and a teammate'
   - Rewrite `08-VERIFICATION.md` prose — still describes "sesi_selesai structurally always 0", which is stale (the underlying test already asserts a real count).
   - Wire `KetuaJurusanStatsView` to `SessionLogbook` so Phase 8's "approved summaries" column has data (REPORT-01).
   - Build Phase 7's advice-item UI (both sides) — the backend now gets fed real data from logbook approvals, but there's still no page to view/manage it directly.
-  - Confirm whether `JitsiVideoProvider`/`VideoProvider` (new in the Phase 6 pull) is live-wired into the Online session flow or an unfinished v2 spike — VIDEO-01 is nominally out of scope for v1.
+  - ✅ **RESOLVED (2026-07-10)** — `JitsiVideoProvider`/`VideoProvider` is live-wired, not a spike: used in `LecturerDashboard.tsx`, `LecturerQueue.tsx`, `StudentQueue.tsx`, all gated on `method === 'online'`.
 - **UI gaps dari uji manual browser (2026-07-04, dilaporkan user):**
   - ✅ **FIXED (2026-07-04, dd4b932)** — Dosen bottom-nav sekarang konsisten: ekstrak `LecturerBottomNav` component, pakai di LecturerDashboard/LecturerRequests/LecturerQueue. Notifikasi buttons sekarang punya onClick handler yang menampilkan "Fitur notifikasi segera hadir." Mahasiswa nav placeholder (Riwayat Sesi, Profil) sekarang explicit disabled styling (opacity-60, cursor-not-allowed).
 - Requirements traceability table in REQUIREMENTS.md was fully resynced 2026-07-06 (had been stale since 2026-06-21).

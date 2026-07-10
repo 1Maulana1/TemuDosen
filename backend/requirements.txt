@@ -3,7 +3,11 @@ djangorestframework==3.17.*
 django-cors-headers==4.9.*
 django-environ==0.14.*
 django-filter==25.2
-python-magic==0.4.27
+python-magic==0.4.27; sys_platform != 'win32'
+# Windows dev: python-magic needs a system libmagic that isn't there by default —
+# importing it can crash with an OS-level access violation (not a catchable Python
+# exception). python-magic-bin bundles a working libmagic.dll instead.
+python-magic-bin==0.4.14; sys_platform == 'win32'
 google-api-python-client==2.*
 google-auth-oauthlib==1.*
 google-auth-httplib2==0.2.*

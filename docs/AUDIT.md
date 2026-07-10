@@ -97,6 +97,11 @@ COMPLETE**. **Perbaikan:** resync STATE.md (Code-Ahead-of-Process table + test e
   0004, seed Bab I–V) + `GET/PATCH /api/thesis-progress/`; StudentDashboard "Progres
   Skripsi" kini data nyata yang bisa ditandai sendiri (optimistic update). 9 backend + 2
   frontend test.
+  > **Update 2026-07-08 (`fddb673`) + 2026-07-10 (dibersihkan):** desain berubah —
+  > penandaan bab kini otoritatif di sisi **dosen** (scoped ke advisee-nya), mahasiswa
+  > read-only. Endpoint `PATCH /api/thesis-progress/<id>/` (student-write) yang jadi
+  > yatim sejak perubahan itu sudah dihapus 2026-07-10, bersama test & wrapper API
+  > frontend-nya yang tidak lagi terpakai.
 - **T3 — ✅ DIPERBAIKI**: thread calendar hanya spawn saat `GOOGLE_CALENDAR_ENABLED`;
   suite penuh kini **300 passed, 0 warning "database table is locked"**. `test_calendar.py`
   kelas sync opt-in via fixture `_calendar_enabled`.

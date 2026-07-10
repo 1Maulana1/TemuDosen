@@ -3,8 +3,8 @@ Audit T2 — thesis (skripsi) progress checklist. Replaces the previously-static
 "Progres Skripsi" mock on the student dashboard with a real, per-student model.
 
 Covers:
-  GET   /api/thesis-progress/        → ThesisProgressView (seed + percent)
-  PATCH /api/thesis-progress/<id>/   → ThesisChapterUpdateView (toggle)
+  GET /api/thesis-progress/ → ThesisProgressView (seed + percent, read-only for
+  the student — chapters are marked by the advising lecturer, see below).
 """
 import pytest
 from rest_framework.test import APIClient
@@ -41,10 +41,12 @@ class TestThesisProgressView:
         assert ThesisChapter.objects.filter(student=student_user).count() == 5
 
     def test_percent_reflects_completed_chapters(self, student_user):
-        client_for(student_user).get(URL)
+        client_for(student_user).get(URL)  # seed
         chapters = list(ThesisChapter.objects.filter(student=student_user).order_by('order'))
-        client_for(student_user).patch(f'{URL}{chapters[0].id}/', {'is_completed': True}, format='json')
-        client_for(student_user).patch(f'{URL}{chapters[1].id}/', {'is_completed': True}, format='json')
+        chapters[0].is_completed = True
+        chapters[0].save(update_fields=['is_completed'])
+        chapters[1].is_completed = True
+        chapters[1].save(update_fields=['is_completed'])
 
         resp = client_for(student_user).get(URL)
         assert resp.data['completed'] == 2
@@ -52,44 +54,6 @@ class TestThesisProgressView:
 
     def test_lecturer_forbidden(self, lecturer_user):
         assert client_for(lecturer_user).get(URL).status_code == 403
-
-
-@pytest.mark.django_db
-class TestThesisChapterUpdateView:
-    def _chapter(self, student):
-        client_for(student).get(URL)  # seed
-        return ThesisChapter.objects.filter(student=student).order_by('order').first()
-
-    def test_student_can_toggle_own_chapter(self, student_user):
-        chapter = self._chapter(student_user)
-        resp = client_for(student_user).patch(f'{URL}{chapter.id}/', {'is_completed': True}, format='json')
-        assert resp.status_code == 200
-        assert resp.data['is_completed'] is True
-        chapter.refresh_from_db()
-        assert chapter.is_completed is True
-
-    def test_toggle_back_to_incomplete(self, student_user):
-        chapter = self._chapter(student_user)
-        chapter.is_completed = True
-        chapter.save(update_fields=['is_completed'])
-        resp = client_for(student_user).patch(f'{URL}{chapter.id}/', {'is_completed': False}, format='json')
-        assert resp.status_code == 200
-        assert resp.data['is_completed'] is False
-
-    def test_non_boolean_rejected(self, student_user):
-        chapter = self._chapter(student_user)
-        resp = client_for(student_user).patch(f'{URL}{chapter.id}/', {'is_completed': 'yes'}, format='json')
-        assert resp.status_code == 400
-
-    def test_cannot_toggle_another_students_chapter(self, student_user, second_approved_student):
-        chapter = self._chapter(student_user)
-        resp = client_for(second_approved_student).patch(
-            f'{URL}{chapter.id}/', {'is_completed': True}, format='json')
-        assert resp.status_code == 404  # scoped to own → looks nonexistent
-
-    def test_missing_chapter_404(self, student_user):
-        resp = client_for(student_user).patch(f'{URL}999999/', {'is_completed': True}, format='json')
-        assert resp.status_code == 404
 
 
 # ── Lecturer-side (advisee) thesis progress ───────────────────────────────────

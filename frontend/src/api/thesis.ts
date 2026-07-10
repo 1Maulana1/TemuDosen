@@ -24,18 +24,6 @@ export async function getThesisProgress(): Promise<ThesisProgress> {
   return res.json();
 }
 
-export async function updateThesisChapter(id: number, isCompleted: boolean): Promise<ThesisChapter> {
-  const res = await apiRequest(`/api/thesis-progress/${id}/`, {
-    method: 'PATCH',
-    body: JSON.stringify({ is_completed: isCompleted }),
-  });
-  if (!res.ok) {
-    const b = await res.json().catch(() => ({}));
-    throw new Error((b as { detail?: string }).detail ?? 'Gagal memperbarui progres.');
-  }
-  return res.json();
-}
-
 // ── Lecturer-side (dosen menandai bab skripsi mahasiswa bimbingannya) ──────────
 
 export async function getStudentThesisProgress(studentId: number): Promise<ThesisProgress> {

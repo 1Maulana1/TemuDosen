@@ -75,8 +75,10 @@ dinamis ("Lihat sesi (menunggu)") atau tampilkan hanya setelah sesi berjalan/DON
 
 ## ✅ Terverifikasi BAIK (live, kode terbaru)
 
-- **Mahasiswa**: bell + badge (2) + dropdown + isi benar; Progres Skripsi nyata &
-  interaktif (klik Bab II → 0%→20%, PATCH terkirim); status riwayat akurat
+- **Mahasiswa**: bell + badge (2) + dropdown + isi benar; Progres Skripsi nyata
+  (⚠️ sejak `fddb673`, 2026-07-08, ini jadi **read-only** bagi mahasiswa — bab
+  ditandai oleh dosen pembimbing, bukan klik-toggle mahasiswa seperti temuan asli
+  di baris ini); status riwayat akurat
   (MENUNGGU/SELESAI/DISETUJUI dari status Session); aksi visibility + menu_book;
   kartu antrean aktif (posisi, ±menit, batalkan); detail sesi: ringkasan
   terstruktur (Saran Dosen / Area Perbaikan), saran + catatan bukti, Tandai

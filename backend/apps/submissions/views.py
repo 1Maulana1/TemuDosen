@@ -235,27 +235,6 @@ class ThesisProgressView(APIView):
         })
 
 
-class ThesisChapterUpdateView(APIView):
-    """PATCH /api/thesis-progress/<id>/ — student toggles one of their own chapters."""
-    permission_classes = [IsStudent]
-
-    def patch(self, request, pk):
-        try:
-            chapter = ThesisChapter.objects.get(pk=pk, student=request.user)
-        except ThesisChapter.DoesNotExist:
-            return Response({'detail': 'Bab tidak ditemukan.'}, status=status.HTTP_404_NOT_FOUND)
-
-        is_completed = request.data.get('is_completed')
-        if not isinstance(is_completed, bool):
-            return Response(
-                {'detail': "Field 'is_completed' (boolean) wajib diisi."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        chapter.is_completed = is_completed
-        chapter.save(update_fields=['is_completed', 'updated_at'])
-        return Response(_serialize_chapter(chapter))
-
-
 # ── Lecturer-side thesis progress ──────────────────────────────────────────────
 #
 # Penandaan bab skripsi kini otoritatif di sisi dosen pembimbing (mahasiswa hanya

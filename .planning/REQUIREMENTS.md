@@ -105,7 +105,7 @@ Deferred to future release. Tracked but not in current roadmap.
 | Speaker diarization | Merged transcript is sufficient for MVP; diarization is complex and error-prone |
 | AI quality scoring of sessions | Out of scope per PRD v2.2 explicit exclusion |
 
-> Note (2026-07-06): a `JitsiVideoProvider`/`VideoProvider` component landed as part of the Phase 6 pull despite VIDEO-01 being out of scope for v1 — worth confirming with the team whether this is dead code, an early v2 spike, or actually wired into the Online session flow before the next audit.
+> Note (2026-07-06, resolved 2026-07-10): a `JitsiVideoProvider`/`VideoProvider` component landed as part of the Phase 6 pull despite VIDEO-01 being out of scope for v1. Confirmed via code read: it **is** live-wired into the Online session flow (`LecturerDashboard.tsx`, `LecturerQueue.tsx`, `StudentQueue.tsx`, gated on `method === 'online'`), not dead code or a spike.
 
 ## Traceability
 

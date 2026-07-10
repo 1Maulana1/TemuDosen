@@ -1,8 +1,10 @@
 /**
  * Vitest test for the StudentDashboard "Progres Skripsi" section — audit T2:
  * real thesis-chapter checklist backed by /api/thesis-progress/ (was static mock).
+ * Read-only for the student; chapters are marked by the advising lecturer
+ * (see LecturerSessionDetail.tsx), so this only covers rendering here.
  */
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { MemoryRouter } from 'react-router';
@@ -46,24 +48,10 @@ describe('StudentDashboard — Progres Skripsi (T2)', () => {
     expect(screen.getByText('33%')).toBeInTheDocument();  // 1 of 3 done
   });
 
-  it('toggling a chapter PATCHes it and updates the percent optimistically', async () => {
-    let patchedId: string | undefined;
-    let patchedBody: unknown;
-    server.use(
-      http.patch('/api/thesis-progress/:id/', async ({ params, request }) => {
-        patchedId = params.id as string;
-        patchedBody = await request.json();
-        return HttpResponse.json({ id: 2, order: 2, title: 'Bab II — Tinjauan Pustaka', is_completed: true });
-      })
-    );
-
+  it('is read-only for the student (no way to toggle a chapter)', async () => {
     render(<MemoryRouter><StudentDashboard /></MemoryRouter>);
     await waitFor(() => expect(screen.getByText('Bab II — Tinjauan Pustaka')).toBeInTheDocument());
 
-    fireEvent.click(screen.getByText('Bab II — Tinjauan Pustaka'));
-
-    await waitFor(() => expect(screen.getByText('67%')).toBeInTheDocument());  // 2 of 3
-    expect(patchedId).toBe('2');
-    expect(patchedBody).toEqual({ is_completed: true });
+    expect(screen.queryByRole('button', { name: /Bab II/ })).not.toBeInTheDocument();
   });
 });
