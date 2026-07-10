@@ -60,13 +60,22 @@ Password semua akun di bawah: **`demo123`**
 | `ketuajurusan@uii.ac.id` | Prof. Ahmad Fauzi | ✅ Approved |
 | `kaprodi.ti@uii.ac.id` | Dr. Hendra Gunawan, M.Kom | ✅ Approved |
 
-### 🔐 Admin
+### 🔐 Admin & Ketua Jurusan (dari `seed_admin.py`)
 
-| Email | Status | Source |
-|-------|--------|--------|
-| `ketuajurusan@temudosen.ac.id` | ✅ Approved | `seed_admin.py` |
+Akun-akun ini **bukan** bagian dari `seed_dev` (password `demo123`) — dibuat oleh
+`seed_admin.py` dengan password terpisah yang di-hardcode di kode
+(`'ChangeMe123!'`), bukan dari `.env`/`ADMIN_DEFAULT_PASSWORD` seperti yang
+tertulis sebelumnya di sini (diverifikasi langsung dari kode dan login nyata,
+2026-07-10 — tidak ada env var seperti itu di `seed_admin.py`).
 
-> **Note:** Admin account credentials ditetapkan di `.env` (lihat `ADMIN_DEFAULT_PASSWORD`)
+| Email | Role | Password | Status |
+|-------|------|----------|--------|
+| `admin@temudosen.ac.id` | **Admin** | `ChangeMe123!` | ✅ Approved |
+| `ketuajurusan@temudosen.ac.id` | **Ketua Jurusan** (bukan Admin — role-nya `ketua_jurusan`) | `ChangeMe123!` | ✅ Approved |
+
+> Kalau butuh akun Ketua Jurusan untuk demo cepat, lebih gampang pakai
+> `ketuajurusan@uii.ac.id` / `demo123` dari `seed_dev` di atas — sama-sama
+> role Ketua Jurusan, tapi password konsisten dengan akun lain.
 
 ## Workflow Testing
 

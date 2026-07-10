@@ -10,7 +10,7 @@ dikumpulkan di sini.
 |------|--------|
 | [`DEPLOYMENT.md`](DEPLOYMENT.md) | Cara deploy frontend (Cloudflare Pages) + backend (Railway/Render/Tunnel), env var, aturan cookie cross-domain |
 | [`HOSTING-MATRIX.md`](HOSTING-MATRIX.md) | Perbandingan **semua kombinasi** hosting frontend+backend (Cloudflare Pages/Vercel/Netlify/same-origin × Railway/Render/Tunnel/Supabase) — dipakai kalau butuh pilih opsi sesuai situasi (demo cepat vs jangka panjang), bukan tutorial langkah-demi-langkah (itu ada di `DEPLOYMENT.md`) |
-| [`BACKLOG.md`](BACKLOG.md) | Semua gap/ide yang pernah ditemukan (audit 2026-07-07) — mayoritas sudah **✅ RESOLVED** (ada catatan di bagian atas file), sisa terbuka: `U7`, `N-04`, `S3` (semua prioritas rendah, sengaja belum dikerjakan) |
+| [`BACKLOG.md`](BACKLOG.md) | Semua gap/ide yang pernah ditemukan (audit 2026-07-07 + live testing 2026-07-10) — mayoritas sudah **✅ RESOLVED** (ada catatan di bagian atas file), sisa terbuka: `U7`, `N-04`, `S3` (prioritas rendah) + `I1` (integrasi belum pernah diuji dengan kredensial asli) |
 | [`UI-REVIEW.md`](UI-REVIEW.md) | Temuan review UI langsung dari browser (2026-07-07) — U1–U8, sebagian sudah diperbaiki (ditandai di file) |
 | [`AUDIT.md`](AUDIT.md) | Hasil audit penuh 8 fase (requirement vs implementasi) |
 
@@ -31,6 +31,16 @@ dikumpulkan di sini.
 - **`VideoProvider`/Jitsi (panggilan video sesi online) sudah live-wired**, bukan
   kode mati — dipakai di dashboard/antrean dosen & antrean mahasiswa, ter-gate oleh
   `method === 'online'`.
+- **Live testing penuh 4 role selesai (2026-07-10)** — semua alur inti (approve/
+  tolak/revisi, mulai&rekam+fallback tanpa mic, selesai sesi, ringkasan manual,
+  tandai bab skripsi, saran+tindak lanjut, export CSV/PDF, Emergency Cancel, user
+  approval) diverifikasi bekerja end-to-end lewat browser sungguhan, bukan cuma
+  baca kode. Detail di `BACKLOG.md` bagian "Live end-to-end testing findings".
+- **Integrasi Google Calendar / Logbook Kampus / STT-LLM semuanya `Nonaktif`** di
+  semua environment sejauh ini — fallback UI-nya sudah benar dan teruji, tapi
+  jalur "aktif"-nya (OAuth Google, push API kampus, transkripsi+ringkasan AI)
+  belum pernah diuji dengan kredensial asli oleh siapa pun. Lihat `BACKLOG.md`
+  item `I1` sebelum mengandalkan fitur ini untuk demo/produksi.
 
 ### Catatan lingkungan Windows (penting untuk kontributor baru)
 

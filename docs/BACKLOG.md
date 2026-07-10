@@ -176,6 +176,52 @@ concurrency. Low priority; wrap the read-modify-write in `transaction.atomic()` 
 - **U7/U8 💡** — pre-hydration submit click swallowed; menu_book shown for WAITING
   sessions (ambiguous expectation).
 
+## Live end-to-end testing findings (audit 2026-07-10)
+
+Full manual walkthrough of all 4 roles (mahasiswa, dosen, ketua jurusan, admin) —
+actually logging in, submitting forms, clicking through complete flows (not just
+reading code). Local dev DB, `seed_dev` + `seed_bimbingan` data.
+
+> **Verified working end-to-end (no action needed):** login/logout all roles ·
+> notifications (real data, not placeholder) · ajukan bimbingan → approve/tolak/
+> revisi · mulai sesi with consent modal, graceful "tanpa rekaman" fallback when
+> mic unavailable · selesai sesi · manual ringkasan entry · thesis-chapter marking
+> (dosen side) · advice items add + "Tandai Selesai" (student side) · riwayat
+> saran + compliance stats · ketua jurusan CSV/PDF export (incl. approved-summary
+> column) + period filter · admin Emergency Cancel (tested live — cancelled 2 real
+> sessions) · admin user approval · admin Katalog Gejala inline edit · admin Log
+> Sistem filter + cleanup · **video call (Jitsi)** — confirmed a real
+> `meet.jit.si` iframe renders when a session is `status=in_progress` +
+> `method=online` (not a stub/placeholder).
+
+### I1 — 🔧 Three integrations are disabled in every environment and their "on" code path has never been exercised live
+`GOOGLE_CALENDAR_ENABLED`, `CAMPUS_LOGBOOK_ENABLED`, `STT_LLM_ENABLED` are all
+`False` locally (no `.env` credentials configured), and — as far as this audit
+could determine — nobody has run any of them against real credentials in any
+environment. The disabled-state fallback UI is correct and well-built (verified
+live: Google Calendar shows "Integrasi belum diaktifkan di server ini.", Campus
+Logbook shows "Sinkron otomatis belum berhasil — unduh CSV/PDF manual", STT/LLM
+falls back cleanly to the dosen's manual-summary form). But that means the
+*enabled* code paths — actual Google OAuth token exchange, actual campus API
+push, actual faster-whisper transcription + Anthropic summarization — are
+untested by any human, ever, in this codebase's history. **Action for whoever
+picks this up:** before relying on any of these for a real demo/production use,
+get real credentials into a `.env` (`GOOGLE_CLIENT_ID`/`SECRET`, campus API
+token, `ANTHROPIC_API_KEY` + Redis/Celery worker running) and walk each flow
+live at least once. Treat "it's wired in the code" and "it works" as separate
+claims until that happens.
+
+### I2 — ✅ Fixed: DEMO_ACCOUNTS.md had wrong admin credentials
+Doc claimed admin password came from `.env`/`ADMIN_DEFAULT_PASSWORD` — that env
+var doesn't exist anywhere in `seed_admin.py`; the password is hardcoded as
+`'ChangeMe123!'`. The doc also listed `ketuajurusan@temudosen.ac.id` under the
+"Admin" heading, but that account's actual role is `ketua_jurusan`, not `admin`
+— the real admin account (`admin@temudosen.ac.id`) wasn't documented with a
+working password anywhere. Fixed in `DEMO_ACCOUNTS.md` 2026-07-10 (verified via
+live login, not just code reading).
+
+---
+
 ## Priority recap (for whoever picks this up)
 
 **Highest value, small effort (do first):**
@@ -187,6 +233,11 @@ concurrency. Low priority; wrap the read-modify-write in `transaction.atomic()` 
 - G5 (recording retention), G6 (STT pipeline retry).
 
 **Low priority / polish:** N-04, G7, G8.
+
+**Before any real demo/production use of AI or integration features:** I1 —
+Google Calendar, Campus Logbook, and STT/LLM are only verified in their
+*disabled* fallback state. Get real credentials configured and run each flow
+live at least once before trusting them in front of a stakeholder.
 
 **v2 milestone (large):** P2 (defense scheduling) + the deferred set (VIDEO-01,
 NOTIF-01, PLAG-01, MOBILE-01, DIAR-01, SCORE-01).
