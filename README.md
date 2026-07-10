@@ -42,8 +42,9 @@ TemuDosen/
 │   ├── config/           # Settings, URLs utama
 │   └── manage.py
 ├── frontend/             # (coming soon)
-├── PANDUAN_TIM.md        # Panduan lengkap per anggota tim (Bahasa Indonesia)
-├── INTERFACES.md         # Kontrak model & fungsi antar anggota tim
+├── docs/                 # Dokumentasi tim (deploy, panduan, kontrak, audit, dll)
+│   ├── PANDUAN_TIM.md    # Panduan lengkap per anggota tim (Bahasa Indonesia)
+│   └── INTERFACES.md     # Kontrak model & fungsi antar anggota tim
 └── .planning/            # Dokumen perencanaan proyek
     ├── ROADMAP.md
     ├── PROJECT.md
@@ -120,9 +121,11 @@ Server berjalan di `http://127.0.0.1:8000`
 
 ## Untuk Anggota Tim
 
-Baca **[PANDUAN_TIM.md](PANDUAN_TIM.md)** untuk panduan lengkap tugas masing-masing anggota tim dalam Bahasa Indonesia.
+Baca **[docs/PANDUAN_TIM.md](docs/PANDUAN_TIM.md)** untuk panduan lengkap tugas masing-masing anggota tim dalam Bahasa Indonesia.
 
-Baca **[INTERFACES.md](INTERFACES.md)** untuk kontrak model dan fungsi antar anggota sebelum mulai coding.
+Baca **[docs/INTERFACES.md](docs/INTERFACES.md)** untuk kontrak model dan fungsi antar anggota sebelum mulai coding.
+
+Dokumentasi lengkap lainnya (deploy, demo accounts, audit, backlog) ada di **[docs/README.md](docs/README.md)**.
 
 ## Tim
 

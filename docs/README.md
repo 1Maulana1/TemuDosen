@@ -13,6 +13,12 @@ dikumpulkan di sini.
 | [`BACKLOG.md`](BACKLOG.md) | Semua gap/ide yang pernah ditemukan (audit 2026-07-07 + live testing 2026-07-10) — mayoritas sudah **✅ RESOLVED** (ada catatan di bagian atas file), sisa terbuka: `U7`, `N-04`, `S3` (prioritas rendah) + `I1` (integrasi belum pernah diuji dengan kredensial asli) |
 | [`UI-REVIEW.md`](UI-REVIEW.md) | Temuan review UI langsung dari browser (2026-07-07) — U1–U8, sebagian sudah diperbaiki (ditandai di file) |
 | [`AUDIT.md`](AUDIT.md) | Hasil audit penuh 8 fase (requirement vs implementasi) |
+| [`DEMO_ACCOUNTS.md`](DEMO_ACCOUNTS.md) | Akun demo semua role + password (`demo123` untuk `seed_dev`, `ChangeMe123!` untuk admin/ketua-jurusan dari `seed_admin.py`) — diverifikasi via login nyata 2026-07-10 |
+| [`CARA_MENJALANKAN.md`](CARA_MENJALANKAN.md) | Cara menjalankan aplikasi secara lokal — manual atau Docker |
+| [`PANDUAN_TIM.md`](PANDUAN_TIM.md) | Panduan lengkap pembagian tugas per anggota tim (Bahasa Indonesia) |
+| [`INTERFACES.md`](INTERFACES.md) | Kontrak model & fungsi antar anggota tim — sumber kebenaran nama field/fungsi |
+| [`KERJA_PARALEL.md`](KERJA_PARALEL.md) | Strategi kerja paralel antar anggota tim (kontrak dulu, stub/mock, integrasi di akhir) |
+| [`TemuDosen_PRD_v2.2.md`](TemuDosen_PRD_v2.2.md) | Product Requirements Document — spesifikasi awal fitur & scope proyek |
 
 ## Status singkat (per catatan terakhir, 2026-07-10)
 

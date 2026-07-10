@@ -133,4 +133,4 @@ python manage.py seed_dev
 
 - **Source code**: `backend/apps/accounts/management/commands/seed_dev.py`
 - **Settings**: `backend/config/settings/*.py` (DATABASES, INSTALLED_APPS, dll)
-- **Documentation lengkap**: Baca `README.md` atau `PANDUAN_TIM.md`
+- **Documentation lengkap**: Baca `README.md` (root repo) atau `PANDUAN_TIM.md`
