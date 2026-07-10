@@ -30,6 +30,10 @@ CSRF_COOKIE_SAMESITE = COOKIE_SAMESITE
 SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_SSL_REDIRECT = True
+# Di belakang reverse proxy (Railway/Render), TLS diterminasi di proxy dan
+# request sampai ke gunicorn sebagai HTTP. Tanpa ini SECURE_SSL_REDIRECT
+# menghasilkan redirect loop 301.
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # CORS — production origins only
 CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[])
