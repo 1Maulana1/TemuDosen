@@ -69,6 +69,10 @@ export async function login(email: string, password: string): Promise<User> {
     throw new Error(data.detail ?? 'Login gagal. Periksa email dan password Anda.');
   }
 
+  // Django merotasi CSRF token saat login — token in-memory yang lama jadi
+  // tidak valid untuk POST berikutnya, jadi ambil ulang.
+  await getCSRFToken();
+
   return data as User;
 }
 
@@ -78,6 +82,8 @@ export async function login(email: string, password: string): Promise<User> {
  */
 export async function logout(): Promise<void> {
   await apiRequest('/api/auth/logout/', { method: 'POST' });
+  // Session berganti setelah logout — segarkan token CSRF in-memory.
+  await getCSRFToken();
 }
 
 /**
