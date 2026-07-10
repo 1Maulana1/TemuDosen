@@ -1,0 +1,35 @@
+# Render Blueprint — deploy backend TemuDosen (Django + PostgreSQL, plan free)
+# Cara pakai: dashboard.render.com → New → Blueprint → pilih repo ini.
+# Catatan free tier: service tidur saat idle (cold start ~30 dtk) dan
+# PostgreSQL free kedaluwarsa ~30 hari. Migrate + seed_admin dijalankan
+# di start command karena preDeployCommand tidak tersedia di plan free.
+
+services:
+  - type: web
+    name: temudosen-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerCommand: sh -c "python manage.py migrate && python manage.py seed_admin && gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 2"
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.prod
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: temudosen-db
+          property: connectionString
+      # Leading dot = wildcard, aman walau Render menambah suffix pada nama service
+      - key: ALLOWED_HOSTS
+        value: .onrender.com
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://temudosen.vercel.app
+      - key: COOKIE_SAMESITE
+        value: "None"
+      - key: FRONTEND_URL
+        value: https://temudosen.vercel.app
+
+databases:
+  - name: temudosen-db
+    plan: free
