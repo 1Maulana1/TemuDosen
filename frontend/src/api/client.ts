@@ -11,12 +11,22 @@
  * Read the csrftoken cookie value.
  * Django sets this via GET /api/csrf/ before the first POST (Pitfall 3 prevention).
  */
+// Fallback in-memory token: saat backend di domain lain (cross-site, mis.
+// Vercel ↔ Railway), document.cookie tidak bisa membaca cookie csrftoken milik
+// domain backend, jadi nilai token diambil dari body respons /api/csrf/.
+let csrfTokenMemory = '';
+
+/** Simpan token CSRF dari body respons /api/csrf/ (dipakai saat cross-site). */
+export function setCsrfToken(token: string): void {
+  csrfTokenMemory = token;
+}
+
 export function getCsrfToken(): string {
   return (
     document.cookie
       .split(';')
       .find((c) => c.trim().startsWith('csrftoken='))
-      ?.split('=')[1] ?? ''
+      ?.split('=')[1] ?? csrfTokenMemory
   );
 }
 

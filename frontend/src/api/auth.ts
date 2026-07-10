@@ -6,7 +6,7 @@
  * logout: POST /api/auth/logout/
  * getCurrentUser: GET /api/auth/me/ — returns User or null
  */
-import { apiRequest } from './client';
+import { apiRequest, setCsrfToken } from './client';
 
 export interface AdviserInfo {
   id: number;
@@ -36,7 +36,11 @@ export interface User {
  */
 export async function getCSRFToken(): Promise<void> {
   try {
-    await apiRequest('/api/csrf/');
+    const res = await apiRequest('/api/csrf/');
+    // Cross-site (frontend & backend beda domain): cookie csrftoken tidak
+    // terbaca dari JS, jadi ambil nilainya dari body respons.
+    const data = await res.json().catch(() => null);
+    if (data?.csrfToken) setCsrfToken(data.csrfToken);
   } catch {
     // Non-fatal: cookie may already be set from a previous visit.
     // The request will fail gracefully if the backend is unreachable.

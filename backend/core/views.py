@@ -19,5 +19,8 @@ def csrf_cookie(request):
     Forces Django to set the csrftoken cookie in the response.
     Called on app mount (main.tsx) before the first POST to prevent CSRF failures.
     """
-    get_token(request)  # forces the cookie to be set in the response
-    return Response({'detail': 'CSRF cookie set'})
+    # Token juga dikirim di body: saat frontend di domain lain (mis. Vercel),
+    # JS tidak bisa membaca cookie milik domain backend, jadi nilai token
+    # harus diambil dari respons ini dan disimpan di memori.
+    token = get_token(request)  # forces the cookie to be set in the response
+    return Response({'detail': 'CSRF cookie set', 'csrfToken': token})
