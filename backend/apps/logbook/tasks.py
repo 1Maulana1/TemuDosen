@@ -123,3 +123,19 @@ def dispatch_pipeline(logbook):
         return False
     _enqueue(transcribe_session, logbook.id)
     return True
+
+
+def dispatch_summarize(logbook):
+    """Ulang tahap ringkasan saja untuk logbook yang sudah punya transkrip.
+
+    Dipakai RetryPipelineView saat dosen minta "ringkas ulang dari transkrip" —
+    hemat: tidak mengulang STT. Kontrak sama dengan dispatch_pipeline: no-op
+    (return False) bila fitur mati atau celery tak terpasang.
+    """
+    from django.conf import settings
+    from config import celery_app
+
+    if not settings.STT_LLM_ENABLED or celery_app is None:
+        return False
+    _enqueue(summarize_session, logbook.id)
+    return True

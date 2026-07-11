@@ -50,6 +50,35 @@ class TestRetryPipelineView:
         resp = client_for(lecturer_user).post(url(lb.session_id))
         assert resp.status_code == 400
 
+    def test_retry_with_transcript_resummarizes_only(self, lecturer_user, pending_submission):
+        # Transkrip sudah ada → tahap LLM saja yang diulang, status → SUMMARIZING.
+        lb = _failed_logbook(pending_submission)
+        lb.transcript = 'halo, bimbingan bab dua'
+        lb.save(update_fields=['transcript'])
+        resp = client_for(lecturer_user).post(url(lb.session_id))
+        assert resp.status_code == 200
+        lb.refresh_from_db()
+        assert lb.status == SessionLogbook.Status.SUMMARIZING
+
+    def test_retry_ready_for_review_with_transcript(self, lecturer_user, pending_submission):
+        # Dosen minta "ringkas ulang dari transkrip" pada draf yang siap tinjau.
+        lb = _failed_logbook(pending_submission)
+        lb.status = SessionLogbook.Status.READY_FOR_REVIEW
+        lb.transcript = 'halo, bimbingan bab dua'
+        lb.save(update_fields=['status', 'transcript'])
+        resp = client_for(lecturer_user).post(url(lb.session_id))
+        assert resp.status_code == 200
+        lb.refresh_from_db()
+        assert lb.status == SessionLogbook.Status.SUMMARIZING
+
+    def test_retry_ready_for_review_without_transcript_rejected(self, lecturer_user, pending_submission):
+        # READY_FOR_REVIEW tanpa transkrip & tanpa rekaman → tidak ada yang bisa diulang.
+        lb = _failed_logbook(pending_submission, with_recording=False)
+        lb.status = SessionLogbook.Status.READY_FOR_REVIEW
+        lb.save(update_fields=['status'])
+        resp = client_for(lecturer_user).post(url(lb.session_id))
+        assert resp.status_code == 400
+
     def test_other_lecturer_forbidden(self, lecturer_user, approved_lecturer, pending_submission):
         lb = _failed_logbook(pending_submission)
         resp = client_for(approved_lecturer).post(url(lb.session_id))

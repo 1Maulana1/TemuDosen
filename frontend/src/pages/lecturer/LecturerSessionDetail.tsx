@@ -371,7 +371,9 @@ export default function LecturerSessionDetail() {
                     <p className="text-[11px] text-on-surface-variant">
                       {data.status === 'ready_for_review'
                         ? 'Draf ringkasan otomatis siap ditinjau — perbaiki bila perlu, lalu setujui.'
-                        : 'Transkripsi & ringkasan otomatis belum tersedia — tuliskan ringkasan hasil bimbingan secara manual di bawah ini.'}
+                        : data.status === 'transcribing' || data.status === 'summarizing'
+                          ? 'Pipeline AI sedang memproses rekaman — muat ulang halaman beberapa saat lagi untuk melihat draf ringkasan.'
+                          : 'Transkripsi & ringkasan otomatis belum tersedia — tuliskan ringkasan hasil bimbingan secara manual di bawah ini.'}
                     </p>
                     {data.status === 'failed' && data.has_recording && (
                       <button type="button" onClick={handleRetry} disabled={retrying}
@@ -381,9 +383,29 @@ export default function LecturerSessionDetail() {
                       </button>
                     )}
                     {data.status === 'ready_for_review' && (
-                      <div className="border border-gray-100 rounded-xl p-3 bg-gray-50/60">
-                        <SummaryContent content={data.summary_raw} showGroundedness />
-                      </div>
+                      <>
+                        {data.transcript && (
+                          <details className="border border-gray-100 rounded-xl bg-gray-50/60">
+                            <summary className="cursor-pointer select-none p-3 text-xs font-bold text-slate-700 flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none rounded-xl">
+                              <span className="material-symbols-outlined text-base text-primary" aria-hidden="true">description</span>
+                              Transkrip AI — bahan draf ringkasan
+                            </summary>
+                            <p className="px-3 pb-3 text-sm text-slate-600 whitespace-pre-wrap max-h-56 overflow-y-auto">
+                              {data.transcript}
+                            </p>
+                          </details>
+                        )}
+                        <div className="border border-gray-100 rounded-xl p-3 bg-gray-50/60">
+                          <SummaryContent content={data.summary_raw} showGroundedness />
+                        </div>
+                        {data.transcript && (
+                          <button type="button" onClick={handleRetry} disabled={retrying}
+                            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-primary text-primary text-xs font-bold hover:bg-primary/5 disabled:opacity-60 min-h-[40px] focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">
+                            <span className="material-symbols-outlined text-base" aria-hidden="true">autorenew</span>
+                            {retrying ? 'Memproses…' : 'Ringkas ulang dari transkrip'}
+                          </button>
+                        )}
+                      </>
                     )}
                     <textarea
                       value={summaryDraft}
