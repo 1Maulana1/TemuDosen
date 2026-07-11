@@ -10,7 +10,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.accounts.permissions import IsAdmin, IsLecturer, IsStudent
+from apps.accounts.permissions import IsAdmin, IsApprovedUser, IsLecturer, IsStudent
 from apps.bimbingan.models import ActionItem, SystemLog
 from apps.bimbingan.services.notification import notify_student
 
@@ -260,12 +260,12 @@ class StudentLogbookView(APIView):
 class LogbookExportView(APIView):
     """GET /api/logbook/<session_id>/export/?format=csv|pdf — SC4 (LOGBOOK-02).
 
-    Fallback ekspor ringkasan yang disetujui untuk diunggah manual ke logbook
-    kampus ketika sinkron API tidak tersedia/gagal. Isinya sama persis dengan
-    payload yang akan dikirim ke API kampus (build_payload) — jadi yang diunggah
-    manual == yang mesin kirim. Hanya dosen pembimbing sesi.
+    Ekspor ringkasan yang disetujui — dosen pembimbing sesi ATAU mahasiswa
+    pemilik sesi. Isinya sama persis dengan payload yang akan dikirim ke API
+    kampus (build_payload), ditambah transkrip AI bila ada — jadi yang
+    diunggah manual == yang mesin kirim.
     """
-    permission_classes = [IsLecturer]
+    permission_classes = [IsApprovedUser]
 
     def perform_content_negotiation(self, request, force=False):
         # `?format=csv|pdf` adalah query domain (format ekspor), bukan URL_FORMAT
@@ -278,9 +278,15 @@ class LogbookExportView(APIView):
         if logbook is None:
             return Response({'detail': 'Logbook tidak ditemukan.'},
                             status=status.HTTP_404_NOT_FOUND)
-        if logbook.session.submission.student.adviser != request.user:
-            return Response({'detail': 'Hanya dosen pembimbing yang dapat mengekspor.'},
-                            status=status.HTTP_403_FORBIDDEN)
+
+        student = logbook.session.submission.student
+        is_owning_lecturer = request.user.role == 'lecturer' and student.adviser == request.user
+        is_owning_student = request.user.role == 'student' and student == request.user
+        if not (is_owning_lecturer or is_owning_student):
+            return Response(
+                {'detail': 'Hanya dosen pembimbing atau mahasiswa pemilik sesi yang dapat mengekspor.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         if logbook.status != SessionLogbook.Status.APPROVED:
             return Response({'detail': 'Hanya ringkasan yang sudah disetujui yang dapat diekspor.'},
                             status=status.HTTP_400_BAD_REQUEST)

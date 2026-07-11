@@ -237,6 +237,23 @@ class TestLogbookExportView:
         resp = client_for(approved_lecturer).get(self._url(lb.session_id, 'csv'))
         assert resp.status_code == 403
 
+    def test_owning_student_can_export_csv(self, advisee_student, pending_submission):
+        lb = _logbook(pending_submission)
+        resp = client_for(advisee_student).get(self._url(lb.session_id, 'csv'))
+        assert resp.status_code == 200
+        assert resp['Content-Type'].startswith('text/csv')
+
+    def test_owning_student_can_export_pdf(self, advisee_student, pending_submission):
+        lb = _logbook(pending_submission)
+        resp = client_for(advisee_student).get(self._url(lb.session_id, 'pdf'))
+        assert resp.status_code == 200
+        assert resp.content[:5] == b'%PDF-'
+
+    def test_other_student_forbidden(self, second_advisee_student, pending_submission):
+        lb = _logbook(pending_submission)
+        resp = client_for(second_advisee_student).get(self._url(lb.session_id, 'csv'))
+        assert resp.status_code == 403
+
     def test_unapproved_logbook_rejected(self, lecturer_user, pending_submission):
         lb = _logbook(pending_submission, status=SessionLogbook.Status.READY_FOR_REVIEW)
         resp = client_for(lecturer_user).get(self._url(lb.session_id, 'csv'))

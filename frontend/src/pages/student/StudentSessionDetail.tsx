@@ -9,7 +9,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useParams, useRouteLoaderData } from 'react-router';
 import {
   getStudentLogbookDetail, getSessionRecordingUrl, getActionItems, completeActionItem,
-  type LogbookDetail, type ActionItem,
+  getLogbookExportUrl, type LogbookDetail, type ActionItem,
 } from '../../api/sessions';
 import { logout, type User } from '../../api/auth';
 import { AppNavbar, AppBottomNav, NAV_ITEMS } from '../../components/AppNav';
@@ -166,7 +166,19 @@ export default function StudentSessionDetail() {
 
             {/* Ringkasan */}
             <section>
-              <h2 className="font-headline font-bold text-lg text-slate-900 mb-3">Ringkasan Hasil Bimbingan</h2>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="font-headline font-bold text-lg text-slate-900">Ringkasan Hasil Bimbingan</h2>
+                <span className="flex items-center gap-2">
+                  <a href={getLogbookExportUrl(sessionId, 'csv')} download
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-primary underline focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none rounded">
+                    <span className="material-symbols-outlined text-sm" aria-hidden="true">download</span>CSV
+                  </a>
+                  <a href={getLogbookExportUrl(sessionId, 'pdf')} download
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-primary underline focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none rounded">
+                    <span className="material-symbols-outlined text-sm" aria-hidden="true">download</span>PDF
+                  </a>
+                </span>
+              </div>
               <div className="bg-surface rounded-2xl border border-gray-200 shadow-sm p-5">
                 <div className="flex items-center gap-1.5 mb-3 text-[11px] font-bold text-success bg-success/10 rounded-full px-2 py-1 w-fit">
                   <span className="material-symbols-outlined text-sm" aria-hidden="true">check_circle</span>
