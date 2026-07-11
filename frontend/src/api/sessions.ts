@@ -259,16 +259,6 @@ export async function approveLogbook(
 }
 
 /** Gate tambahan (STT-04): dosen menolak draf AI ready_for_review, dialihkan ke jalur manual. */
-/** Dosen: coba proses ulang pipeline STT/AI untuk logbook yang gagal (G6). */
-export async function retryPipeline(sessionId: number): Promise<{ status: string; dispatched: boolean }> {
-  const res = await apiRequest(`/api/logbook/${sessionId}/retry/`, { method: 'POST' });
-  if (!res.ok) {
-    const b = await res.json().catch(() => ({}));
-    throw new Error((b as { detail?: string }).detail ?? 'Gagal memproses ulang.');
-  }
-  return res.json();
-}
-
 export async function rejectLogbook(sessionId: number): Promise<LogbookDetail> {
   const res = await apiRequest(`/api/logbook/${sessionId}/reject/`, { method: 'POST' });
   if (!res.ok) {
