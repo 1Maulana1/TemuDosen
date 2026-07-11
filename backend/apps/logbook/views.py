@@ -291,8 +291,8 @@ class LogbookExportView(APIView):
         filename_base = f'Logbook_Sesi_{session_id}'
 
         if export_format == 'pdf':
-            return self._render_pdf(payload, filename_base)
-        return self._render_csv(payload, filename_base)
+            return self._render_pdf(payload, filename_base, logbook.transcript)
+        return self._render_csv(payload, filename_base, logbook.transcript)
 
     @staticmethod
     def _fmt_tanggal(iso):
@@ -309,8 +309,8 @@ class LogbookExportView(APIView):
         except (ValueError, TypeError):
             return iso
 
-    def _rows(self, payload):
-        return [
+    def _rows(self, payload, transcript=''):
+        rows = [
             ('NIM', payload.get('nim') or '-'),
             ('NIDN', payload.get('nidn') or '-'),
             ('Tanggal', self._fmt_tanggal(payload.get('tanggal'))),
@@ -319,8 +319,13 @@ class LogbookExportView(APIView):
             ('Ringkasan', payload.get('ringkasan') or '-'),
             ('Saran', '\n'.join(payload.get('saran') or []) or '-'),
         ]
+        # Transkrip mentah hasil STT (di luar kontrak API kampus build_payload) —
+        # disertakan hanya di ekspor CSV/PDF sebagai lampiran referensi dosen/mahasiswa.
+        if transcript:
+            rows.append(('Transkrip Rekaman (AI)', transcript))
+        return rows
 
-    def _render_csv(self, payload, filename_base):
+    def _render_csv(self, payload, filename_base, transcript=''):
         import csv
         from django.http import HttpResponse
 
@@ -330,10 +335,10 @@ class LogbookExportView(APIView):
         from apps.bimbingan.views import _csv_safe  # neutralize CSV injection (S1)
         writer = csv.writer(response)
         writer.writerow(['Field', 'Nilai'])
-        writer.writerows([[_csv_safe(c) for c in row] for row in self._rows(payload)])
+        writer.writerows([[_csv_safe(c) for c in row] for row in self._rows(payload, transcript)])
         return response
 
-    def _render_pdf(self, payload, filename_base):
+    def _render_pdf(self, payload, filename_base, transcript=''):
         from django.http import HttpResponse
         try:
             from reportlab.lib import colors
@@ -342,13 +347,15 @@ class LogbookExportView(APIView):
             from reportlab.lib.styles import getSampleStyleSheet
             import io
 
+            from xml.sax.saxutils import escape as _xml_escape
+
             styles = getSampleStyleSheet()
             buf = io.BytesIO()
             doc = SimpleDocTemplate(buf, pagesize=A4)
             title = Paragraph('Ringkasan Bimbingan — Logbook', styles['Title'])
             table_data = [['Field', 'Nilai']] + [
-                [k, Paragraph(str(v).replace('\n', '<br/>'), styles['BodyText'])]
-                for k, v in self._rows(payload)
+                [k, Paragraph(_xml_escape(str(v)).replace('\n', '<br/>'), styles['BodyText'])]
+                for k, v in self._rows(payload, transcript)
             ]
             table = Table(table_data, colWidths=[110, 370], repeatRows=1)
             table.setStyle(TableStyle([

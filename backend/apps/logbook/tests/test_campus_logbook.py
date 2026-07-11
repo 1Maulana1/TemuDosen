@@ -195,6 +195,37 @@ class TestLogbookExportView:
         assert resp['Content-Type'] == 'application/pdf'
         assert resp.content[:5] == b'%PDF-'
 
+    def test_csv_export_includes_ai_transcript_when_present(
+        self, lecturer_user, pending_submission
+    ):
+        lb = _logbook(pending_submission)
+        lb.transcript = 'Dosen: perbaiki metodologi bab tiga.'
+        lb.save(update_fields=['transcript'])
+
+        resp = client_for(lecturer_user).get(self._url(lb.session_id, 'csv'))
+        body = resp.content.decode('utf-8')
+        assert 'Transkrip Rekaman (AI)' in body
+        assert 'perbaiki metodologi bab tiga' in body
+
+    def test_csv_export_omits_transcript_row_when_empty(
+        self, lecturer_user, pending_submission
+    ):
+        lb = _logbook(pending_submission)  # transcript default kosong
+        resp = client_for(lecturer_user).get(self._url(lb.session_id, 'csv'))
+        body = resp.content.decode('utf-8')
+        assert 'Transkrip Rekaman (AI)' not in body
+
+    def test_pdf_export_includes_ai_transcript_when_present(
+        self, lecturer_user, pending_submission
+    ):
+        lb = _logbook(pending_submission)
+        lb.transcript = 'Dosen: perbaiki metodologi bab tiga.'
+        lb.save(update_fields=['transcript'])
+
+        resp = client_for(lecturer_user).get(self._url(lb.session_id, 'pdf'))
+        assert resp.status_code == 200
+        assert resp.content[:5] == b'%PDF-'
+
     def test_defaults_to_csv(self, lecturer_user, pending_submission):
         lb = _logbook(pending_submission)
         resp = client_for(lecturer_user).get(self._url(lb.session_id))
