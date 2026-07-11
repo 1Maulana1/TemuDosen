@@ -10,7 +10,8 @@ services:
     runtime: docker
     plan: free
     dockerfilePath: ./Dockerfile
-    dockerCommand: sh -c "python manage.py migrate && python manage.py seed_admin && gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 2"
+    # start.sh = gunicorn + Celery worker (bila STT_LLM_ENABLED=True) satu container
+    dockerCommand: sh -c "python manage.py migrate && python manage.py seed_admin && sh start.sh"
     envVars:
       - key: DJANGO_SETTINGS_MODULE
         value: config.settings.prod
@@ -29,6 +30,28 @@ services:
         value: "None"
       - key: FRONTEND_URL
         value: https://temudosen.vercel.app
+      # ── Pipeline STT/LLM (opsional) ──────────────────────────────────
+      # Aktifkan dengan mengubah STT_LLM_ENABLED ke "True" dan mengisi
+      # GROQ_API_KEY + ANTHROPIC_API_KEY di dashboard (sync: false).
+      - key: STT_LLM_ENABLED
+        value: "False"
+      - key: STT_PROVIDER
+        value: groq
+      - key: GROQ_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: CELERY_BROKER_URL
+        fromService:
+          type: keyvalue
+          name: temudosen-redis
+          property: connectionString
+
+  # Redis (Render "Key Value", plan free) — broker Celery untuk pipeline STT/LLM
+  - type: keyvalue
+    name: temudosen-redis
+    plan: free
+    ipAllowList: []  # hanya akses internal antar service Render
 
 databases:
   - name: temudosen-db

@@ -72,6 +72,30 @@ Env var **opsional** (fitur — biarkan default kalau tidak dipakai):
    ```
 6. Domain backend ada di Settings → Networking → Generate Domain.
 
+#### Mengaktifkan pipeline STT/LLM di Railway (opsional)
+
+Rekaman sesi → transkrip (Groq Whisper API, free tier) → ringkasan (Anthropic).
+Celery worker ikut jalan **di dalam container backend** (via `start.sh`) karena
+Railway tidak bisa share volume antar service — worker harus bisa membaca file
+rekaman yang ditulis web service. Dengan provider `groq`, worker hanya
+melakukan HTTP call, jadi ringan.
+
+1. Tambah **Redis**: New → Database → Redis.
+2. Di Variables service backend, tambahkan:
+
+   | Variabel | Nilai |
+   |---|---|
+   | `CELERY_BROKER_URL` | `${{Redis.REDIS_URL}}` (reference ke service Redis) |
+   | `STT_LLM_ENABLED` | `True` |
+   | `GROQ_API_KEY` | dari [console.groq.com](https://console.groq.com) → API Keys (gratis) |
+   | `ANTHROPIC_API_KEY` | dari [console.anthropic.com](https://console.anthropic.com) (untuk ringkasan) |
+
+3. Redeploy. Cek log: harus muncul `[start.sh] STT_LLM_ENABLED aktif — menyalakan Celery worker`.
+
+> Tanpa langkah ini app tetap jalan normal — logbook jatuh ke catatan manual
+> (graceful degradation). `STT_PROVIDER=local` (faster-whisper) TIDAK
+> direkomendasikan di Railway/Render: modelnya butuh RAM ~1–2GB.
+
 ### Opsi 2 — Render (gratis, tidur saat idle → cold start ~30 dtk)
 
 1. [render.com](https://render.com) → **New → Web Service** → connect repo.
