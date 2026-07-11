@@ -181,7 +181,14 @@ CAMPUS_LOGBOOK_TOKEN = env('CAMPUS_LOGBOOK_TOKEN', default='')
 CAMPUS_LOGBOOK_TIMEOUT = env.int('CAMPUS_LOGBOOK_TIMEOUT', default=5)
 CAMPUS_LOGBOOK_MAX_RETRIES = env.int('CAMPUS_LOGBOOK_MAX_RETRIES', default=3)
 
-# Anthropic LLM summarization (D-04). Model id harus valid — jangan disubstitusi.
+# LLM summarization (D-04). Provider: 'groq' (llama, free tier — pakai
+# GROQ_API_KEY yang sama dengan STT) atau 'anthropic' (claude, berbayar).
+# 'groq' tanpa GROQ_API_KEY jatuh ke Anthropic bila key-nya ada (services/summarizer.py).
+LLM_PROVIDER = env('LLM_PROVIDER', default='groq')
+GROQ_LLM_MODEL = env('GROQ_LLM_MODEL', default='llama-3.3-70b-versatile')
+GROQ_LLM_TIMEOUT = env.int('GROQ_LLM_TIMEOUT', default=120)  # detik
+
+# Anthropic (provider 'anthropic'). Model id harus valid — jangan disubstitusi.
 LLM_MODEL = env('LLM_MODEL', default='claude-haiku-4-5')
 ANTHROPIC_API_KEY = env('ANTHROPIC_API_KEY', default='')
 LLM_BATCH_TIMEOUT_MINUTES = env.int('LLM_BATCH_TIMEOUT_MINUTES', default=180)  # D-08

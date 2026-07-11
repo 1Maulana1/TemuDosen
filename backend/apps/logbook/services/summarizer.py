@@ -1,13 +1,20 @@
 """
-Phase 6 (06-03): peringkas transkrip via Anthropic (forced tool call).
+Phase 6 (06-03): peringkas transkrip via LLM (forced tool call) — Groq atau Anthropic.
 
 Desain:
-  - `anthropic` dan schema Pydantic di-import MALAS — app boot tanpa paket berat.
-  - Graceful degradation: bila STT_LLM_ENABLED off / ANTHROPIC_API_KEY kosong /
-    transkrip kosong → kembalikan (None, 0, 0) tanpa memanggil API (D-08).
-  - Memaksa tool call `record_summary` dengan input_schema dari
+  - Dua provider, dipilih via LLM_PROVIDER:
+      'groq'      → Groq chat completions (llama-3.3-70b, free tier) via httpx —
+                    satu GROQ_API_KEY menggerakkan STT + LLM sekaligus.
+      'anthropic' → Anthropic Messages API (claude), kualitas tertinggi, berbayar.
+    'groq' tanpa GROQ_API_KEY jatuh ke Anthropic (bila key-nya ada), bukan error.
+  - Dependency berat (`anthropic`, `httpx`, schema Pydantic) di-import MALAS —
+    app boot tanpa paket terpasang.
+  - Graceful degradation: bila STT_LLM_ENABLED off / tidak ada API key sama
+    sekali / transkrip kosong → kembalikan (None, 0, 0) tanpa memanggil API (D-08).
+  - Kedua provider memaksa tool call `record_summary` dengan schema dari
     SessionSummary (schemas.py) sehingga output selalu JSON terstruktur & tervalidasi.
 """
+import json
 import logging
 import re
 
@@ -16,6 +23,7 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 _TOOL_NAME = 'record_summary'
+_TOOL_DESCRIPTION = 'Catat ringkasan terstruktur hasil sesi bimbingan.'
 _SYSTEM_PROMPT = (
     'Anda meringkas transkrip sesi bimbingan skripsi dalam Bahasa Indonesia. '
     'Ekstrak HANYA saran konkret dari dosen dan area perbaikan untuk mahasiswa. '
@@ -23,24 +31,63 @@ _SYSTEM_PROMPT = (
     '(jangan menulis "Tidak ada saran").'
 )
 
+_GROQ_CHAT_URL = 'https://api.groq.com/openai/v1/chat/completions'
 
-def summarize_transcript(transcript):
-    """Ringkas transkrip → (summary_dict, input_tokens, output_tokens).
 
-    Mengembalikan (None, 0, 0) bila pipeline nonaktif atau transkrip kosong.
-    """
-    if not settings.STT_LLM_ENABLED or not settings.ANTHROPIC_API_KEY:
-        return None, 0, 0
-    if not transcript or not transcript.strip():
-        return None, 0, 0
+def _summarize_groq(transcript):
+    """Ringkas via Groq (API kompatibel-OpenAI, forced function call)."""
+    import httpx  # import malas
+    from ..schemas import SessionSummary
 
+    response = httpx.post(
+        _GROQ_CHAT_URL,
+        headers={'Authorization': f'Bearer {settings.GROQ_API_KEY}'},
+        json={
+            'model': settings.GROQ_LLM_MODEL,
+            'max_tokens': 2000,
+            'messages': [
+                {'role': 'system', 'content': _SYSTEM_PROMPT},
+                {'role': 'user', 'content': transcript},
+            ],
+            'tools': [{
+                'type': 'function',
+                'function': {
+                    'name': _TOOL_NAME,
+                    'description': _TOOL_DESCRIPTION,
+                    'parameters': SessionSummary.model_json_schema(),
+                },
+            }],
+            'tool_choice': {'type': 'function', 'function': {'name': _TOOL_NAME}},
+        },
+        timeout=settings.GROQ_LLM_TIMEOUT,
+    )
+    response.raise_for_status()
+    data = response.json()
+
+    tool_calls = (data['choices'][0]['message'].get('tool_calls') or [])
+    if not tool_calls:
+        raise ValueError('LLM (groq) tidak mengembalikan tool call record_summary')
+    tool_input = json.loads(tool_calls[0]['function']['arguments'])
+
+    # Validasi via Pydantic (menegakkan aturan anti-placeholder di schemas.py).
+    validated = SessionSummary.model_validate(tool_input)
+    usage = data.get('usage', {})
+    return (
+        validated.model_dump(),
+        int(usage.get('prompt_tokens', 0)),
+        int(usage.get('completion_tokens', 0)),
+    )
+
+
+def _summarize_anthropic(transcript):
+    """Ringkas via Anthropic Messages API (forced tool call)."""
     from anthropic import Anthropic  # import malas
     from ..schemas import SessionSummary
 
     client = Anthropic(api_key=settings.ANTHROPIC_API_KEY)
     tool = {
         'name': _TOOL_NAME,
-        'description': 'Catat ringkasan terstruktur hasil sesi bimbingan.',
+        'description': _TOOL_DESCRIPTION,
         'input_schema': SessionSummary.model_json_schema(),
     }
     message = client.messages.create(
@@ -67,6 +114,27 @@ def summarize_transcript(transcript):
         message.usage.input_tokens,
         message.usage.output_tokens,
     )
+
+
+def summarize_transcript(transcript):
+    """Ringkas transkrip → (summary_dict, input_tokens, output_tokens).
+
+    Mengembalikan (None, 0, 0) bila pipeline nonaktif, tidak ada API key yang
+    bisa dipakai, atau transkrip kosong.
+    """
+    if not settings.STT_LLM_ENABLED:
+        return None, 0, 0
+    if not transcript or not transcript.strip():
+        return None, 0, 0
+
+    if settings.LLM_PROVIDER == 'groq':
+        if settings.GROQ_API_KEY:
+            return _summarize_groq(transcript)
+        logger.warning('LLM_PROVIDER=groq tapi GROQ_API_KEY kosong — mencoba Anthropic')
+
+    if not settings.ANTHROPIC_API_KEY:
+        return None, 0, 0
+    return _summarize_anthropic(transcript)
 
 
 def flag_ungrounded(summary, transcript):

@@ -54,10 +54,50 @@ class TestServicesGracefulDegradation:
     def test_summarizer_disabled_returns_none(self):
         assert summarize_transcript('transkrip apa pun') == (None, 0, 0)
 
-    @override_settings(STT_LLM_ENABLED=True, ANTHROPIC_API_KEY='')
+    @override_settings(STT_LLM_ENABLED=True, ANTHROPIC_API_KEY='', GROQ_API_KEY='')
     def test_summarizer_no_api_key_returns_none(self):
-        # Aktif tapi tanpa API key → tetap degradasi, tidak memanggil anthropic.
+        # Aktif tapi tanpa API key sama sekali → tetap degradasi, tanpa panggilan API.
         assert summarize_transcript('transkrip') == (None, 0, 0)
+
+    @override_settings(STT_LLM_ENABLED=True, LLM_PROVIDER='groq', GROQ_API_KEY='gsk-test')
+    def test_summarizer_groq_forced_tool_call_validated(self, monkeypatch):
+        # httpx belum tentu terpasang di env test → suntik stub ke sys.modules.
+        import json
+        import sys
+        import types
+
+        captured = {}
+
+        class FakeResponse:
+            def raise_for_status(self):
+                pass
+
+            def json(self):
+                return {
+                    'choices': [{'message': {'tool_calls': [{'function': {
+                        'arguments': json.dumps({
+                            'advice_points': [{'topic': 'Metodologi', 'detail': 'Perbaiki sampling'}],
+                            'improvement_notes': [],
+                        }),
+                    }}]}}],
+                    'usage': {'prompt_tokens': 100, 'completion_tokens': 20},
+                }
+
+        def fake_post(url, **kwargs):
+            captured['url'] = url
+            captured['json'] = kwargs['json']
+            return FakeResponse()
+
+        monkeypatch.setitem(sys.modules, 'httpx', types.SimpleNamespace(post=fake_post))
+
+        summary, tok_in, tok_out = summarize_transcript('dosen menyarankan perbaiki sampling')
+        assert summary == {
+            'advice_points': [{'topic': 'Metodologi', 'detail': 'Perbaiki sampling'}],
+            'improvement_notes': [],
+        }
+        assert (tok_in, tok_out) == (100, 20)
+        # Tool call dipaksa (bukan opsional) agar output selalu terstruktur.
+        assert captured['json']['tool_choice']['function']['name'] == 'record_summary'
 
     @override_settings(STT_LLM_ENABLED=True, ANTHROPIC_API_KEY='sk-test')
     def test_summarizer_empty_transcript_returns_none(self):

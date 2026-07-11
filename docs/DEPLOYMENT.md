@@ -87,8 +87,14 @@ melakukan HTTP call, jadi ringan.
    |---|---|
    | `CELERY_BROKER_URL` | `${{Redis.REDIS_URL}}` (reference ke service Redis) |
    | `STT_LLM_ENABLED` | `True` |
-   | `GROQ_API_KEY` | dari [console.groq.com](https://console.groq.com) → API Keys (gratis) |
-   | `ANTHROPIC_API_KEY` | dari [console.anthropic.com](https://console.anthropic.com) (untuk ringkasan) |
+   | `GROQ_API_KEY` | dari [console.groq.com](https://console.groq.com) → API Keys (gratis) — dipakai untuk transkripsi (Whisper) **dan** ringkasan (Llama) |
+   | `LLM_INPUT_RATE_USD_PER_MTOK` | `0` (Groq free tier — agar estimasi biaya di UI akurat) |
+   | `LLM_OUTPUT_RATE_USD_PER_MTOK` | `0` |
+
+   Opsional — pakai Claude untuk ringkasan (kualitas tertinggi, berbayar):
+   set `LLM_PROVIDER=anthropic` + `ANTHROPIC_API_KEY` dari
+   [console.anthropic.com](https://console.anthropic.com), dan hapus kedua
+   variabel tarif di atas (default-nya sudah tarif claude-haiku-4-5).
 
 3. Redeploy. Cek log: harus muncul `[start.sh] STT_LLM_ENABLED aktif — menyalakan Celery worker`.
 
