@@ -1049,13 +1049,17 @@ class AdminStatsView(APIView):
         stt_llm = {
             # "Lolos transkripsi" = tahap STT sukses dan diteruskan ke ringkasan
             # (state machine D-06: transcribe_session hanya mencapai status ini
-            # setelah transcript berhasil disimpan).
+            # setelah transcript berhasil disimpan). is_manual=False mengecualikan
+            # logbook APPROVED lewat ManualNotesView (PENDING/FAILED -> APPROVED
+            # langsung, tanpa pernah ditranskripsi) — tanpa filter ini logbook
+            # manual ikut terhitung sebagai transkripsi "berhasil" (bug S-17).
             'transcription_success': SessionLogbook.objects.filter(
                 status__in=[
                     SessionLogbook.Status.SUMMARIZING,
                     SessionLogbook.Status.READY_FOR_REVIEW,
                     SessionLogbook.Status.APPROVED,
                 ],
+                is_manual=False,
             ).count(),
             'summary_success': SessionLogbook.objects.filter(
                 status__in=[SessionLogbook.Status.READY_FOR_REVIEW, SessionLogbook.Status.APPROVED],

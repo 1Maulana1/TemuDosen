@@ -70,6 +70,23 @@ class TestAdminStatsView:
         assert resp.data['stt_llm']['transcription_success'] == 1
         assert resp.data['stt_llm']['summary_success'] == 1
 
+    def test_stt_llm_excludes_manual_logbooks_from_transcription_success(
+        self, authenticated_admin, lecturer_user, pending_submission
+    ):
+        # Sesi APPROVED via ManualNotesView (is_manual=True) tidak pernah
+        # ditranskripsi — tidak boleh ikut terhitung "Transkripsi Berhasil".
+        from apps.logbook.models import SessionLogbook
+
+        session = _approve(lecturer_user, pending_submission)
+        SessionLogbook.objects.create(
+            session=session, status=SessionLogbook.Status.APPROVED, is_manual=True,
+        )
+
+        resp = authenticated_admin.get(self.url)
+        assert resp.status_code == 200
+        assert resp.data['stt_llm']['transcription_success'] == 0
+        assert resp.data['stt_llm']['summary_success'] == 0
+
     def test_stt_llm_failed_fallback_counts_failure_events(self, authenticated_admin):
         SystemLog.objects.create(
             level=SystemLog.Level.ERROR, event_type='STT_FAILED', message='gagal',
