@@ -77,6 +77,9 @@ services:
       - MEDIA_ROOT=/app/storage
       - CELERY_BROKER_URL=redis://redis:6379/0
       - STT_LLM_ENABLED=False
+      # Provider STT: 'groq' (default; Whisper via API, isi GROQ_API_KEY) atau 'local'
+      - STT_PROVIDER=${STT_PROVIDER:-groq}
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
       - STT_MODEL_SIZE=small
       - STT_COMPUTE_TYPE=int8
       - STT_LANGUAGE=id

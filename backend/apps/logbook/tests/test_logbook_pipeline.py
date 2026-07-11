@@ -20,6 +20,37 @@ class TestServicesGracefulDegradation:
         # STT_LLM_ENABLED False (default test) → tak menyentuh faster_whisper.
         assert transcribe_audio('/tmp/does-not-matter.webm') == ('', 0.0)
 
+    @override_settings(STT_LLM_ENABLED=True, STT_PROVIDER='groq', GROQ_API_KEY='gsk-test')
+    def test_stt_groq_posts_audio_and_returns_text_duration(self, monkeypatch, tmp_path):
+        # httpx belum tentu terpasang di env test → suntik stub ke sys.modules.
+        import sys
+        import types
+
+        captured = {}
+
+        class FakeResponse:
+            def raise_for_status(self):
+                pass
+
+            def json(self):
+                return {'text': '  halo bimbingan  ', 'duration': 12.5}
+
+        def fake_post(url, **kwargs):
+            captured['url'] = url
+            captured['headers'] = kwargs['headers']
+            captured['data'] = kwargs['data']
+            return FakeResponse()
+
+        fake_httpx = types.SimpleNamespace(post=fake_post)
+        monkeypatch.setitem(sys.modules, 'httpx', fake_httpx)
+
+        audio = tmp_path / 'sesi.webm'
+        audio.write_bytes(b'fake-audio')
+        assert transcribe_audio(str(audio)) == ('halo bimbingan', 12.5)
+        assert 'api.groq.com' in captured['url']
+        assert captured['headers']['Authorization'] == 'Bearer gsk-test'
+        assert captured['data']['response_format'] == 'verbose_json'
+
     def test_summarizer_disabled_returns_none(self):
         assert summarize_transcript('transkrip apa pun') == (None, 0, 0)
 

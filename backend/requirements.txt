@@ -18,7 +18,9 @@ pytest==9.1.*
 pytest-django==4.12.*
 factory-boy==3.3.*
 
-# Phase 6: STT + AI Summarization + Logbook (Celery/Redis broker, faster-whisper STT, Anthropic LLM)
+# Phase 6: STT + AI Summarization + Logbook (Celery/Redis broker, Anthropic LLM).
+# STT default via Groq Whisper API (free tier, hanya HTTP call — httpx sudah ikut
+# sebagai dependency `anthropic`). faster-whisper = fallback provider 'local'.
 faster-whisper==1.2.1
 celery==5.6.3
 # celery 5.6.3 punya regresi reconnect pubsub result-backend Redis untuk redis-py < 5.3.0

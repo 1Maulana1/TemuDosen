@@ -157,7 +157,15 @@ CELERY_TASK_TIME_LIMIT = 60 * 60 * 4  # ceiling di atas LLM_BATCH_TIMEOUT_MINUTE
 # editor catatan manual (graceful degradation, STT-07). "Belum ada API key" = aman.
 STT_LLM_ENABLED = env.bool('STT_LLM_ENABLED', default=False)  # D-04
 
-# faster-whisper (D-01)
+# Provider STT: 'groq' (Whisper via API, free tier — ringan, cocok untuk hosting
+# free-tier) atau 'local' (faster-whisper, gratis penuh tapi butuh RAM ~1-2GB).
+# 'groq' tanpa GROQ_API_KEY otomatis jatuh ke 'local' (lihat services/stt.py).
+STT_PROVIDER = env('STT_PROVIDER', default='groq')
+GROQ_API_KEY = env('GROQ_API_KEY', default='')
+GROQ_STT_MODEL = env('GROQ_STT_MODEL', default='whisper-large-v3-turbo')
+GROQ_STT_TIMEOUT = env.int('GROQ_STT_TIMEOUT', default=300)  # detik; audio panjang butuh waktu upload
+
+# faster-whisper (D-01) — provider 'local'
 STT_MODEL_SIZE = env('STT_MODEL_SIZE', default='small')
 STT_COMPUTE_TYPE = env('STT_COMPUTE_TYPE', default='int8')
 STT_LANGUAGE = env('STT_LANGUAGE', default='id')
