@@ -145,6 +145,25 @@ export default function StudentSessionDetail() {
               </div>
             </section>
 
+            {/* Transkrip (hasil STT) — hanya muncul bila pipeline menghasilkannya */}
+            {data.transcript && (
+              <section>
+                <h2 className="font-headline font-bold text-lg text-slate-900 mb-3">Transkrip</h2>
+                <details className="bg-surface rounded-2xl border border-gray-200 shadow-sm">
+                  <summary className="cursor-pointer select-none p-5 text-sm font-bold text-slate-700 flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none rounded-2xl">
+                    <span className="material-symbols-outlined text-base text-primary" aria-hidden="true">description</span>
+                    Lihat transkrip otomatis
+                    <span className="ml-auto text-[11px] font-normal text-on-surface-variant">hasil transkripsi AI — bisa tidak akurat</span>
+                  </summary>
+                  <div className="px-5 pb-5">
+                    <p className="text-sm text-slate-600 whitespace-pre-wrap max-h-72 overflow-y-auto border-t border-gray-100 pt-3">
+                      {data.transcript}
+                    </p>
+                  </div>
+                </details>
+              </section>
+            )}
+
             {/* Ringkasan */}
             <section>
               <h2 className="font-headline font-bold text-lg text-slate-900 mb-3">Ringkasan Hasil Bimbingan</h2>
