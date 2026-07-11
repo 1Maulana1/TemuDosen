@@ -12,7 +12,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useParams, useRouteLoaderData } from 'react-router';
 import {
   getLogbookDetail, approveLogbook, rejectLogbook, saveManualNotes, getSessionRecordingUrl,
-  getActionItems, addActionItem, updateActionItem, deleteActionItem, getLogbookExportUrl, retryPipeline,
+  getActionItems, addActionItem, updateActionItem, deleteActionItem, getLogbookExportUrl,
   type LogbookDetail, type SessionSummaryContent, type ActionItem, type CampusSyncStatus,
 } from '../../api/sessions';
 import { logout, type User } from '../../api/auth';
@@ -191,20 +191,6 @@ export default function LecturerSessionDetail() {
     }
   }
 
-  const [retrying, setRetrying] = useState(false);
-  async function handleRetry() {
-    setRetrying(true);
-    setItemsMsg('');
-    try {
-      await retryPipeline(sessionId);
-      load();  // muat ulang status (pending → pipeline berjalan lagi)
-    } catch (e) {
-      setItemsMsg(e instanceof Error ? e.message : 'Gagal memproses ulang.');
-    } finally {
-      setRetrying(false);
-    }
-  }
-
   async function handleLogout() {
     await logout();
     navigate('/login');
@@ -380,26 +366,8 @@ export default function LecturerSessionDetail() {
                           ? 'Pipeline AI sedang memproses rekaman — muat ulang halaman beberapa saat lagi untuk melihat draf ringkasan.'
                           : 'Transkripsi & ringkasan otomatis belum tersedia — tuliskan ringkasan hasil bimbingan secara manual di bawah ini.'}
                     </p>
-                    {data.status === 'failed' && data.has_recording && (
-                      <button type="button" onClick={handleRetry} disabled={retrying}
-                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-primary text-primary text-xs font-bold hover:bg-primary/5 disabled:opacity-60 min-h-[40px] focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">
-                        <span className="material-symbols-outlined text-base" aria-hidden="true">refresh</span>
-                        {retrying ? 'Memproses…' : 'Coba proses ulang otomatis'}
-                      </button>
-                    )}
                     {data.status === 'ready_for_review' && (
                       <>
-                        {data.transcript && (
-                          <details className="border border-gray-100 rounded-xl bg-gray-50/60">
-                            <summary className="cursor-pointer select-none p-3 text-xs font-bold text-slate-700 flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none rounded-xl">
-                              <span className="material-symbols-outlined text-base text-primary" aria-hidden="true">description</span>
-                              Transkrip AI — bahan draf ringkasan
-                            </summary>
-                            <p className="px-3 pb-3 text-sm text-slate-600 whitespace-pre-wrap max-h-56 overflow-y-auto">
-                              {data.transcript}
-                            </p>
-                          </details>
-                        )}
                         <div className="border border-gray-100 rounded-xl p-3 bg-gray-50/60">
                           <SummaryContent content={data.summary_raw} showGroundedness />
                         </div>
