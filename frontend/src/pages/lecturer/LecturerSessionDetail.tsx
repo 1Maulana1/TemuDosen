@@ -96,6 +96,8 @@ export default function LecturerSessionDetail() {
 
   const [data, setData] = useState<LogbookDetail | null>(null);
   const [summaryDraft, setSummaryDraft] = useState('');
+  // Ringkasan manual dosen (opsional) yang disimpan bersama draf AI saat approve.
+  const [manualNotes, setManualNotes] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -213,10 +215,13 @@ export default function LecturerSessionDetail() {
     setSaving(true);
     setMsg('');
     try {
-      // AI menghasilkan draf → approve dengan ringkasan editan (terstruktur bila
-      // format bullet dipertahankan); selain itu jalur manual (STT-07).
+      // AI menghasilkan draf → approve draf terstruktur apa adanya, plus
+      // ringkasan manual dosen bila diisi; selain itu jalur manual (STT-07).
+      const manual = manualNotes.trim();
       const updated = data.status === 'ready_for_review'
-        ? await approveLogbook(sessionId, textToSummary(summaryDraft))
+        ? await approveLogbook(sessionId, manual
+            ? { ...(data.summary_raw ?? {}), manual_notes: manual }
+            : (data.summary_raw ?? textToSummary(summaryDraft)))
         : await saveManualNotes(sessionId, summaryDraft);
       setData(updated);
       setMsg('Ringkasan disetujui — mahasiswa sekarang bisa melihatnya.');
@@ -398,23 +403,35 @@ export default function LecturerSessionDetail() {
                         <div className="border border-gray-100 rounded-xl p-3 bg-gray-50/60">
                           <SummaryContent content={data.summary_raw} showGroundedness />
                         </div>
-                        {data.transcript && (
-                          <button type="button" onClick={handleRetry} disabled={retrying}
-                            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-primary text-primary text-xs font-bold hover:bg-primary/5 disabled:opacity-60 min-h-[40px] focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">
-                            <span className="material-symbols-outlined text-base" aria-hidden="true">autorenew</span>
-                            {retrying ? 'Memproses…' : 'Ringkas ulang dari transkrip'}
-                          </button>
-                        )}
+                        {/* Ringkasan manual dosen — pelengkap/pengganti bila hasil AI kurang memuaskan */}
+                        <div className="border border-gray-200 rounded-xl overflow-hidden">
+                          <div className="bg-gray-50 px-3 py-2 flex items-center gap-1.5 border-b border-gray-200">
+                            <span className="material-symbols-outlined text-base text-on-surface-variant" aria-hidden="true">edit_note</span>
+                            <span className="text-xs font-bold text-slate-700">Ringkasan Manual Dosen</span>
+                            <span className="text-[11px] text-on-surface-variant">— opsional, isi bila ringkasan AI kurang memuaskan</span>
+                          </div>
+                          <textarea
+                            value={manualNotes}
+                            onChange={(e) => setManualNotes(e.target.value)}
+                            placeholder="Tuliskan ringkasan hasil bimbingan versi Anda…"
+                            rows={3}
+                            className="w-full text-sm p-3 focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                          />
+                        </div>
                       </>
                     )}
-                    <textarea
-                      value={summaryDraft}
-                      onChange={(e) => setSummaryDraft(e.target.value)}
-                      placeholder="Tuliskan ringkasan hasil bimbingan, saran, dan tindak lanjut untuk mahasiswa…"
-                      rows={6}
-                      className="w-full text-sm border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-                    />
-                    <button type="button" disabled={saving || !summaryDraft.trim()} onClick={handleApprove}
+                    {data.status !== 'ready_for_review' && (
+                      <textarea
+                        value={summaryDraft}
+                        onChange={(e) => setSummaryDraft(e.target.value)}
+                        placeholder="Tuliskan ringkasan hasil bimbingan, saran, dan tindak lanjut untuk mahasiswa…"
+                        rows={6}
+                        className="w-full text-sm border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                      />
+                    )}
+                    <button type="button"
+                      disabled={saving || (data.status !== 'ready_for_review' && !summaryDraft.trim())}
+                      onClick={handleApprove}
                       className="w-full py-3 rounded-xl bg-primary text-on-primary text-sm font-bold hover:bg-primary-hover disabled:opacity-60 min-h-[44px] flex items-center justify-center gap-1.5 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none">
                       <span className="material-symbols-outlined text-base" aria-hidden="true">check_circle</span>
                       {saving ? 'Menyetujui…' : 'Setujui & Kirim ke Mahasiswa'}

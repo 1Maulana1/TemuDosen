@@ -33,13 +33,14 @@ export default function SummaryContent({
 }) {
   if (!content) return <p className="text-sm text-on-surface-variant">—</p>;
 
-  // Jalur manual: satu blok teks bebas.
-  if (content.manual_notes) {
+  const advice = content.advice_points ?? [];
+  const improvements = content.improvement_notes ?? [];
+
+  // Jalur manual murni: satu blok teks bebas.
+  if (content.manual_notes && advice.length === 0 && improvements.length === 0) {
     return <p className="text-sm text-slate-700 whitespace-pre-wrap">{content.manual_notes}</p>;
   }
 
-  const advice = content.advice_points ?? [];
-  const improvements = content.improvement_notes ?? [];
   if (advice.length === 0 && improvements.length === 0) {
     return <p className="text-sm text-on-surface-variant">—</p>;
   }
@@ -79,6 +80,20 @@ export default function SummaryContent({
               </li>
             ))}
           </ul>
+        </section>
+      )}
+
+      {/* Ringkasan manual dosen — pelengkap draf AI (diisi saat approve bila
+          hasil AI kurang memuaskan); tampil untuk dosen maupun mahasiswa. */}
+      {content.manual_notes && (
+        <section>
+          <h3 className="flex items-center gap-1.5 text-xs font-bold text-slate-700 uppercase tracking-wide mb-2">
+            <span className="material-symbols-outlined text-base" aria-hidden="true">edit_note</span>
+            Catatan Dosen
+          </h3>
+          <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
+            <p className="text-sm text-slate-700 whitespace-pre-wrap">{content.manual_notes}</p>
+          </div>
         </section>
       )}
     </div>
