@@ -18,6 +18,7 @@ import { useState, type FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { login } from '../../api/auth';
 import { getRoleRedirect } from './roleRedirect';
+import BrandLogo from '../../components/BrandLogo';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -58,8 +59,8 @@ export default function LoginPage() {
         {/* Card */}
         <div className="bg-surface rounded-2xl shadow-2xl border border-neutral-gray/20 p-10">
           {/* Wordmark */}
-          <h1 className="font-headline font-bold text-2xl text-primary text-center mb-8">
-            TemuDosen
+          <h1 className="text-center mb-8">
+            <BrandLogo textClassName="text-2xl" />
           </h1>
 
           <form onSubmit={handleSubmit} noValidate>

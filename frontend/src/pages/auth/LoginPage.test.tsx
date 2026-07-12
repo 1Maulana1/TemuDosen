@@ -36,7 +36,7 @@ describe('LoginPage', () => {
         <LoginPage />
       </MemoryRouter>
     );
-    expect(screen.getByText('TemuDosen')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'TemuDosen' })).toBeInTheDocument();
   });
 
   it('renders the "Daftar" link', () => {

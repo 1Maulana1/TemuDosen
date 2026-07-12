@@ -53,7 +53,7 @@ describe('LecturerDashboard (S-08)', () => {
   it('renders header with TemuDosen wordmark and notification bell', async () => {
     renderDashboard();
 
-    expect(screen.getByText('TemuDosen')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'TemuDosen' })).toBeInTheDocument();
     // Bell icon has no aria-label in the current header markup — assert on the
     // material-symbols icon text itself instead of an accessible label.
     expect(screen.getByText('notifications')).toBeInTheDocument();

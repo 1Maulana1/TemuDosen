@@ -13,6 +13,7 @@ import { useNavigate, Link } from 'react-router';
 import { login } from '../../api/auth';
 import type { User } from '../../api/auth';
 import PasswordInput from '../../components/PasswordInput';
+import BrandLogo from '../../components/BrandLogo';
 import { getRoleRedirect } from './roleRedirect';
 
 // This page only accepts 'ketua_jurusan' accounts. Actual role values confirmed
@@ -65,8 +66,8 @@ export default function LoginKetuaJurusanPage() {
     <div className="min-h-screen bg-[image:var(--gradient-auth)] flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="bg-surface rounded-2xl shadow-2xl border border-neutral-gray/20 p-10">
-          <h1 className="font-headline font-bold text-2xl text-primary text-center mb-1">
-            TemuDosen
+          <h1 className="text-center mb-1">
+            <BrandLogo textClassName="text-2xl" />
           </h1>
           <p className="text-center text-sm font-bold text-slate-800 mb-8">Login Ketua Jurusan</p>
 

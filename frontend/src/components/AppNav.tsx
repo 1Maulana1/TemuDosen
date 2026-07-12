@@ -16,6 +16,7 @@
  */
 import { Link } from 'react-router';
 import NotificationBell from './NotificationBell';
+import BrandLogo from './BrandLogo';
 
 export interface NavItem {
   key: string;
@@ -74,8 +75,8 @@ export function AppNavbar({ items, active, userName, onLogout, brandSuffix }: Ap
     <header className="sticky top-0 z-40 bg-surface border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
         <div className="flex items-center gap-8 min-w-0">
-          <span className="font-headline font-bold text-xl text-primary flex-shrink-0">
-            TemuDosen{brandSuffix ? <span className="text-on-surface-variant font-normal"> · {brandSuffix}</span> : null}
+          <span className="flex-shrink-0">
+            <BrandLogo textClassName="text-xl" iconClassName="h-7" suffix={brandSuffix} />
           </span>
           <nav className="hidden md:flex items-center gap-6" aria-label="Navigasi utama">
             {items.map((item) => {
