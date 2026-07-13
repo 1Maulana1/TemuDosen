@@ -3,6 +3,7 @@ import { useRouteLoaderData, useSearchParams, useNavigate } from 'react-router';
 import { logout, type User } from '../../api/auth';
 import { getCalendarStatus, getCalendarAuthUrl } from '../../api/sessions';
 import { AppNavbar, AppBottomNav, NAV_ITEMS } from '../../components/AppNav';
+import BimbinganCalendar from '../../components/BimbinganCalendar';
 
 const CALLBACK_REASON: Record<string, string> = {
   disabled: 'Google Calendar tidak diaktifkan di server ini.',
@@ -72,57 +73,54 @@ export default function LecturerSettings() {
           </div>
         </section>
 
-        {/* Info + Integrasi side by side, equal columns */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
-          {/* Informasi Akun */}
-          <section>
-            <h2 className="font-headline font-bold text-lg text-slate-900 mb-3">Informasi Akun</h2>
-            <div className="bg-surface rounded-2xl border border-gray-200 shadow-sm divide-y divide-gray-100">
-              <div className="flex items-center justify-between px-5 py-3.5">
-                <span className="text-sm text-on-surface-variant">NIDN</span>
-                <span className="text-sm font-bold text-slate-800">{user?.nidn ?? '—'}</span>
-              </div>
-              <div className="flex items-center justify-between px-5 py-3.5">
-                <span className="text-sm text-on-surface-variant">Email</span>
-                <span className="text-sm font-bold text-slate-800 truncate ml-4">{user?.email}</span>
-              </div>
-              <div className="flex items-center justify-between px-5 py-3.5">
-                <span className="text-sm text-on-surface-variant">Peran</span>
-                <span className="text-sm font-bold text-slate-800">Dosen</span>
-              </div>
+        {/* Informasi Akun */}
+        <section>
+          <h2 className="font-headline font-bold text-lg text-slate-900 mb-3">Informasi Akun</h2>
+          <div className="bg-surface rounded-2xl border border-gray-200 shadow-sm divide-y divide-gray-100">
+            <div className="flex items-center justify-between px-5 py-3.5">
+              <span className="text-sm text-on-surface-variant">NIDN</span>
+              <span className="text-sm font-bold text-slate-800">{user?.nidn ?? '—'}</span>
             </div>
-          </section>
+            <div className="flex items-center justify-between px-5 py-3.5">
+              <span className="text-sm text-on-surface-variant">Email</span>
+              <span className="text-sm font-bold text-slate-800 truncate ml-4">{user?.email}</span>
+            </div>
+            <div className="flex items-center justify-between px-5 py-3.5">
+              <span className="text-sm text-on-surface-variant">Peran</span>
+              <span className="text-sm font-bold text-slate-800">Dosen</span>
+            </div>
+          </div>
+        </section>
 
-          {/* Integrasi */}
-          <section>
-            <h2 className="font-headline font-bold text-lg text-slate-900 mb-3">Integrasi</h2>
-            <div className="bg-surface rounded-2xl border border-gray-200 shadow-sm p-5 flex items-center gap-3">
-              <span className={`material-symbols-outlined text-2xl ${status?.connected ? 'text-success' : 'text-gray-300'}`}>
+        {/* Kalender Bimbingan — grid bulanan + status koneksi Google Calendar */}
+        <section>
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <h2 className="font-headline font-bold text-lg text-slate-900">Kalender Bimbingan</h2>
+            <div className="flex items-center gap-2">
+              <span className={`material-symbols-outlined text-base ${status?.connected ? 'text-success' : 'text-gray-300'}`} aria-hidden="true">
                 calendar_month
               </span>
-              <div className="flex-1 min-w-0">
-                <p className="font-bold text-sm text-slate-800">Google Calendar</p>
-                <p className="text-[11px] text-on-surface-variant">
-                  {loading
-                    ? 'Memeriksa status...'
-                    : !status?.enabled
-                    ? 'Integrasi belum diaktifkan di server ini.'
-                    : status.connected
-                    ? 'Terhubung — sesi yang disetujui otomatis muncul di kalender Anda.'
-                    : 'Belum terhubung. Sesi tetap berjalan normal tanpa ini.'}
-                </p>
-              </div>
+              <span className="text-[11px] text-on-surface-variant">
+                {loading
+                  ? 'Memeriksa Google Calendar...'
+                  : !status?.enabled
+                  ? 'Google Calendar belum diaktifkan di server ini.'
+                  : status.connected
+                  ? 'Google Calendar terhubung — jadwal otomatis tersinkron.'
+                  : 'Google Calendar belum terhubung.'}
+              </span>
               {status?.enabled && !status.connected && (
                 <a
                   href={getCalendarAuthUrl()}
-                  className="px-3 py-2 bg-primary text-on-primary text-xs font-bold rounded-lg hover:bg-primary-hover min-h-[44px] flex items-center flex-shrink-0 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
+                  className="px-3 py-1.5 bg-primary text-on-primary text-xs font-bold rounded-lg hover:bg-primary-hover flex items-center flex-shrink-0 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
                 >
                   Hubungkan
                 </a>
               )}
             </div>
-          </section>
-        </div>
+          </div>
+          <BimbinganCalendar />
+        </section>
 
         {/* Logout */}
         <button type="button" onClick={handleLogout}

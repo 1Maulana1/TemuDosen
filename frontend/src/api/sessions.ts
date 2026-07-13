@@ -128,6 +128,25 @@ export async function scheduleSession(payload: SchedulePayload): Promise<{ messa
   return res.json();
 }
 
+// ── Kalender bimbingan (grid bulanan, halaman profil dosen) ───────────────────
+
+export interface CalendarSession {
+  id: number;
+  scheduled_at: string;
+  status: 'waiting' | 'in_progress' | 'done';
+  method: 'offline' | 'online' | null;
+  mahasiswa_name: string;
+  nim: string | null;
+}
+
+/** @param month "YYYY-MM" */
+export async function getLecturerCalendar(month: string): Promise<CalendarSession[]> {
+  const res = await apiRequest(`/api/queue/lecturer/calendar/?month=${encodeURIComponent(month)}`);
+  if (!res.ok) throw new Error('Gagal memuat kalender bimbingan.');
+  const body = await res.json();
+  return body.sessions;
+}
+
 // ── Selesai (SESSION-04) ───────────────────────────────────────────────────────
 
 export interface CompleteSessionResult {

@@ -13,7 +13,7 @@ from .views import (
     NotificationListView, NotificationReadView, NotificationReadAllView,
     LecturerSessionHistoryView, StudentSessionHistoryView,
     SessionRecordingFileView,
-    LecturerAdviseesView, LecturerScheduleSessionView,
+    LecturerAdviseesView, LecturerScheduleSessionView, LecturerCalendarView,
 )
 
 queue_urlpatterns = [
@@ -28,6 +28,8 @@ queue_urlpatterns = [
     # Dosen full control: pilih mahasiswa + tanggal → langsung terjadwal + notifikasi
     path('lecturer/advisees/', LecturerAdviseesView.as_view(), name='queue-lecturer-advisees'),
     path('lecturer/schedule/', LecturerScheduleSessionView.as_view(), name='queue-lecturer-schedule'),
+    # Grid kalender bulanan di halaman profil dosen
+    path('lecturer/calendar/', LecturerCalendarView.as_view(), name='queue-lecturer-calendar'),
     path('lecturer/history/', LecturerSessionHistoryView.as_view(), name='queue-lecturer-history'),
     # ADVICE-02 (Phase 7 SC2): rekap saran agregat lintas sesi per mahasiswa bimbingan
     path('lecturer/advice-history/', LecturerAdviceHistoryView.as_view(), name='queue-lecturer-advice-history'),

@@ -118,6 +118,30 @@ class TestLecturerScheduleSessionView:
         )
         assert resp.status_code == 403
 
+    def test_scheduled_session_appears_in_lecturer_calendar(
+        self, lecturer_user, advisee_student
+    ):
+        """Sesi yang dijadwalkan muncul di grid kalender bulanan dosen."""
+        when = timezone.now() + timedelta(hours=24)
+        client_for(lecturer_user).post(
+            SCHEDULE_URL,
+            {'student_id': advisee_student.id, 'scheduled_at': when.isoformat()},
+            format='json',
+        )
+        local = timezone.localtime(when)
+        resp = client_for(lecturer_user).get(
+            f'/api/queue/lecturer/calendar/?month={local.year:04d}-{local.month:02d}'
+        )
+        assert resp.status_code == 200
+        assert len(resp.data['sessions']) == 1
+        assert resp.data['sessions'][0]['mahasiswa_name'] == advisee_student.full_name
+
+    def test_calendar_invalid_month_falls_back_to_current(self, lecturer_user):
+        resp = client_for(lecturer_user).get('/api/queue/lecturer/calendar/?month=banana')
+        assert resp.status_code == 200
+        now = timezone.localtime()
+        assert resp.data['month'] == f'{now.year:04d}-{now.month:02d}'
+
     def test_scheduled_session_appears_in_student_queue(
         self, lecturer_user, advisee_student
     ):

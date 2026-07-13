@@ -520,6 +520,54 @@ class LecturerQueueView(APIView):
         })
 
 
+# ── Kalender bimbingan (grid bulanan di halaman profil dosen) ──────────────────
+
+class LecturerCalendarView(APIView):
+    """
+    GET /api/queue/lecturer/calendar/?month=YYYY-MM
+
+    Semua sesi bimbingan dosen (selain yang dibatalkan) pada bulan tersebut,
+    untuk tampilan grid kalender bulanan. Default: bulan berjalan.
+    """
+    permission_classes = [IsLecturer]
+
+    def get(self, request):
+        month_param = request.query_params.get('month', '')
+        try:
+            year, month = (int(p) for p in month_param.split('-'))
+            if not 1 <= month <= 12:
+                raise ValueError
+        except (ValueError, TypeError):
+            now = timezone.localtime()
+            year, month = now.year, now.month
+
+        sessions = (
+            Session.objects
+            .filter(
+                submission__student__adviser=request.user,
+                scheduled_at__year=year,
+                scheduled_at__month=month,
+            )
+            .exclude(status=Session.Status.CANCELLED)
+            .select_related('submission__student')
+            .order_by('scheduled_at')
+        )
+        return Response({
+            'month': f'{year:04d}-{month:02d}',
+            'sessions': [
+                {
+                    'id': s.id,
+                    'scheduled_at': s.scheduled_at.isoformat(),
+                    'status': s.status,
+                    'method': s.method,
+                    'mahasiswa_name': s.submission.student.full_name,
+                    'nim': s.submission.student.nim,
+                }
+                for s in sessions
+            ],
+        })
+
+
 # ── Dosen jadwalkan langsung (full control, tanpa approval mahasiswa) ──────────
 
 class LecturerAdviseesView(APIView):
