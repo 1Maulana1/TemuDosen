@@ -24,7 +24,7 @@ function monthKey(year: number, month: number) {
   return `${year.toString().padStart(4, '0')}-${(month + 1).toString().padStart(2, '0')}`;
 }
 
-export default function BimbinganCalendar() {
+export default function BimbinganCalendar({ refreshKey = 0 }: { refreshKey?: number }) {
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth()); // 0-based
@@ -39,7 +39,7 @@ export default function BimbinganCalendar() {
       .catch(() => { if (!cancelled) setSessions([]); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [year, month]);
+  }, [year, month, refreshKey]);
 
   function shift(delta: number) {
     const d = new Date(year, month + delta, 1);

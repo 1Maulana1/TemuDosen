@@ -4,6 +4,7 @@ import { logout, type User } from '../../api/auth';
 import { getCalendarStatus, getCalendarAuthUrl } from '../../api/sessions';
 import { AppNavbar, AppBottomNav, NAV_ITEMS } from '../../components/AppNav';
 import BimbinganCalendar from '../../components/BimbinganCalendar';
+import ScheduleSessionCard from '../../components/ScheduleSessionCard';
 
 const CALLBACK_REASON: Record<string, string> = {
   disabled: 'Google Calendar tidak diaktifkan di server ini.',
@@ -21,6 +22,7 @@ export default function LecturerSettings() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [status, setStatus] = useState<{ enabled: boolean; connected: boolean } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [calRefresh, setCalRefresh] = useState(0);
 
   const load = useCallback(() => {
     getCalendarStatus().then(setStatus).catch(() => null).finally(() => setLoading(false));
@@ -119,7 +121,13 @@ export default function LecturerSettings() {
               )}
             </div>
           </div>
-          <BimbinganCalendar />
+          {/* Grid kalender + form jadwalkan berdampingan (menumpuk di mobile) */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
+            <div className="lg:col-span-2">
+              <BimbinganCalendar refreshKey={calRefresh} />
+            </div>
+            <ScheduleSessionCard onScheduled={() => setCalRefresh((k) => k + 1)} />
+          </div>
         </section>
 
         {/* Logout */}
