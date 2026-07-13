@@ -8,6 +8,7 @@ import ConsentModal from '../../components/ConsentModal';
 import { AppNavbar, AppBottomNav, NAV_ITEMS } from '../../components/AppNav';
 import { useMediaRecorder } from '../../hooks/useMediaRecorder';
 import VideoProvider from '../../components/video/VideoProvider';
+import ScheduleSessionCard from '../../components/ScheduleSessionCard';
 
 function fmt(iso: string) {
   return new Date(iso).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
@@ -214,6 +215,9 @@ export default function LecturerDashboard() {
                 <p className="text-[11px] text-on-surface-variant mt-0.5">Mulai sesi dari daftar mahasiswa menunggu.</p>
               </section>
             )}
+
+            {/* Dosen full control: assign jadwal langsung ke mahasiswa bimbingan */}
+            <ScheduleSessionCard onScheduled={load} />
           </div>
         </div>
       </main>

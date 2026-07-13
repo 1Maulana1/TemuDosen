@@ -28,6 +28,40 @@ class ApproveSubmissionSerializer(serializers.Serializer):
         return attrs
 
 
+# ── Dosen jadwalkan langsung ───────────────────────────────────────────────────
+
+class LecturerScheduleSerializer(serializers.Serializer):
+    """Dosen assign jadwal bimbingan langsung ke mahasiswa bimbingannya —
+    tanpa pengajuan dari mahasiswa dan tanpa approval (mahasiswa hanya
+    menerima notifikasi)."""
+    student_id = serializers.IntegerField()
+    scheduled_at = serializers.DateTimeField()
+    method = serializers.ChoiceField(
+        choices=[('offline', 'Offline'), ('online', 'Online')],
+        default='offline',
+    )
+    meeting_link = serializers.URLField(
+        required=False,
+        allow_null=True,
+        allow_blank=True,
+        validators=[URLValidator(schemes=['http', 'https'])],
+    )
+    note = serializers.CharField(required=False, allow_blank=True, max_length=500)
+
+    def validate_scheduled_at(self, value):
+        from django.utils import timezone
+        if value <= timezone.now():
+            raise serializers.ValidationError('Jadwal harus di waktu yang akan datang.')
+        return value
+
+    def validate(self, attrs):
+        if attrs.get('method') == 'online' and not attrs.get('meeting_link'):
+            raise serializers.ValidationError(
+                {'meeting_link': 'Link meeting wajib diisi jika metode Online.'}
+            )
+        return attrs
+
+
 # ── Reject / Revisi ────────────────────────────────────────────────────────────
 
 class RejectSubmissionSerializer(serializers.Serializer):

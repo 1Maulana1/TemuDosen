@@ -28,3 +28,9 @@ CSRF_COOKIE_SECURE = False
 CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_EAGER_PROPAGATES = True
 STT_LLM_ENABLED = False
+
+# Test mengasumsikan integrasi eksternal nonaktif — jangan biarkan nilai dari
+# backend/.env developer (mis. GOOGLE_CALENDAR_ENABLED=true) bocor ke test run.
+GOOGLE_CALENDAR_ENABLED = False
+GOOGLE_CLIENT_ID = ''
+GOOGLE_CLIENT_SECRET = ''

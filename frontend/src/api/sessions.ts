@@ -87,6 +87,47 @@ export async function getLecturerQueue(): Promise<LecturerQueueResponse> {
   return res.json();
 }
 
+// ── Dosen jadwalkan langsung (full control, tanpa approval mahasiswa) ─────────
+
+export interface Advisee {
+  id: number;
+  full_name: string;
+  nim: string | null;
+}
+
+export async function getAdvisees(): Promise<Advisee[]> {
+  const res = await apiRequest('/api/queue/lecturer/advisees/');
+  if (!res.ok) throw new Error('Gagal memuat daftar mahasiswa bimbingan.');
+  const body = await res.json();
+  return body.advisees;
+}
+
+export interface SchedulePayload {
+  student_id: number;
+  scheduled_at: string; // ISO datetime
+  method: 'offline' | 'online';
+  meeting_link?: string;
+  note?: string;
+}
+
+export async function scheduleSession(payload: SchedulePayload): Promise<{ message: string }> {
+  const res = await apiRequest('/api/queue/lecturer/schedule/', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    const b = body as Record<string, unknown>;
+    const detail =
+      (typeof b.detail === 'string' && b.detail) ||
+      (Array.isArray(b.scheduled_at) && String(b.scheduled_at[0])) ||
+      (Array.isArray(b.meeting_link) && String(b.meeting_link[0])) ||
+      'Gagal menjadwalkan sesi.';
+    throw new Error(detail);
+  }
+  return res.json();
+}
+
 // ── Selesai (SESSION-04) ───────────────────────────────────────────────────────
 
 export interface CompleteSessionResult {

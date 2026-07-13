@@ -42,6 +42,7 @@ from .models import ActionItem, DosenCalendarToken, Notification, Session, Sessi
 from .serializers import (
     ApproveSubmissionSerializer,
     LecturerQueueItemSerializer,
+    LecturerScheduleSerializer,
     RejectSubmissionSerializer,
     SessionDetailSerializer,
     SessionHistorySerializer,
@@ -517,6 +518,151 @@ class LecturerQueueView(APIView):
             'queue': serializer.data,
             'activeSession': active_data,
         })
+
+
+# ── Dosen jadwalkan langsung (full control, tanpa approval mahasiswa) ──────────
+
+class LecturerAdviseesView(APIView):
+    """GET /api/queue/lecturer/advisees/ — daftar mahasiswa bimbingan dosen,
+    untuk dropdown form 'Jadwalkan Bimbingan'."""
+    permission_classes = [IsLecturer]
+
+    def get(self, request):
+        from apps.accounts.models import CustomUser
+        students = (
+            CustomUser.objects
+            .filter(role='student', adviser=request.user, is_approved=True)
+            .order_by('full_name')
+        )
+        return Response({
+            'advisees': [
+                {'id': s.id, 'full_name': s.full_name, 'nim': s.nim}
+                for s in students
+            ],
+        })
+
+
+class LecturerScheduleSessionView(APIView):
+    """
+    POST /api/queue/lecturer/schedule/
+
+    Dosen memilih mahasiswa + tanggal lalu langsung menjadwalkan sesi bimbingan.
+    Sistem membuat Submission (APPROVED, atas nama mahasiswa) + Session WAITING
+    pada waktu yang dipilih, mengirim notifikasi ke mahasiswa (tanpa perlu
+    approval — mahasiswa hanya melihat jadwalnya), dan membuat event Google
+    Calendar (async) bila integrasi aktif.
+    """
+    permission_classes = [IsLecturer]
+
+    def post(self, request):
+        from apps.accounts.models import CustomUser
+
+        serializer = LecturerScheduleSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        dosen = request.user
+        data = serializer.validated_data
+
+        try:
+            student = CustomUser.objects.get(pk=data['student_id'], role='student')
+        except CustomUser.DoesNotExist:
+            return Response({'detail': 'Mahasiswa tidak ditemukan.'}, status=status.HTTP_404_NOT_FOUND)
+        if student.adviser_id != dosen.id:
+            return Response(
+                {'detail': 'Mahasiswa ini bukan mahasiswa bimbingan Anda.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        # Satu sesi aktif per mahasiswa (aturan yang sama dengan jalur approve).
+        if Session.objects.filter(
+            submission__student=student,
+            status=Session.Status.WAITING,
+        ).exists():
+            return Response(
+                {'detail': 'Mahasiswa sudah memiliki sesi aktif dalam antrian.'},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        scheduled_at = data['scheduled_at']
+        method = data['method']
+        meeting_link = data.get('meeting_link') or None
+        note = (data.get('note') or '').strip()
+        estimated_minutes = 30
+
+        submission = Submission.objects.create(
+            student=student,
+            description=note or 'Bimbingan dijadwalkan langsung oleh dosen pembimbing.',
+            status=Submission.Status.APPROVED,
+        )
+        session = Session.objects.create(
+            submission=submission,
+            status=Session.Status.WAITING,
+            method=method,
+            meeting_link=meeting_link,
+            estimated_minutes=estimated_minutes,
+            scheduled_at=scheduled_at,
+        )
+
+        # Event Google Calendar (async, pola yang sama dengan jalur approve).
+        end_time = scheduled_at + timedelta(minutes=estimated_minutes)
+        event_data = {
+            'title': f'Bimbingan {student.full_name} - Dijadwalkan Dosen',
+            'description': (
+                f'Sesi bimbingan akademik (dijadwalkan langsung oleh dosen).\n'
+                f'Mahasiswa: {student.full_name} ({student.nim or "-"})\n'
+                f'Dosen: {dosen.full_name}\n'
+                + (f'Catatan: {note}\n' if note else '')
+                + f'Metode: {"Online" if method == "online" else "Tatap Muka"}'
+                + (f'\nLink: {meeting_link}' if meeting_link else '')
+            ),
+            'start_time': scheduled_at,
+            'end_time': end_time,
+            'attendee_emails': [dosen.email, student.email],
+            'location': meeting_link if method == 'online' else None,
+        }
+        if getattr(settings, 'GOOGLE_CALENDAR_ENABLED', False):
+            threading.Thread(
+                target=_create_calendar_event_async,
+                args=(dosen.id, session.id, event_data),
+                daemon=True,
+            ).start()
+
+        # Notifikasi ke mahasiswa — informasi saja, tidak perlu approve.
+        local_dt = timezone.localtime(scheduled_at)
+        notify_student(
+            student,
+            f'Dosen {dosen.full_name} menjadwalkan sesi bimbingan untuk Anda pada '
+            f'{local_dt.strftime("%d/%m/%Y %H:%M")} WIB '
+            f'({"Online" if method == "online" else "Tatap Muka"}).'
+            + (f' Link: {meeting_link}' if meeting_link else '')
+            + (f' Catatan: {note}' if note else ''),
+            session=session,
+            event_type='SCHEDULED_BY_LECTURER',
+        )
+
+        SystemLog.objects.create(
+            level=SystemLog.Level.INFO,
+            event_type='SESSION_SCHEDULED_BY_LECTURER',
+            message=f'Dosen {dosen.email} menjadwalkan sesi #{session.id} untuk {student.email}',
+            context={'session_id': session.id, 'student_id': student.id, 'dosen_id': dosen.id},
+        )
+
+        return Response(
+            {
+                'message': 'Sesi bimbingan berhasil dijadwalkan. Mahasiswa telah dinotifikasi.',
+                'session': {
+                    'id': session.id,
+                    'status': session.status,
+                    'method': session.method,
+                    'meeting_link': session.meeting_link,
+                    'estimated_minutes': session.estimated_minutes,
+                    'scheduled_at': session.scheduled_at.isoformat(),
+                    'student': {'id': student.id, 'full_name': student.full_name, 'nim': student.nim},
+                },
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
 
 # ── Phase 6 (partial): riwayat sesi, rekaman, ringkasan manual ─────────────────

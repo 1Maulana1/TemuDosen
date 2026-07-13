@@ -13,6 +13,7 @@ from .views import (
     NotificationListView, NotificationReadView, NotificationReadAllView,
     LecturerSessionHistoryView, StudentSessionHistoryView,
     SessionRecordingFileView,
+    LecturerAdviseesView, LecturerScheduleSessionView,
 )
 
 queue_urlpatterns = [
@@ -24,6 +25,9 @@ queue_urlpatterns = [
     path('<int:pk>/recording/', SessionRecordingFileView.as_view(), name='queue-recording'),
     # Phase 6 merge: ringkasan pindah ke /api/logbook/ (lihat apps.logbook.urls)
     path('lecturer/', LecturerQueueView.as_view(), name='queue-lecturer'),
+    # Dosen full control: pilih mahasiswa + tanggal → langsung terjadwal + notifikasi
+    path('lecturer/advisees/', LecturerAdviseesView.as_view(), name='queue-lecturer-advisees'),
+    path('lecturer/schedule/', LecturerScheduleSessionView.as_view(), name='queue-lecturer-schedule'),
     path('lecturer/history/', LecturerSessionHistoryView.as_view(), name='queue-lecturer-history'),
     # ADVICE-02 (Phase 7 SC2): rekap saran agregat lintas sesi per mahasiswa bimbingan
     path('lecturer/advice-history/', LecturerAdviceHistoryView.as_view(), name='queue-lecturer-advice-history'),
