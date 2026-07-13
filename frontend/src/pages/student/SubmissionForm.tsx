@@ -52,10 +52,9 @@ export default function SubmissionForm() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // FR-D01: status submission terakhir — REJECTED memblokir form, REVISION menampilkan catatan
+  // FR-D01: status submission terakhir — REJECTED/REVISION menampilkan catatan dosen
   const [latestStatus, setLatestStatus] = useState<'rejected' | 'revision' | null>(null);
   const [revisionNote, setRevisionNote] = useState('');
-  const [checkingHistory, setCheckingHistory] = useState(true);
 
   // Load available symptoms
   useEffect(() => {
@@ -76,13 +75,13 @@ export default function SubmissionForm() {
         const latest = subs[0];
         if (latest?.status === 'rejected') {
           setLatestStatus('rejected');
+          setRevisionNote(latest.rejection_reason);
         } else if (latest?.status === 'revision') {
           setLatestStatus('revision');
           setRevisionNote(latest.rejection_reason);
         }
       })
-      .catch(() => null)
-      .finally(() => setCheckingHistory(false));
+      .catch(() => null);
   }, []);
 
   // Compute estimated duration from selected symptoms
@@ -157,26 +156,7 @@ export default function SubmissionForm() {
     <div className="font-body text-slate-900 bg-gray-50 min-h-screen flex flex-col overflow-x-hidden">
       <AppNavbar items={NAV_ITEMS.mahasiswa} active="ajukan" userName={user?.full_name ?? 'Mahasiswa'} onLogout={handleLogout} />
 
-      {/* FR-D01: submission terakhir DITOLAK — blokir pengajuan baru */}
-      {!checkingHistory && latestStatus === 'rejected' ? (
-        <main className="flex-1 w-full max-w-xl mx-auto px-4 sm:px-6 py-10">
-          <div className="flex flex-col items-center text-center gap-3 py-10">
-            <div className="w-14 h-14 rounded-full bg-error/10 flex items-center justify-center">
-              <span className="material-symbols-outlined text-error text-2xl" aria-hidden="true">block</span>
-            </div>
-            <h2 className="font-headline font-bold text-lg text-slate-900">Pengajuan Tidak Dapat Dibuat</h2>
-            <p className="text-sm text-neutral-gray max-w-xs">
-              Pengajuan bimbingan Anda sebelumnya ditolak secara final. Anda tidak dapat mengajukan
-              bimbingan baru. Hubungi admin jika ada pertanyaan.
-            </p>
-            <button type="button" onClick={() => navigate('/mahasiswa')}
-              className="mt-2 px-6 py-3 bg-primary text-on-primary text-sm font-bold rounded-xl hover:bg-primary-hover min-h-[44px]">
-              Kembali ke Dashboard
-            </button>
-          </div>
-        </main>
-      ) : (
-      <>
+<>
       {/* Main form — 2 kolom di desktop (isian + sidebar estimasi) */}
       <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 py-6 pb-24 md:pb-8">
         {/* Page header + step progress */}
@@ -201,6 +181,16 @@ export default function SubmissionForm() {
             <div className="p-3 bg-orange-50 border border-orange-200 rounded-xl text-sm text-orange-700">
               <span className="font-bold">Catatan revisi dari dosen: </span>
               {revisionNote}
+            </div>
+          )}
+
+          {/* FR-D01: pengajuan sebelumnya ditolak — tampilkan alasan, tetap boleh mengajukan lagi */}
+          {latestStatus === 'rejected' && (
+            <div className="p-3 bg-error/5 border border-error/20 rounded-xl text-sm text-error">
+              <span className="font-bold">Pengajuan Anda sebelumnya ditolak. </span>
+              {revisionNote
+                ? <>Alasan: {revisionNote}. Perbaiki sesuai catatan dosen lalu ajukan kembali.</>
+                : 'Anda dapat memperbaiki dan mengajukan bimbingan baru.'}
             </div>
           )}
 
@@ -373,7 +363,6 @@ export default function SubmissionForm() {
         </div>
       </main>
       </>
-      )}
 
       <AppBottomNav items={NAV_ITEMS.mahasiswa} active="ajukan" />
     </div>

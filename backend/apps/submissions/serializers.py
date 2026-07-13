@@ -78,20 +78,13 @@ class SubmissionCreateSerializer(serializers.Serializer):
     def validate(self, attrs):
         """
         FR-D01: cek status submission terakhir mahasiswa sebelum membuat yang baru.
-          - REJECTED (final): mahasiswa tidak boleh mengajukan submission baru sama sekali.
+          - REJECTED: boleh mengajukan lagi sebagai pengajuan baru (tidak ditautkan
+            ke submission lama); alasan penolakan sebelumnya ditampilkan di FE.
           - REVISION: diperbolehkan, dan submission baru ditautkan ke submission REVISION
             tersebut lewat previous_submission (dipakai FE untuk menampilkan catatan revisi).
         """
         student = self.context['request'].user
         latest = Submission.objects.filter(student=student).order_by('-created_at').first()
-
-        if latest and latest.status == Submission.Status.REJECTED:
-            raise serializers.ValidationError({
-                'non_field_errors': [
-                    'Pengajuan Anda sebelumnya ditolak secara final. '
-                    'Anda tidak dapat mengajukan bimbingan baru. Hubungi admin jika ada pertanyaan.'
-                ]
-            })
 
         attrs['_previous_submission'] = (
             latest if latest and latest.status == Submission.Status.REVISION else None
